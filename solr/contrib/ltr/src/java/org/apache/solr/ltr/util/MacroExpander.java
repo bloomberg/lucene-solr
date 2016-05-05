@@ -96,7 +96,14 @@ public class MacroExpander {
       if (replacement != null) {
         sb.append(replacement);
       } else {
-        sb.append(val.substring(matchedStart, start));
+        /*
+        int defaultValueIdx=val.indexOf(":",matchedStart);
+        if(defaultValueIdx>start)
+          sb.append(val.substring(matchedStart, start));
+        else
+          sb.append(val.substring(defaultValueIdx+1, start-1));
+          */
+        return null;
       }
 
     }

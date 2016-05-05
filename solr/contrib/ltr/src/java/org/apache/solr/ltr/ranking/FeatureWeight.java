@@ -119,11 +119,15 @@ public abstract class FeatureWeight extends Weight {
   public Explanation explain(LeafReaderContext context, int doc)
       throws IOException {
     FeatureScorer r = scorer(context);
-    r.iterator().advance(doc);
     float score = getDefaultValue();
-    if (r.docID() == doc) score = r.score();
+    if (r != null) {
+      r.iterator().advance(doc);
+      if (r.docID() == doc) score = r.score();
+      return Explanation.match(score, r.toString());
+    }else{
+      return Explanation.match(score, "The feature has no value");
+    }
 
-    return Explanation.match(score, r.toString());
   }
 
   @Override

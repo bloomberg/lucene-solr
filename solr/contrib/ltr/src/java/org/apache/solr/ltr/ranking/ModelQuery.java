@@ -36,7 +36,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.solr.ltr.feature.ModelMetadata;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
@@ -100,7 +99,7 @@ public class ModelQuery extends Query {
     result = prime * result + ((meta == null) ? 0 : meta.hashCode());
     result = prime * result
         + ((originalQuery == null) ? 0 : originalQuery.hashCode());
-    result = prime * result + ((efi == null) ? 0 : originalQuery.hashCode());
+    result = prime * result + ((efi == null) ? 0 : efi.hashCode());
     result = prime * result + this.toString().hashCode();
     return result;
   }
@@ -217,15 +216,17 @@ public class ModelQuery extends Query {
       Explanation[] explanations = new Explanation[allFeatureValues.length];
       int index = 0;
       for (FeatureWeight feature : allFeatureWeights) {
-        explanations[index++] = feature.explain(context, doc);
+        Explanation featureExplanation = feature.explain(context, doc);
+        explanations[index++] = featureExplanation;
       }
 
       List<Explanation> featureExplanations = new ArrayList<>();
       for (FeatureWeight f : modelFeatures) {
         Normalizer n = f.getNorm();
         Explanation e = explanations[f.id];
-        if (n != IdentityNormalizer.INSTANCE) e = n.explain(e);
-        featureExplanations.add(e);
+          if (n != IdentityNormalizer.INSTANCE) e = n.explain(e);
+          featureExplanations.add(e);
+
       }
       // TODO this calls twice the scorers, could be optimized.
       ModelScorer bs = scorer(context);

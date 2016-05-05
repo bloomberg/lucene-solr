@@ -46,6 +46,8 @@ public class TestExternalFeatures extends TestRerankBase {
 
     loadFeatures("external_features.json");
     loadModels("external_model.json");
+    loadFeatures("external_features_for_sparse_processing.json");
+    loadModels("external_model_binary_feature.json");
   }
 
   @AfterClass
@@ -96,6 +98,48 @@ public class TestExternalFeatures extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==0.0");
+
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+  }
+
+  @Test
+  public void efiFeatureProcessing_noRequestParameter_shouldNotCalculateMissingFeature() throws Exception {
+    SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*,score,features:[fv]");
+    query.add("rows", "3");
+    query.add(LTRComponent.LTRParams.FV, "true");
+
+    query.add("fl", "[fv]");
+    query
+        .add("rq", "{!ltr reRankDocs=3 model=external_model_binary_feature efi.user_device_tablet=1}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(),
+        "/response/docs/[0]/features=='user_device_tablet:1.0'");
+    assertJQ("/query" + query.toQueryString(),
+        "/response/docs/[0]/score==65.0");
+
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+  }
+
+  @Test
+  public void efiFeatureProcessing_noRequestParameters_shouldReturnZeroScore() throws Exception {
+    SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*,score,features:[fv]");
+    query.add("rows", "3");
+    query.add(LTRComponent.LTRParams.FV, "true");
+
+    query.add("fl", "[fv]");
+    query
+        .add("rq", "{!ltr reRankDocs=3 model=external_model_binary_feature}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(),
+        "/response/docs/[0]/features==''");
+    assertJQ("/query" + query.toQueryString(),
+        "/response/docs/[0]/score==0.0");
 
     System.out.println(restTestHarness.query("/query" + query.toQueryString()));
   }

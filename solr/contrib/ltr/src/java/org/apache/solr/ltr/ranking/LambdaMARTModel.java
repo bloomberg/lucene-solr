@@ -52,7 +52,7 @@ public class LambdaMARTModel extends ModelMetadata {
       }
 
       if (featureIndex < 0 || // unsupported feature
-          featureIndex > featureVector.length || // tree is looking for a
+          featureIndex >= featureVector.length || // tree is looking for a
                                                  // feature that does not
                                                  // exist
           featureVector[featureIndex] <= threshold) {

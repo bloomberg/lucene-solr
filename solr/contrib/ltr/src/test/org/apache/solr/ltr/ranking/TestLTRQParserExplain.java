@@ -112,6 +112,66 @@ public class TestLTRQParserExplain extends TestRerankBase {
         "/debug/explain/9=='\n3.5116758 = 6029760550880411648 [ org.apache.solr.ltr.ranking.RankSVMModel ] model applied to features, sum of:\n  0.0 = prod of:\n    0.0 = weight on feature [would be cool to have the name :)]\n    1.0 = ValueFeature [name=title value=1.0]\n  0.2 = prod of:\n    0.1 = weight on feature [would be cool to have the name :)]\n    2.0 = ValueFeature [name=description value=2.0]\n  0.4 = prod of:\n    0.2 = weight on feature [would be cool to have the name :)]\n    2.0 = ValueFeature [name=keywords value=2.0]\n  0.09 = prod of:\n    0.3 = weight on feature [would be cool to have the name :)]\n    0.3 = normalized using org.apache.solr.ltr.feature.norm.impl.MinMaxNormalizer [params {min=0.0, max=10.0}]\n      3.0 = ValueFeature [name=popularity value=3.0]\n  1.6 = prod of:\n    0.4 = weight on feature [would be cool to have the name :)]\n    4.0 = ValueFeature [name=text value=4.0]\n  0.6156155 = prod of:\n    0.1231231 = weight on feature [would be cool to have the name :)]\n    5.0 = ValueFeature [name=queryIntentPerson value=5.0]\n  0.60606056 = prod of:\n    0.12121211 = weight on feature [would be cool to have the name :)]\n    5.0 = ValueFeature [name=queryIntentCompany value=5.0]\n'}");
   }
 
+  @Test
+  public void SVMScoreExplain_missingEfiFeature_shouldReturnDefaultScore() throws Exception {
+    loadFeatures("features-ranksvm-efi.json");
+    loadModels("svm-model-efi.json");
+
+    SolrQuery query = new SolrQuery();
+    query.setQuery("title:bloomberg");
+    query.setParam("debugQuery", "on");
+    query.add("rows", "4");
+    query.add("rq", "{!ltr reRankDocs=4 model=svm-efi}");
+    query.add("fl", "*,score");
+    query.add("wt", "xml");
+
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    query.remove("wt");
+    query.add("wt", "json");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/debug/explain/7=='\n5.0 = svm-efi [ org.apache.solr.ltr.ranking.RankSVMModel ] model applied to features, sum of:\n  5.0 = prod of:\n    1.0 = weight on feature [would be cool to have the name :)]\n    5.0 = ValueFeature [name=sampleConstant value=5.0]\n" +
+            "  0.0 = prod of:\n" +
+            "    2.0 = weight on feature [would be cool to have the name :)]\n" +
+            "    0.0 = The feature has no value\n'}");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/debug/explain/9=='\n5.0 = svm-efi [ org.apache.solr.ltr.ranking.RankSVMModel ] model applied to features, sum of:\n  5.0 = prod of:\n    1.0 = weight on feature [would be cool to have the name :)]\n    5.0 = ValueFeature [name=sampleConstant value=5.0]\n" +
+            "  0.0 = prod of:\n" +
+            "    2.0 = weight on feature [would be cool to have the name :)]\n" +
+            "    0.0 = The feature has no value\n'}");
+  }
+
+  @Test
+  public void lambdaMARTScoreExplain_missingEfiFeature_shouldReturnDefaultScore() throws Exception {
+    loadFeatures("external_features_for_sparse_processing.json");
+    loadModels("external_model_binary_feature.json");
+
+    SolrQuery query = new SolrQuery();
+    query.setQuery("title:bloomberg");
+    query.setParam("debugQuery", "on");
+    query.add("rows", "4");
+    query.add("rq", "{!ltr reRankDocs=4 model=external_model_binary_feature efi.user_device_tablet=1}");
+    query.add("fl", "*,score");
+    query.add("wt", "xml");
+
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    query.remove("wt");
+    query.add("wt", "json");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/debug/explain/7=='\n" +
+            "65.0 = external_model_binary_feature [ org.apache.solr.ltr.ranking.LambdaMARTModel ] model applied to features, sum of:\n" +
+            "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n" +
+            "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/debug/explain/9=='\n" +
+            "65.0 = external_model_binary_feature [ org.apache.solr.ltr.ranking.LambdaMARTModel ] model applied to features, sum of:\n" +
+            "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n" +
+            "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
+  }
+
   // @Test
   // public void checkfq() throws Exception {
   //

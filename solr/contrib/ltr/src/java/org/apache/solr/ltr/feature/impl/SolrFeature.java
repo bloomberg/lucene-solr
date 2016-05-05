@@ -78,7 +78,9 @@ public class SolrFeature extends Feature {
         if (solrQuery == null || solrQuery.isEmpty()) {
           solrQuery = "*:*";
         }
-        solrQuery = macroExpander.expand(solrQuery);
+        String expandedQuery = macroExpander.expand(solrQuery);
+        if(expandedQuery!=null)
+            solrQuery = expandedQuery;
 
         SolrQueryRequest req = makeRequest(request.getCore(), solrQuery, fqs,
             df);

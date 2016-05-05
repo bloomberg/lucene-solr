@@ -18,6 +18,7 @@ package org.apache.solr.ltr.util;
  */
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,9 +35,9 @@ public class TestMacroExpander {
     assertEquals("", macroExpander.expand(""));
     assertEquals("foo", macroExpander.expand("foo"));
     assertEquals("$foo", macroExpander.expand("$foo"));
-    assertEquals("${foo}", macroExpander.expand("${foo}"));
+    assertNull( macroExpander.expand("${foo}"));
     assertEquals("{foo}", macroExpander.expand("{foo}"));
-    assertEquals("${foo}", MacroExpander.expand("${foo}", efi));
+    assertNull( MacroExpander.expand("${foo}", efi));
   }
 
   @Test

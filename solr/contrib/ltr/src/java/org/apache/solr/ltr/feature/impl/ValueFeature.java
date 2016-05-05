@@ -69,7 +69,7 @@ public class ValueFeature extends Feature {
 
   public class ValueFeatureWeight extends FeatureWeight {
 
-    protected float featureValue;
+    protected Float featureValue;
 
     public ValueFeatureWeight(IndexSearcher searcher, String name,
         NamedParams params, Normalizer norm, int id) {
@@ -84,7 +84,9 @@ public class ValueFeature extends Feature {
       // otherwise use the
       // constant value provided in the config.
       if (configValueStr != null) {
-        featureValue = Float.parseFloat(macroExpander.expand(configValueStr));
+        String expandedValue = macroExpander.expand(configValueStr);
+        if(expandedValue!=null)
+          featureValue = Float.parseFloat(expandedValue);
       } else {
         featureValue = configValue;
       }
@@ -92,7 +94,10 @@ public class ValueFeature extends Feature {
 
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
-      return new ValueFeatureScorer(this, featureValue, "ValueFeature");
+      if(featureValue!=null)
+        return new ValueFeatureScorer(this, featureValue, "ValueFeature");
+      else
+        return null;
     }
 
     /**

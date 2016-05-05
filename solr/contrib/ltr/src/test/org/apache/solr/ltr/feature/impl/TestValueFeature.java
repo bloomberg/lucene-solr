@@ -124,7 +124,7 @@ public class TestValueFeature extends TestRerankBase {
     // System.out.println(res);
 
     // No efi.val passed in
-    assertJQ("/query" + query.toQueryString(), "/responseHeader/status==400");
+    assertJQ("/query" + query.toQueryString(), "/responseHeader/status==0");
   }
 
   @Test
