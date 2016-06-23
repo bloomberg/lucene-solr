@@ -18,7 +18,6 @@ package org.apache.solr.ltr.ranking;
  */
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +29,39 @@ import org.apache.solr.ltr.util.ModelException;
 import org.apache.solr.ltr.util.NamedParams;
 
 public class LambdaMARTModel extends LTRScoringAlgorithm {
+  public static final String WEIGHT = "weight";
+  public static final String ORIGINAL_SCORE_FEATURE = "OriginalScoreFeature";
+  public static final String ORIGINAL_SCORE_BOOST_PARAM = "originalScoreBoost";
+  public static final String ADDITIVE_BOOST = "additive";
+  public static final String MULTIPLICATIVE_BOOST = "multiplicative";
 
+
+  OriginalScoreBoost originalScoreBoost;
   List<RegressionTree> trees = new ArrayList<RegressionTree>();
+
+  class OriginalScoreBoost {
+    public static final String BOOST = "boost";
+
+    public int featureIndex;
+    public float weight;
+    public String boostType;
+
+    public OriginalScoreBoost(String modelName,Map<String, Object> originalScoreParams,int originalScoreFeatureIndex){
+      if (originalScoreFeatureIndex == -1) {
+        throw new ModelException("Model " + modelName + " doesn't contain any original score feature");
+      }
+      if (originalScoreParams.containsKey(WEIGHT)) {
+        weight = NamedParams.convertToFloat(originalScoreParams.get(WEIGHT));
+      } else {
+        throw new ModelException("Model " + modelName + " doesn't contain any weight for the original score feature");
+      }
+      boostType = MULTIPLICATIVE_BOOST;
+      if (originalScoreParams.get(BOOST) != null) {
+        boostType = (String) originalScoreParams.get(BOOST);
+      }
+      featureIndex =originalScoreFeatureIndex;
+    }
+  }
 
   class RegressionTreeNode {
     public static final float NODE_SPLIT_SLACK = 1E-6f;
@@ -151,7 +181,7 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
 
     public RegressionTree(Map<String,Object> map,
         HashMap<String,Integer> fname2index) throws ModelException {
-      final Object ow = map.get("weight");
+      final Object ow = map.get(WEIGHT);
       if (null == ow) {
         throw new ModelException(
             "LambdaMARTModel tree doesn't contain a weight");
@@ -178,11 +208,18 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
       throw new ModelException("LambdaMARTModel doesn't contain any params");
     }
 
+    int originalScoreFeatureIndex=-1;
     final HashMap<String,Integer> fname2index = new HashMap<String,Integer>();
     for (int i = 0; i < features.size(); ++i) {
-      final String key = features.get(i).getName();
+      Feature currentFeature = features.get(i);
+      final String key = currentFeature.getName();
+      final String type = currentFeature.getType();
       fname2index.put(key, i);
+      if (ORIGINAL_SCORE_FEATURE.equals(type))
+        originalScoreFeatureIndex = i;
     }
+
+    initOriginalScoreBoost(name,originalScoreFeatureIndex);
 
     final List<Object> jsonTrees = getParams().getList("trees");
 
@@ -198,11 +235,34 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
 
   }
 
+  private void initOriginalScoreBoost(String modelName, int  originalScoreFeatureIndex){
+      final Map<String, Object> originalScoreParams = (Map<String, Object>) getParams()
+          .get(ORIGINAL_SCORE_BOOST_PARAM);
+
+      if (originalScoreParams != null) {
+        this.originalScoreBoost=new OriginalScoreBoost(modelName,originalScoreParams,originalScoreFeatureIndex);
+    }
+  }
   @Override
   public float score(float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (final RegressionTree t : trees) {
       score += t.score(modelFeatureValuesNormalized);
+    }
+    if (originalScoreBoost!=null) {
+
+      float originalScore = modelFeatureValuesNormalized[originalScoreBoost.featureIndex];
+      float weightedOriginalScore = originalScoreBoost.weight * originalScore;
+
+      if (MULTIPLICATIVE_BOOST.equals(originalScoreBoost.boostType)) {
+        if (score < 0) {
+          weightedOriginalScore = 1 / weightedOriginalScore;
+        }
+        score *= weightedOriginalScore;
+      } else if (ADDITIVE_BOOST.equals(originalScoreBoost.boostType)) {
+        score += weightedOriginalScore;
+      }
+
     }
     return score;
   }

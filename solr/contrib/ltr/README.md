@@ -310,8 +310,74 @@ list that will be computed but not used in the model for scoring, which can
 be useful for logging. Params are the LambdaMART specific parameters. In this
 case we have 2 trees, one with 3 leaf nodes and one with 1 leaf node.
 
-A good library for training LambdaMART ( http://sourceforge.net/p/lemur/wiki/RankLib/ ).
-You will need to convert the RankLib model format to the format specified above.
+###### model3.json
+```json
+{
+    "type":"org.apache.solr.ltr.ranking.LambdaMARTModel",
+    "name":"lambdamartmodel",
+    "features":[
+        { "name": "userTextTitleMatch"},
+        { "name": "originalScoreFeature"}
+    ],
+    "params":{
+    "originalScoreBoost":{
+                "weight":0.1,
+                "boost":"additive"
+            },
+        "trees": [
+            {
+                "weight" : 1,
+                "tree": {
+                    "feature": "userTextTitleMatch",
+                    "threshold": 0.5,
+                    "left" : {
+                        "value" : -100
+                    },
+                    "right": {
+                        "value" : 10
+                        
+                    }
+                }
+            },
+            {
+                "weight" : 2,
+                "tree": {
+                    "value" : -10
+                }
+            }
+        ]
+    }
+}
+```
+This is an example of a toy LambdaMART using an additional capability : Original Score Boosting.
+This possible configuration covers the use cases when you have the original score of the Solr Document not available at training time.
+e.g.
+Your training set is not built on clicks of the search results and contains legacy data.
+
+N.B. a requirement for the Original Score Boost to work is to have defined a feature of type "originalScoreFeature" in the list of features of the model.
+e.g.
+"features":[
+        { "name": "userTextTitleMatch"},
+        { "name": "originalScoreFeature"}
+    ]
+Let's see the configuration in details :
+
+"originalScoreBoost":{
+                "weight":0.1,
+                "boost":"additive"
+            }
+The original score feature value, weighted, will be added to the score produced by LambdaMART.
+
+"originalScoreBoost":{
+                "weight":0.1,
+                "boost":"multiplicative"
+            }
+The original score feature value, weighted, will be multiplied to the score produced by LambdaMART.
+
+N.B. take extra care when using this approach, this will introduce a manual boosting to the score calculation.
+It adds a nice flexibility when you don't have the original score available for training, but should not be abused to affect too much the LTR re-ranking 
+( basically loosing the benefits of a learned model in the first place)
+
 
 # Deploy Models and Features
 To send features run
