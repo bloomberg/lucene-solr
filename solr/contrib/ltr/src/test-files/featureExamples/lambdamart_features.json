@@ -12,5 +12,10 @@
         "params": {
             "value": 1
         }
+    },
+    {
+        "name": "originalScoreFeature",
+        "type": "org.apache.solr.ltr.feature.impl.OriginalScoreFeature",
+        "params": {}
     }
 ]

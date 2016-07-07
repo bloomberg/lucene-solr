@@ -166,6 +166,16 @@ public abstract class LTRScoringAlgorithm {
   public abstract Explanation explain(LeafReaderContext context, int doc,
       float finalScore, List<Explanation> featureExplanations);
 
+  protected float[] getFeatureVector(List<Explanation> featureExplanations) {
+    float[] featureVector = new float[numFeatures()];
+    int index = 0;
+    for (final Explanation featureExplain : featureExplanations) {
+      featureVector[index] = featureExplain.getValue();
+      index++;
+    }
+    return featureVector;
+  }
+
   @Override
   public String toString() {
     return  getClass().getSimpleName() + "(name="+getName()+")";

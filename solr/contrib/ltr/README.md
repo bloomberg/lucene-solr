@@ -313,6 +313,79 @@ case we have 2 trees, one with 3 leaf nodes and one with 1 leaf node.
 A good library for training LambdaMART ( http://sourceforge.net/p/lemur/wiki/RankLib/ ).
 You will need to convert the RankLib model format to the format specified above.
 
+###### model3.json
+```json
+{
+    "type":"org.apache.solr.ltr.ranking.HeuristicBoostedLambdaMARTModel",
+    "name":"lambdamartmodel",
+    "features":[
+        { "name": "userTextTitleMatch"},
+        { "name": "originalScoreFeature"}
+    ],
+    "params":{
+    "boost": {
+          "feature": "originalScoreFeature",
+          "weight": 0.5,
+          "type": "SUM"
+        },
+        "trees": [
+            {
+                "weight" : 1,
+                "tree": {
+                    "feature": "userTextTitleMatch",
+                    "threshold": 0.5,
+                    "left" : {
+                        "value" : -100
+                    },
+                    "right": {
+                        "value" : 10
+                        
+                    }
+                }
+            },
+            {
+                "weight" : 2,
+                "tree": {
+                    "value" : -10
+                }
+            }
+        ]
+    }
+}
+```
+This is an example of a toy LambdaMART using an additional capability : Heuristic Boosting.
+This capability is currently supported only by the : org.apache.solr.ltr.ranking.HeuristicBoostedLambdaMARTModel .
+This possible configuration covers the use cases when you have a feature of the Solr Document that was not available at training time.
+e.g.
+Your training set is not built on clicks of the search results and contains legacy data, but you want to include the original score as a boosting factor
+
+Let's see the configuration in details :
+Given :
+"features":[
+        { "name": "userTextTitleMatch"},
+        { "name": "originalScoreFeature"}
+    ]
+    
+"boost":{
+                "feature":"originalScoreFeature",
+                "weight":0.1,
+                "type":"SUM"
+            }
+The original score feature value, weighted by a factor of 0.1, will be added to the score produced by the LambdaMART trees.
+
+"boost":{
+                "feature":"originalScoreFeature",
+                "weight":0.1,
+                "type":"PRODUCT"
+            }
+The original score feature value, weighted by a factor of 0.1, will be multiplied to the score produced by the LambdaMART trees.
+
+N.B. Take extra care when using this approach. This introduces a manual boosting to the score calculation,
+which adds flexibility when you don't have much data for training. However, you will loose some of the benefits
+of a machine learned model, which was optimized to rerank your results.
+As you get more data and your model becomes better, you should shift off the manual boosting.
+
+
 # Deploy Models and Features
 To send features run
 

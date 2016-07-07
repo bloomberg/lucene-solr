@@ -1,0 +1,50 @@
+{
+  "type": "org.apache.solr.ltr.ranking.HeuristicBoostedLambdaMARTModel",
+  "name": "lambdaMARTModelOriginalScoreAdditiveLowercase",
+  "features": [
+    {
+      "name": "matchedTitle"
+    },
+    {
+      "name": "constantScoreToForceLambdaMARTScoreAllDocs"
+    },
+    {
+      "name": "originalScoreFeature"
+    }
+  ],
+  "params": {
+    "boost": {
+      "feature": "originalScoreFeature",
+      "weight": 0.1,
+      "type": "sum"
+    },
+    "trees": [
+      {
+        "weight": 1,
+        "tree": {
+          "feature": "matchedTitle",
+          "threshold": 0.5,
+          "left": {
+            "value": -100
+          },
+          "right": {
+            "feature": "constantScoreToForceLambdaMARTScoreAllDocs",
+            "threshold": 10.0,
+            "left": {
+              "value": 50
+            },
+            "right": {
+              "value": 75
+            }
+          }
+        }
+      },
+      {
+        "weight": 2,
+        "tree": {
+          "value": -10
+        }
+      }
+    ]
+  }
+}

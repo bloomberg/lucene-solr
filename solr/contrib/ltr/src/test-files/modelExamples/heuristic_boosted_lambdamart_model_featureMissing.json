@@ -1,0 +1,45 @@
+{
+  "type": "org.apache.solr.ltr.ranking.HeuristicBoostedLambdaMARTModel",
+  "name": "lambdaMARTModelOriginalScoreNoOriginalScoreFeature",
+  "features": [
+    {
+      "name": "matchedTitle"
+    },
+    {
+      "name": "constantScoreToForceLambdaMARTScoreAllDocs"
+    }
+  ],
+  "params": {
+    "boost": {
+      "weight": 0.05
+    },
+    "trees": [
+      {
+        "weight": 1,
+        "tree": {
+          "feature": "matchedTitle",
+          "threshold": 0.5,
+          "left": {
+            "value": -100
+          },
+          "right": {
+            "feature": "constantScoreToForceLambdaMARTScoreAllDocs",
+            "threshold": 10.0,
+            "left": {
+              "value": 50
+            },
+            "right": {
+              "value": 75
+            }
+          }
+        }
+      },
+      {
+        "weight": 2,
+        "tree": {
+          "value": -10
+        }
+      }
+    ]
+  }
+}

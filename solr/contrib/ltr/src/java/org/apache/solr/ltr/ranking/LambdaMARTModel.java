@@ -18,7 +18,6 @@ package org.apache.solr.ltr.ranking;
  */
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -220,15 +219,10 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
   public Explanation explain(LeafReaderContext context, int doc,
       float finalScore, List<Explanation> featureExplanations) {
     // FIXME this still needs lots of work
-    final float[] fv = new float[featureExplanations.size()];
-    int index = 0;
-    for (final Explanation featureExplain : featureExplanations) {
-      fv[index] = featureExplain.getValue();
-      index++;
-    }
+    final float[] fv = getFeatureVector(featureExplanations);
 
     final List<Explanation> details = new ArrayList<>();
-    index = 0;
+    int index = 0;
 
     for (final RegressionTree t : trees) {
       final float score = t.score(fv);
