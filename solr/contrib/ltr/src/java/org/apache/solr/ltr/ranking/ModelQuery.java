@@ -145,7 +145,7 @@ public class ModelQuery extends Query {
   }
 
   @Override
-  public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores)
+  public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
       throws IOException {
     final FeatureWeight[] allFeatureWeights = createWeights(meta.getAllFeatures(),
         searcher, needsScores);
@@ -260,7 +260,7 @@ public class ModelQuery extends Query {
 
     }
 
-    @Override
+    /*@Override
     public float getValueForNormalization() throws IOException {
       return 1;
     }
@@ -271,6 +271,7 @@ public class ModelQuery extends Query {
         feature.normalize(norm, topLevelBoost);
       }
     }
+   */
 
     @Override
     public void extractTerms(Set<Term> terms) {

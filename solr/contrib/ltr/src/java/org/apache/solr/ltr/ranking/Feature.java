@@ -242,7 +242,7 @@ public abstract class Feature extends Query implements Cloneable {
     }
     
     
-    @Override
+  /*  @Override
     public float getValueForNormalization() throws IOException {
       return 1f;
     }
@@ -252,7 +252,7 @@ public abstract class Feature extends Query implements Cloneable {
       // For advanced features that use Solr weights internally, you must override
       // and pass this call on to them
     }
-
+*/
     @Override
     public void extractTerms(Set<Term> terms) {
       // needs to be implemented by query subclasses

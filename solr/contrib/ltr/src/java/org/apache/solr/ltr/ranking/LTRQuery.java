@@ -116,9 +116,9 @@ public class LTRQuery extends RankQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores)
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
       throws IOException {
-    final Weight mainWeight = mainQuery.createWeight(searcher, needsScores);
+    final Weight mainWeight = mainQuery.createWeight(searcher, needsScores, boost);
     return new LTRWeight(searcher, mainWeight, reRankModel);
   }
 
@@ -152,7 +152,7 @@ public class LTRQuery extends RankQuery {
       mainWeight.extractTerms(terms);
     }
 
-    @Override
+   /* @Override
     public float getValueForNormalization() throws IOException {
       return mainWeight.getValueForNormalization();
     }
@@ -161,6 +161,7 @@ public class LTRQuery extends RankQuery {
     public void normalize(float norm, float topLevelBoost) {
       mainWeight.normalize(norm, topLevelBoost);
     }
+    */
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {

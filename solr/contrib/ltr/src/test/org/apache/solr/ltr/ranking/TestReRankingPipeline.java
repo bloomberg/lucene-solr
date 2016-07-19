@@ -261,7 +261,7 @@ public class TestReRankingPipeline extends LuceneTestCase {
     MockModel meta = new MockModel("test",
         features, "test", allFeatures, null);
     ModelQuery query = new ModelQuery(meta);
-    ModelWeight wgt = query.createWeight(null, true);
+    ModelWeight wgt = query.createWeight(null, true, 1f);
     ModelScorer modelScr = wgt.scorer(null);
     modelScr.setDocInfoParam("ORIGINAL_SCORE", 1);
     for (final ChildScorer feat : modelScr.getChildren()) {
@@ -274,7 +274,7 @@ public class TestReRankingPipeline extends LuceneTestCase {
     meta = new MockModel("test", features,
         "test", allFeatures, null);
     query = new ModelQuery(meta);
-    wgt = query.createWeight(null, true);
+    wgt = query.createWeight(null, true, 1f);
     modelScr = wgt.scorer(null);
     modelScr.setDocInfoParam("ORIGINAL_SCORE", 1);
     for (final ChildScorer feat : modelScr.getChildren()) {
