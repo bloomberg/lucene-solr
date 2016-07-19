@@ -18,22 +18,52 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Set;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 
 /**
-     * A query that matches no documents.
+ * A query that matches no documents.
  */
+
 public class MatchNoDocsQuery extends Query {
+
+  private final String reason;
+
+  /** Default constructor */
+  public MatchNoDocsQuery() {
+    this("");
+  }
+
+  /** Provides a reason explaining why this query was used */
+  public MatchNoDocsQuery(String reason) {
+    this.reason = reason;
+  }
+  
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
-    // Rewrite to an empty BooleanQuery so no Scorer or Weight is required
-    return new BooleanQuery.Builder().build();
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    return new Weight(this) {
+      @Override
+      public void extractTerms(Set<Term> terms) {
+      }
+
+      @Override
+      public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+        return Explanation.noMatch(reason);
+      }
+
+      @Override
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        return null;
+      }
+
+    };
   }
 
   @Override
   public String toString(String field) {
-      return "";
+    return "MatchNoDocsQuery(\"" + reason + "\")";
   }
 
   @Override

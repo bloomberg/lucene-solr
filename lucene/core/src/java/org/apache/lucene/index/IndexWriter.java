@@ -17,9 +17,7 @@
 package org.apache.lucene.index;
 
 import java.io.Closeable;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -294,6 +292,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   private volatile boolean closed;
   private volatile boolean closing;
+
+  private Iterable<Map.Entry<String,String>> commitUserData;
 
   // Holds all SegmentInfo instances currently involved in
   // merges
@@ -763,8 +763,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * 
    * <p>
    * <b>NOTE:</b> after ths writer is created, the given configuration instance
-   * cannot be passed to another writer. If you intend to do so, you should
-   * {@link IndexWriterConfig#clone() clone} it beforehand.
+   * cannot be passed to another writer.
    * 
    * @param d
    *          the index directory. The index is either created or appended
@@ -946,6 +945,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         rollbackSegments = segmentInfos.createBackupSegmentInfos();
       }
+
+      commitUserData = new HashMap<String,String>(segmentInfos.getUserData()).entrySet();
 
       pendingNumDocs.set(segmentInfos.totalMaxDoc());
 
@@ -2344,7 +2345,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             globalFieldNumberMap.clear();
 
             success = true;
-            return docWriter.deleteQueue.getNextSequenceNumber();
+            long seqNo = docWriter.deleteQueue.getNextSequenceNumber();
+            docWriter.setLastSeqNo(seqNo);
+            return seqNo;
 
           } finally {
             docWriter.unlockAllAfterAbortAll(this);
@@ -2880,9 +2883,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Copy the segment's files
       for (String file: info.files()) {
         final String newFileName = newInfo.namedForThisSegment(file);
-
-        assert !slowFileExists(directory, newFileName): "file \"" + newFileName + "\" already exists; newInfo.files=" + newInfo.files();
-
         directory.copyFrom(info.info.dir, file, newFileName, context);
         copiedFiles.add(newFileName);
       }
@@ -2997,6 +2997,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
                 segmentInfos.changed();
               }
 
+              if (commitUserData != null) {
+                Map<String,String> userData = new HashMap<>();
+                for(Map.Entry<String,String> ent : commitUserData) {
+                  userData.put(ent.getKey(), ent.getValue());
+                }
+                segmentInfos.setUserData(userData, false);
+              }
+
               // Must clone the segmentInfos while we still
               // hold fullFlushLock and while sync'd so that
               // no partial changes (eg a delete w/o
@@ -3011,7 +3019,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
               // we are trying to sync all referenced files, a
               // merge completes which would otherwise have
               // removed the files we are now syncing.    
-              filesToCommit = toCommit.files(false);
+              filesToCommit = toCommit.files(false); 
               deleter.incRef(filesToCommit);
             }
             success = true;
@@ -3059,36 +3067,38 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
   
   /**
-   * Sets the commit user data map. That method is considered a transaction by
-   * {@link IndexWriter} and will be {@link #commit() committed} even if no other
-   * changes were made to the writer instance. Note that you must call this method
-   * before {@link #prepareCommit()}, or otherwise it won't be included in the
+   * Sets the iterator to provide the commit user data map at commit time.  Calling this method
+   * is considered a committable change and will be {@link #commit() committed} even if
+   * there are no other changes this writer. Note that you must call this method
+   * before {@link #prepareCommit()}.  Otherwise it won't be included in the
    * follow-on {@link #commit()}.
    * <p>
-   * <b>NOTE:</b> the map is cloned internally, therefore altering the map's
-   * contents after calling this method has no effect.
+   * <b>NOTE:</b> the iterator is late-binding: it is only visited once all documents for the
+   * commit have been written to their segments, before the next segments_N file is written
    */
-  public final synchronized void setCommitData(Map<String,String> commitUserData) {
-    setCommitData(commitUserData, true);
+  public final synchronized void setLiveCommitData(Iterable<Map.Entry<String,String>> commitUserData) {
+    setLiveCommitData(commitUserData, true);
   }
 
   /**
-   * Sets the commit user data map, controlling whether to advance the {@link SegmentInfos#getVersion}.
+   * Sets the commit user data iterator, controlling whether to advance the {@link SegmentInfos#getVersion}.
    *
-   * @see #setCommitData(Map)
+   * @see #setLiveCommitData(Iterable)
    *
    * @lucene.internal */
-  public final synchronized void setCommitData(Map<String,String> commitUserData, boolean doIncrementVersion) {
-    segmentInfos.setUserData(new HashMap<>(commitUserData), doIncrementVersion);
+  public final synchronized void setLiveCommitData(Iterable<Map.Entry<String,String>> commitUserData, boolean doIncrementVersion) {
+    this.commitUserData = commitUserData;
+    if (doIncrementVersion) {
+      segmentInfos.changed();
+    }
     changeCount.incrementAndGet();
   }
   
   /**
-   * Returns the commit user data map that was last committed, or the one that
-   * was set on {@link #setCommitData(Map)}.
+   * Returns the commit user data iterable previously set with {@link #setLiveCommitData(Iterable)}, or null if nothing has been set yet.
    */
-  public final synchronized Map<String,String> getCommitData() {
-    return segmentInfos.getUserData();
+  public final synchronized Iterable<Map.Entry<String,String>> getLiveCommitData() {
+    return commitUserData;
   }
   
   // Used only by commit and prepareCommit, below; lock
@@ -4527,7 +4537,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     
     Collection<String> files = toSync.files(false);
     for(final String fileName: files) {
-      assert slowFileExists(directory, fileName): "file " + fileName + " does not exist; files=" + Arrays.toString(directory.listAll());
       // If this trips it means we are missing a call to
       // .checkpoint somewhere, because by the time we
       // are called, deleter should know about every
@@ -4982,19 +4991,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
      *           if an {@link IOException} occurs
      */
     void process(IndexWriter writer, boolean triggerMerge, boolean clearBuffers) throws IOException;
-  }
-
-  /** Used only by asserts: returns true if the file exists
-   *  (can be opened), false if it cannot be opened, and
-   *  (unlike Java's File.exists) throws IOException if
-   *  there's some unexpected error. */
-  static boolean slowFileExists(Directory dir, String fileName) throws IOException {
-    try {
-      dir.openInput(fileName, IOContext.DEFAULT).close();
-      return true;
-    } catch (NoSuchFileException | FileNotFoundException e) {
-      return false;
-    }
   }
 
   /** Anything that will add N docs to the index should reserve first to

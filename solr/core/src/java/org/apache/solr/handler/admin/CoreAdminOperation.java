@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -41,6 +41,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.SyncStrategy;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
@@ -60,6 +61,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.RestoreCore;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -580,24 +582,20 @@ enum CoreAdminOperation {
     public void call(final CallInfo callInfo) throws IOException {
       final SolrParams params = callInfo.req.getParams();
       log.info("It has been requested that we recover: core="+params.get(CoreAdminParams.CORE));
-      Thread thread = new Thread() {
-        @Override
-        public void run() {
-          String cname = params.get(CoreAdminParams.CORE);
-          if (cname == null) {
-            cname = "";
-          }
-          try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
-            if (core != null) {
-              core.getUpdateHandler().getSolrCoreState().doRecovery(callInfo.handler.coreContainer, core.getCoreDescriptor());
-            } else {
-              SolrException.log(log, "Could not find core to call recovery:" + cname);
-            }
+      new Thread(() -> {
+        String cname = params.get(CoreAdminParams.CORE);
+        if (cname == null) {
+          cname = "";
+        }
+        try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
+          if (core != null) {
+            core.getUpdateHandler().getSolrCoreState().doRecovery(callInfo.handler.coreContainer, core.getCoreDescriptor());
+          } else {
+            SolrException.log(log, "Could not find core to call recovery:" + cname);
           }
         }
-      };
+      }).start();
 
-      thread.start();
     }
   },
   REQUESTSYNCSHARD_OP(REQUESTSYNCSHARD) {
@@ -858,20 +856,24 @@ enum CoreAdminOperation {
         throw new IllegalArgumentException(CoreAdminParams.NAME + " is required");
       }
 
-      String location = params.get("location");
+      String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
+      BackupRepository repository = callInfo.handler.coreContainer.newBackupRepository(Optional.ofNullable(repoName));
+
+      String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {
-        throw new IllegalArgumentException("location is required");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
+            + " parameter or as a default repository property");
       }
 
       try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
-        SnapShooter snapShooter = new SnapShooter(core, location, name);
+        SnapShooter snapShooter = new SnapShooter(repository, core, location, name);
         // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
         //  But we want to throw. One reason is that
         //  this dir really should, in fact must, already exist here if triggered via a collection backup on a shared
         //  file system. Otherwise, perhaps the FS location isn't shared -- we want an error.
-        if (!Files.exists(snapShooter.getLocation())) {
+        if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation().toAbsolutePath());
+              "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation());
         }
         snapShooter.validateCreateSnapshot();
         snapShooter.createSnapshot();
@@ -900,13 +902,17 @@ enum CoreAdminOperation {
         throw new IllegalArgumentException(CoreAdminParams.NAME + " is required");
       }
 
-      String location = params.get("location");
+      String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
+      BackupRepository repository = callInfo.handler.coreContainer.newBackupRepository(Optional.ofNullable(repoName));
+
+      String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {
-        throw new IllegalArgumentException("location is required");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
+            + " parameter or as a default repository property");
       }
 
       try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
-        RestoreCore restoreCore = new RestoreCore(core, location, name);
+        RestoreCore restoreCore = new RestoreCore(repository, core, location, name);
         boolean success = restoreCore.doRestore();
         if (!success) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to restore core=" + core.getName());

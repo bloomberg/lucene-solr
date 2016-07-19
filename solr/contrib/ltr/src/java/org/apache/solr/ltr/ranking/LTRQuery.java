@@ -116,9 +116,9 @@ public class LTRQuery extends RankQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores)
+  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
       throws IOException {
-    final Weight mainWeight = mainQuery.createWeight(searcher, needsScores);
+    final Weight mainWeight = mainQuery.createWeight(searcher, needsScores, boost);
     return new LTRWeight(searcher, mainWeight, reRankModel);
   }
 
@@ -150,16 +150,6 @@ public class LTRQuery extends RankQuery {
     @Override
     public void extractTerms(Set<Term> terms) {
       mainWeight.extractTerms(terms);
-    }
-
-    @Override
-    public float getValueForNormalization() throws IOException {
-      return mainWeight.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float norm, float topLevelBoost) {
-      mainWeight.normalize(norm, topLevelBoost);
     }
 
     @Override

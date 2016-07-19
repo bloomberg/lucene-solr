@@ -156,7 +156,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       Weight w;
       try {
-        w = reRankModel.createWeight(searcher, true);
+        w = reRankModel.createWeight(searcher, true, 1f);
       } catch (final IOException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e);
       }

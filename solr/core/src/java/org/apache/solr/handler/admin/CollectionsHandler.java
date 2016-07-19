@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,10 +27,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -51,8 +52,18 @@ import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -66,6 +77,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -765,13 +777,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         return null;
       }
     },
-    MODIFYCOLLECTION_OP(MODIFYCOLLECTION, DEFAULT_COLLECTION_OP_TIMEOUT, false) {
+    MODIFYCOLLECTION_OP(MODIFYCOLLECTION) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
 
-        Map<String, Object> m = req.getParams().getAll(null, MODIFIABLE_COLL_PROPS.toArray(new String[0]));
+        Map<String, Object> m = req.getParams().getAll(null, MODIFIABLE_COLL_PROPS);
         if (m.isEmpty()) throw new SolrException(ErrorCode.BAD_REQUEST,
-            formatString("no supported values provided rule, snitch, masShardsPerNode, replicationFactor"));
+            formatString("no supported values provided rule, snitch, maxShardsPerNode, replicationFactor, collection.configName"));
         req.getParams().required().getAll(m, COLLECTION_PROP);
         addMapObject(m, RULE);
         addMapObject(m, SNITCH);
@@ -798,15 +810,35 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' does not exist, no action taken.");
         }
 
-        String location = req.getParams().get("location");
+        CoreContainer cc = h.coreContainer;
+        String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
+        BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+
+        String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
         if (location == null) {
-          location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty("location", (String) null);
+          //Refresh the cluster property file to make sure the value set for location is the latest
+          h.coreContainer.getZkController().getZkStateReader().forceUpdateClusterProperties();
+
+          // Check if the location is specified in the cluster property.
+          location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
+          if (location == null) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
+                + " parameter or as a default repository property or as a cluster property.");
+          }
         }
-        if (location == null) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query parameter or set as a cluster property");
+
+        // Check if the specified location is valid for this repository.
+        URI uri = repository.createURI(location);
+        try {
+          if (!repository.exists(uri)) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
+          }
+        } catch (IOException ex) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
         }
+
         Map<String, Object> params = req.getParams().getAll(null, NAME, COLLECTION_PROP);
-        params.put("location", location);
+        params.put(CoreAdminParams.BACKUP_LOCATION, location);
         return params;
       }
     },
@@ -822,16 +854,35 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' exists, no action taken.");
         }
 
-        String location = req.getParams().get("location");
+        CoreContainer cc = h.coreContainer;
+        String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
+        BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+
+        String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
         if (location == null) {
-          location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty("location", (String) null);
+          //Refresh the cluster property file to make sure the value set for location is the latest
+          h.coreContainer.getZkController().getZkStateReader().forceUpdateClusterProperties();
+
+          // Check if the location is specified in the cluster property.
+          location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty("location", null);
+          if (location == null) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
+                + " parameter or as a default repository property or as a cluster property.");
+          }
         }
-        if (location == null) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query parameter or set as a cluster property");
+
+        // Check if the specified location is valid for this repository.
+        URI uri = repository.createURI(location);
+        try {
+          if (!repository.exists(uri)) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
+          }
+        } catch (IOException ex) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
         }
 
         Map<String, Object> params = req.getParams().getAll(null, NAME, COLLECTION_PROP);
-        params.put("location", location);
+        params.put(CoreAdminParams.BACKUP_LOCATION, location);
         // from CREATE_OP:
         req.getParams().getAll(params, COLL_CONF, REPLICATION_FACTOR, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS);
         copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
@@ -1045,11 +1096,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  public static final List<String> MODIFIABLE_COLL_PROPS = ImmutableList.of(
+  public static final List<String> MODIFIABLE_COLL_PROPS = Arrays.asList(
       RULE,
       SNITCH,
       REPLICATION_FACTOR,
       MAX_SHARDS_PER_NODE,
-      AUTO_ADD_REPLICAS);
-
+      AUTO_ADD_REPLICAS,
+      COLL_CONF);
 }

@@ -31,10 +31,11 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.MultiTermQuery.RewriteMethod;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
@@ -185,14 +186,15 @@ public class ComplexPhraseQueryParser extends QueryParser {
   @Override
   protected Query newRangeQuery(String field, String part1, String part2,
       boolean startInclusive, boolean endInclusive) {
-    if (isPass2ResolvingPhrases) {
-      // Must use old-style RangeQuery in order to produce a BooleanQuery
-      // that can be turned into SpanOr clause
-      TermRangeQuery rangeQuery = TermRangeQuery.newStringRange(field, part1, part2, startInclusive, endInclusive);
-      rangeQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
-      return rangeQuery;
+    RewriteMethod originalRewriteMethod = getMultiTermRewriteMethod();
+    try {
+      if (isPass2ResolvingPhrases) {
+        setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+      }
+      return super.newRangeQuery(field, part1, part2, startInclusive, endInclusive);
+    } finally {
+      setMultiTermRewriteMethod(originalRewriteMethod);
     }
-    return super.newRangeQuery(field, part1, part2, startInclusive, endInclusive);
   }
 
   @Override
@@ -295,6 +297,12 @@ public class ComplexPhraseQueryParser extends QueryParser {
             allSpanClauses[i] = new SpanTermQuery(new Term(field,
                 "Dummy clause because no terms found - must match nothing"));
           }
+        } else if (qc instanceof MatchNoDocsQuery) {
+          // Insert fake term e.g. phrase query was for "Fred Smithe*" and
+          // there were no "Smithe*" terms - need to
+          // prevent match on just "Fred".
+          allSpanClauses[i] = new SpanTermQuery(new Term(field,
+                                                         "Dummy clause because no terms found - must match nothing"));
         } else {
           if (qc instanceof TermQuery) {
             TermQuery tq = (TermQuery) qc;
