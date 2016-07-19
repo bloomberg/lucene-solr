@@ -53,6 +53,7 @@ public class TestScorerPerf extends LuceneTestCase {
     iw.close();
     r = DirectoryReader.open(d);
     s = newSearcher(r);
+    s.setQueryCache(null);
   }
 
   public void createRandomTerms(int nDocs, int nTerms, double power, Directory dir) throws Exception {
@@ -148,8 +149,8 @@ public class TestScorerPerf extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-      return new ConstantScoreWeight(this) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+      return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           return new ConstantScoreScorer(this, score(), new BitSetIterator(docs, docs.approximateCardinality()));

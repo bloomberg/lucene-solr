@@ -1,5 +1,3 @@
-package org.apache.lucene.spatial.geopoint.document;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.spatial.geopoint.document;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.lucene.spatial.geopoint.document;
 
 import java.util.Objects;
 
@@ -48,15 +48,11 @@ import static org.apache.lucene.spatial.geopoint.document.GeoPointField.PRECISIO
  *   GeoPointField geoPointField = new GeoPointField(fieldName1, lat, lon, GeoPointField.TYPE_NOT_STORED);
  *   document.add(geoPointField);
  *
- *   // query by bounding box (default uses TermEncoding.PREFIX)
+ *   // query by bounding box
  *   Query q = new GeoPointInBBoxQuery(fieldName1, minLat, maxLat, minLon, maxLon);
  *
- *   // using numeric terms
- *   geoPointField = new GeoPointField(fieldName2, lat, lon, GeoPointField.NUMERIC_TYPE_NOT_STORED);
- *   document.add(geoPointField);
- *
- *   // query by distance (requires TermEncoding.NUMERIC)
- *   q = new GeoPointDistanceQuery(fieldName2, TermEncoding.NUMERIC, centerLat, centerLon, radiusMeters);
+ *   // query by distance
+ *   q = new GeoPointDistanceQuery(fieldName2, centerLat, centerLon, radiusMeters);
  * </pre>
  *
  * @lucene.experimental
