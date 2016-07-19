@@ -260,19 +260,6 @@ public class ModelQuery extends Query {
 
     }
 
-    /*@Override
-    public float getValueForNormalization() throws IOException {
-      return 1;
-    }
-
-    @Override
-    public void normalize(float norm, float topLevelBoost) {
-      for (final FeatureWeight feature : allFeatureWeights) {
-        feature.normalize(norm, topLevelBoost);
-      }
-    }
-   */
-
     @Override
     public void extractTerms(Set<Term> terms) {
       for (final FeatureWeight feature : allFeatureWeights) {

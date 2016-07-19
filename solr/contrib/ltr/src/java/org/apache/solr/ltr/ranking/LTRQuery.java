@@ -152,17 +152,6 @@ public class LTRQuery extends RankQuery {
       mainWeight.extractTerms(terms);
     }
 
-   /* @Override
-    public float getValueForNormalization() throws IOException {
-      return mainWeight.getValueForNormalization();
-    }
-
-    @Override
-    public void normalize(float norm, float topLevelBoost) {
-      mainWeight.normalize(norm, topLevelBoost);
-    }
-    */
-
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       return mainWeight.scorer(context);
