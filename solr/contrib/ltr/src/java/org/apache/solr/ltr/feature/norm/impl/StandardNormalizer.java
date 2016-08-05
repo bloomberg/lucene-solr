@@ -16,8 +16,7 @@
  */
 package org.apache.solr.ltr.feature.norm.impl;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedHashMap;
 
 import org.apache.solr.ltr.feature.norm.Normalizer;
 
@@ -56,8 +55,8 @@ public class StandardNormalizer extends Normalizer {
   }
 
   @Override
-  protected Map<String,Object> paramsToMap() {
-    final Map<String,Object> params = new HashMap<>(2, 1.0f);
+  protected LinkedHashMap<String,Object> paramsToMap() {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<>(2, 1.0f);
     params.put("avg", avg);
     params.put("std", std);
     return params;
