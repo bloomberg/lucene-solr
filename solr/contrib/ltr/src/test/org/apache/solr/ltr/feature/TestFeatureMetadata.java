@@ -63,14 +63,5 @@ public class TestFeatureMetadata extends TestRerankBase {
         "testFstore2", NamedParams.EMPTY);
 
   }
-
-  @Test(expected = InvalidFeatureNameException.class)
-  public void getInvalidNameTest() throws FeatureException,
-      InvalidFeatureNameException {
-
-    store.addFeature("!!!??????????", ValueFeature.class.getCanonicalName(),
-        "testFstore3", NamedParams.EMPTY);
-
-  }
-
+  
 }
