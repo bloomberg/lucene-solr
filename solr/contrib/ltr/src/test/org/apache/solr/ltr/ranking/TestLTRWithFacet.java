@@ -32,21 +32,21 @@ public class TestLTRWithFacet extends TestRerankBase {
   public static void before() throws Exception {
     setuptest("solrconfig-ltr.xml", "schema-ltr.xml");
 
-    assertU(adoc("id", "1", "title", "w1", "description", "E", "popularity",
+    assertU(adoc("id", "1", "title", "a1", "description", "E", "popularity",
         "1"));
-    assertU(adoc("id", "2", "title", "w2 2asd asdd didid", "description",
+    assertU(adoc("id", "2", "title", "a1 b1", "description",
         "B", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "B", "popularity",
+    assertU(adoc("id", "3", "title", "a1 b1 c1", "description", "B", "popularity",
         "3"));
-    assertU(adoc("id", "4", "title", "w4", "description", "B", "popularity",
+    assertU(adoc("id", "4", "title", "a1 b1 c1 d1", "description", "B", "popularity",
         "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "E", "popularity",
+    assertU(adoc("id", "5", "title", "a1 b1 c1 d1 e1", "description", "E", "popularity",
         "5"));
-    assertU(adoc("id", "6", "title", "w1 w2", "description", "B",
+    assertU(adoc("id", "6", "title", "a1 b1 c1 d1 e1 f1", "description", "B",
         "popularity", "6"));
-    assertU(adoc("id", "7", "title", "w1 w2 w3 w4 w5", "description",
+    assertU(adoc("id", "7", "title", "a1 b1 c1 d1 e1 f1 g1", "description",
         "C", "popularity", "7"));
-    assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
+    assertU(adoc("id", "8", "title", "a1 b1 c1 d1 e1 f1 g1 h1", "description",
         "D", "popularity", "8"));
     assertU(commit());
   }
@@ -61,7 +61,7 @@ public class TestLTRWithFacet extends TestRerankBase {
         new String[] {"powpularityS"}, "{\"weights\":{\"powpularityS\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
-    query.setQuery("*:*");
+    query.setQuery("title:a1");
     query.add("fl", "*, score");
     query.add("rows", "4");
     query.add("facet", "true");
