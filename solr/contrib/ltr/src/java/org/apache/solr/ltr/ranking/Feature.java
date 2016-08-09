@@ -42,7 +42,6 @@ import org.apache.solr.request.SolrQueryRequest;
 public abstract class Feature extends Query implements Cloneable {
 
   protected String name;
-  protected Normalizer norm = IdentityNormalizer.INSTANCE;
   protected int id;
 
   @Deprecated
@@ -67,20 +66,6 @@ public abstract class Feature extends Query implements Cloneable {
   }
 
   public Feature() {
-
-  }
-
-  /** Returns a clone of this feature query. */
-  @Override
-  public Query clone() {
-
-    try {
-      return (Query) super.clone();
-    } catch (final CloneNotSupportedException e) {
-      // FIXME throw the exception, wrap into another exception?
-      e.printStackTrace();
-    }
-    return null;
   }
 
   @Override
@@ -146,7 +131,7 @@ public abstract class Feature extends Query implements Cloneable {
    * @return the norm
    */
   public Normalizer getNorm() {
-    return norm;
+    return IdentityNormalizer.INSTANCE;
   }
 
   /**
@@ -157,11 +142,6 @@ public abstract class Feature extends Query implements Cloneable {
   }
 
   protected abstract LinkedHashMap<String,Object> paramsToMap();
-
-  public void setNorm(Normalizer norm) {
-    this.norm = norm;
-
-  }
 
   public LinkedHashMap<String,Object> toMap(String storeName) {
     final LinkedHashMap<String,Object> o = new LinkedHashMap<>(4, 1.0f);
@@ -181,6 +161,8 @@ public abstract class Feature extends Query implements Cloneable {
     final protected Map<String,String> efi;
     final protected MacroExpander macroExpander;
     final protected Query originalQuery;
+
+    private Normalizer norm;
 
     /**
      * Initialize a feature without the normalizer from the feature file. This is
@@ -207,8 +189,16 @@ public abstract class Feature extends Query implements Cloneable {
       return Feature.this.name;
     }
 
+    public void setNorm(Normalizer norm) {
+      this.norm = norm;
+    }
+
     public Normalizer getNorm() {
-      return Feature.this.norm;
+      if (norm != null) {
+        return norm;
+      } else {
+        return Feature.this.getNorm();
+      }
     }
 
     public int getId() {

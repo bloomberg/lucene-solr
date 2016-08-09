@@ -32,6 +32,7 @@ import org.apache.solr.ltr.feature.ModelStore;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.ranking.Feature;
+import org.apache.solr.ltr.ranking.FilterFeature;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
@@ -106,15 +107,6 @@ public class ManagedModelStore extends ManagedResource implements
     // FIXME name shouldn't be be null, exception?
     final String name = (String) featureMap.get(CommonLTRParams.FEATURE_NAME);
 
-    final Normalizer norm;
-    final Object normObj = featureMap.get(CommonLTRParams.FEATURE_NORM);
-    if (normObj != null) {
-      norm = Normalizer.fromMap(solrResourceLoader,
-          (Map<String,Object>) normObj);
-    } else {
-      norm = IdentityNormalizer.INSTANCE;
-    }
-
     if (featureStores == null) {
       throw new FeatureException("missing feature store");
     }
@@ -125,8 +117,12 @@ public class ManagedModelStore extends ManagedResource implements
           + " not found in store " + featureStore.getName());
     }
 
-    meta = (Feature) meta.clone();
-    meta.setNorm(norm);
+    final Object normObj = featureMap.get(CommonLTRParams.FEATURE_NORM);
+    if (normObj != null) {
+      final Normalizer norm = Normalizer.fromMap(solrResourceLoader,
+          (Map<String,Object>) normObj);
+      meta = new FilterFeature(meta, norm);
+    }
 
     return meta;
   }
