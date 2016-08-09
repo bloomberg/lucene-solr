@@ -103,15 +103,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (context == null) {
         return false;
       }
-      if (context.getRequest() == null) {
+      if (context.getSearcher() == null) {
         return false;
       }
       searcher = context.getSearcher();
-      if (searcher == null) {
-        throw new SolrException(
-            org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST,
-            "searcher is null");
-      }
       return true;
     }
 
@@ -136,7 +131,11 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     @Override
     public void setContext(ResultContext context) {
       super.setContext(context);
-      if (! setSearcher(context)) return;
+      if (! setSearcher(context)) {
+        throw new SolrException(
+            org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST,
+            "searcher is null");
+      }
       leafContexts = searcher.getTopReaderContext().leaves();
 
       // Setup ModelQuery

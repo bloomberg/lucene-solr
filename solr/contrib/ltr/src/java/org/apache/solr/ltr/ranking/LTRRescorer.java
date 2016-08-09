@@ -125,8 +125,6 @@ public class LTRRescorer extends Rescorer {
 
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
-    
-
     ModelScorer scorer = null;
 
     final ModelWeight modelWeight = (ModelWeight) searcher
