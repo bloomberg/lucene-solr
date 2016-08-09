@@ -24,7 +24,6 @@ import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.InvalidFeatureNameException;
 import org.apache.solr.ltr.util.NamedParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,8 +39,8 @@ public class TestFeatureStore extends TestRerankBase {
   }
 
   @Test
-  public void testFeatureStoreAdd() throws InvalidFeatureNameException,
-      FeatureException {
+  public void testFeatureStoreAdd() throws FeatureException 
+  {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature");
     for (int i = 0; i < 5; i++) {
       fstore.addFeature("c" + i, OriginalScoreFeature.class.getCanonicalName(),
@@ -55,8 +54,8 @@ public class TestFeatureStore extends TestRerankBase {
   }
 
   @Test
-  public void testFeatureStoreGet() throws FeatureException,
-      InvalidFeatureNameException {
+  public void testFeatureStoreGet() throws FeatureException
+  {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature2");
     for (int i = 0; i < 5; i++) {
 
@@ -85,8 +84,8 @@ public class TestFeatureStore extends TestRerankBase {
   }
 
   @Test(expected = FeatureException.class)
-  public void testAddingFeatureWithInvalidParams() throws InvalidFeatureNameException,
-      FeatureException {
+  public void testAddingFeatureWithInvalidParams() throws FeatureException
+  {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature4");
     for (int i = 0; i < 5; i++) {
       fstore.addFeature("testc" + (float) i,

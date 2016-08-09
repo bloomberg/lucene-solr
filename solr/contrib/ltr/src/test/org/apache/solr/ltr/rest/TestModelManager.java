@@ -158,15 +158,4 @@ public class TestModelManager extends TestRerankBase {
         "/features/[1]/name=='description'");
   }
 
-  @Test
-  public void testLoadInvalidFeature() throws Exception {
-    // relies on these ManagedResources being activated in the
-    // schema-rest.xml used by this test
-    assertJQ("/schema/managed", "/responseHeader/status==0");
-    final String newEndpoint = CommonLTRParams.FEATURE_STORE_END_POINT;
-    final String feature = "{\"name\": \"^&test1\", \"type\": \"org.apache.solr.ltr.feature.impl.ValueFeature\", \"params\": {\"value\": 1} }";
-    assertJPut(newEndpoint, feature, "/responseHeader/status==400");
-
-  }
-
 }

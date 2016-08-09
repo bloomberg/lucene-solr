@@ -27,7 +27,6 @@ import java.util.Set;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.ModelException;
-import org.apache.solr.ltr.util.NameValidator;
 
 /**
  * Contains the model and features declared.
@@ -106,9 +105,6 @@ public class ModelStore {
     if (modeldata.getFeatures().isEmpty()) {
       throw new ModelException("no features declared for model "
           + modeldata.getName());
-    }
-    if (!NameValidator.check(name)) {
-      throw new ModelException("invalid model name " + name);
     }
 
     if (containsModel(name)) {
