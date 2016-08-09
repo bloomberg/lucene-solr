@@ -31,7 +31,6 @@ import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.InvalidFeatureNameException;
 import org.apache.solr.ltr.util.NamedParams;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
@@ -98,8 +97,6 @@ public class ManagedFeatureStore extends ManagedResource implements
     try {
 
       addFeature(name, type, store, params);
-    } catch (final InvalidFeatureNameException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, e);
     } catch (final FeatureException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
@@ -107,7 +104,7 @@ public class ManagedFeatureStore extends ManagedResource implements
 
   public synchronized void addFeature(String name, String type,
       String featureStore, NamedParams params)
-      throws InvalidFeatureNameException, FeatureException {
+      throws FeatureException {
     if (featureStore == null) {
       featureStore = CommonLTRParams.DEFAULT_FEATURE_STORE_NAME;
     }
@@ -118,7 +115,7 @@ public class ManagedFeatureStore extends ManagedResource implements
     final FeatureStore fstore = getFeatureStore(featureStore);
 
     if (fstore.containsFeature(name)) {
-      throw new InvalidFeatureNameException(name
+      throw new FeatureException(name
           + " already contained in the store, please use a different name");
     }
 

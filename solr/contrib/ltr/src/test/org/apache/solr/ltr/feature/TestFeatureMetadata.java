@@ -23,7 +23,6 @@ import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.InvalidFeatureNameException;
 import org.apache.solr.ltr.util.NamedParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -45,8 +44,8 @@ public class TestFeatureMetadata extends TestRerankBase {
   }
 
   @Test
-  public void getInstanceTest() throws FeatureException,
-      InvalidFeatureNameException {
+  public void getInstanceTest() throws FeatureException
+  {
 
     store.addFeature("test", OriginalScoreFeature.class.getCanonicalName(),
         "testFstore", NamedParams.EMPTY);
@@ -57,8 +56,8 @@ public class TestFeatureMetadata extends TestRerankBase {
   }
 
   @Test(expected = FeatureException.class)
-  public void getInvalidInstanceTest() throws FeatureException,
-      InvalidFeatureNameException {
+  public void getInvalidInstanceTest() throws FeatureException
+  {
     store.addFeature("test", "org.apache.solr.ltr.feature.LOLFeature",
         "testFstore2", NamedParams.EMPTY);
 
