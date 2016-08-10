@@ -16,7 +16,7 @@
  */
 package org.apache.solr.ltr.feature.norm.impl;
 
-import java.util.Map;
+import java.util.LinkedHashMap;
 
 import org.apache.solr.ltr.feature.norm.Normalizer;
 
@@ -34,7 +34,7 @@ public class IdentityNormalizer extends Normalizer {
   }
 
   @Override
-  protected Map<String,Object> paramsToMap() {
+  protected LinkedHashMap<String,Object> paramsToMap() {
     return null;
   }
 

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.ltr.feature.norm;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.lucene.search.Explanation;
@@ -37,7 +37,7 @@ public abstract class Normalizer {
 
   public abstract float normalize(float value);
 
-  protected abstract Map<String,Object> paramsToMap();
+  protected abstract LinkedHashMap<String,Object> paramsToMap();
 
   public Explanation explain(Explanation explain) {
     final float normalized = normalize(explain.getValue());
@@ -68,12 +68,12 @@ public abstract class Normalizer {
         type, params);
   }
 
-  public Map<String,Object> toMap() {
-    final Map<String,Object> normalizer = new HashMap<>(2, 1.0f);
+  public LinkedHashMap<String,Object> toMap() {
+    final LinkedHashMap<String,Object> normalizer = new LinkedHashMap<>(2, 1.0f);
 
     normalizer.put(TYPE_KEY, getClass().getCanonicalName());
 
-    final Map<String,Object> params = paramsToMap();
+    final LinkedHashMap<String,Object> params = paramsToMap();
     if (params != null) {
       normalizer.put(PARAMS_KEY, params);
     }

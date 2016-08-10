@@ -18,6 +18,7 @@ package org.apache.solr.ltr.feature.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +70,21 @@ public class SolrFeature extends Feature {
 
   public void setFq(List<String> fq) {
     this.fq = fq;
+  }
+
+  @Override
+  protected LinkedHashMap<String,Object> paramsToMap() {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<>(3, 1.0f);
+    if (df != null) {
+      params.put("df", df);
+    }
+    if (q != null) {
+      params.put("q", q);
+    }
+    if (fq != null) {
+      params.put("fq", fq);
+    }
+    return params;
   }
 
   @Override
@@ -217,14 +233,12 @@ public class SolrFeature extends Feature {
     }
 
     public class SolrFeatureScorer extends FeatureScorer {
-      Scorer solrScorer;
-      String q;
-      DocIdSetIterator itr;
+      final private Scorer solrScorer;
+      final private DocIdSetIterator itr;
 
       public SolrFeatureScorer(FeatureWeight weight, Scorer solrScorer,
           DocIdSetIterator filterIterator) {
         super(weight);
-        q = (String) getParams().get(CommonParams.Q);
         this.solrScorer = solrScorer;
         itr = new SolrFeatureScorerIterator(filterIterator,
             solrScorer.iterator());
@@ -247,8 +261,8 @@ public class SolrFeature extends Feature {
 
       private class SolrFeatureScorerIterator extends DocIdSetIterator {
 
-        DocIdSetIterator filterIterator;
-        DocIdSetIterator scorerFilter;
+        final private DocIdSetIterator filterIterator;
+        final private DocIdSetIterator scorerFilter;
         int docID;
 
         SolrFeatureScorerIterator(DocIdSetIterator filterIterator,
@@ -287,13 +301,11 @@ public class SolrFeature extends Feature {
     }
 
     public class SolrFeatureFilterOnlyScorer extends FeatureScorer {
-      String fq;
-      DocIdSetIterator itr;
+      final private DocIdSetIterator itr;
 
       public SolrFeatureFilterOnlyScorer(FeatureWeight weight,
           DocIdSetIterator iterator) {
         super(weight);
-        fq = (String) getParams().get(CommonParams.FQ);
         itr = iterator;
       }
 

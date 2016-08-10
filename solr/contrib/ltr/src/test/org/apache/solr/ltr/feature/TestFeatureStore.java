@@ -58,15 +58,17 @@ public class TestFeatureStore extends TestRerankBase {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature2");
     for (int i = 0; i < 5; i++) {
 
-      fstore.addFeature("c" + (float) i, ValueFeature.class.getCanonicalName(),
+      fstore.addFeature("c" + i, ValueFeature.class.getCanonicalName(),
           "fstore-testFeature2", new NamedParams().add("value", i));
 
     }
 
-    for (float i = 0; i < 5; i++) {
+    for (int i = 0; i < 5; i++) {
       final Feature f = fs.get("c" + i);
       assertEquals("c" + i, f.getName());
-      assertEquals(i, f.getParams().getFloat("value"), 0.0001);
+      assertTrue(f instanceof ValueFeature);
+      final ValueFeature vf = (ValueFeature)f;
+      assertEquals(i, vf.getValue());
     }
   }
 
