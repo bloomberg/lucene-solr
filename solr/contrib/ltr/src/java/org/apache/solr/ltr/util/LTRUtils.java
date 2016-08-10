@@ -1,11 +1,3 @@
-package org.apache.solr.ltr.util;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
-import org.apache.solr.common.params.SolrParams;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,6 +14,13 @@ import org.apache.solr.common.params.SolrParams;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.ltr.util;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.apache.solr.common.params.SolrParams;
 
 public class LTRUtils {
 

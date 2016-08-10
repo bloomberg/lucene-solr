@@ -1,13 +1,3 @@
-package org.apache.solr.ltr.feature.impl;
-
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.ltr.TestRerankBase;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,6 +14,15 @@ import org.junit.Test;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.ltr.feature.impl;
+
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.ltr.TestRerankBase;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x", "Lucene41", "Lucene40", "Appending"})
 public class TestExternalValueFeatures extends TestRerankBase {
