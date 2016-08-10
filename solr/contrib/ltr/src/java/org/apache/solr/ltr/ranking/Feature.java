@@ -88,7 +88,7 @@ public abstract class Feature extends Query implements Cloneable {
     final StringBuilder sb = new StringBuilder(64); // default initialCapacity of 16 won't be enough
     sb.append(getClass().getSimpleName());
     sb.append(" [name=").append(name);
-    final Map<String,Object> params = paramsToMap();
+    final LinkedHashMap<String,Object> params = paramsToMap();
     if (params != null) {
       sb.append(", params=").append(params);
     }
