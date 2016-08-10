@@ -112,4 +112,6 @@ public class CommonLTRParams {
 
   // Name of key used to store the original score of a doc
   public static final String ORIGINAL_DOC_SCORE = "ORIGINAL_DOC_SCORE";
+  public static final String FEATURE_REQUEST = "[features]";
+  public static final String FV_REQUEST = "[fv]";
 }

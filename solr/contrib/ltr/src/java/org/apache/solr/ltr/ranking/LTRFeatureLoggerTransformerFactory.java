@@ -119,7 +119,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       resultsReranked = (reRankModel != null);
       String featureStoreName = params.get(CommonLTRParams.STORE);
       if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getFeatureStoreName())))) {
-        // if store is set in the trasformer we should overwrite the logger
+        // if store is set in the transformer we should overwrite the logger
         if (featureStoreName == null){
             featureStoreName =CommonLTRParams.DEFAULT_FEATURE_STORE_NAME;
         }
@@ -131,7 +131,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
         try {
           final LoggingModel lm = new LoggingModel(featureStoreName,store.getFeatures());
-          reRankModel = new ModelQuery(lm);
+          boolean featRequested = true;
+          reRankModel = new ModelQuery(lm, featRequested);
 
           // Local transformer efi if provided
           final Map<String,String> externalFeatureInfo = LTRUtils.extractEFIParams(params);

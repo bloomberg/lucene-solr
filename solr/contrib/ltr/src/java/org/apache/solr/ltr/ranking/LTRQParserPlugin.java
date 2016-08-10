@@ -78,13 +78,18 @@ public class LTRQParserPlugin extends QParserPlugin {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Must provide model in the request");
       }
-
+      
+      String flString1 = params.get(CommonParams.FL, CommonLTRParams.FEATURE_REQUEST); 
+      String flString2 = params.get(CommonParams.FL, CommonLTRParams.FV_REQUEST); 
+      boolean featuresRequested = (flString1.indexOf(CommonLTRParams.FEATURE_REQUEST) >= 0 || flString2.indexOf(CommonLTRParams.FV_REQUEST) >= 0) ? true : false;
+      log.info("params: {} localParams: {} fl = {} featuresRequested {}", params.toString(), localParams.toString(), params.get(CommonParams.FL), featuresRequested);
       final LTRScoringAlgorithm meta = mr.getModel(modelName);
       if (meta == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "cannot find " + CommonLTRParams.MODEL + " " + modelName);
       }
-      final ModelQuery reRankModel = new ModelQuery(meta);
+      
+      final ModelQuery reRankModel = new ModelQuery(meta, featuresRequested);
 
       int reRankDocs = localParams.getInt(CommonLTRParams.RERANK_DOCS,
           CommonLTRParams.DEFAULT_RERANK_DOCS);
