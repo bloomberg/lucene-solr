@@ -41,6 +41,7 @@ import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.solr.ltr.util.LTRException;
 
 import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.IntIntHashMap;
@@ -111,10 +112,8 @@ public class LTRCollector extends TopDocsCollector {
         topRerankDocs = reRankRescorer.rescore(searcher,
             mainDocs, howMany);
       } catch (final IOException e) {
-        log.error("LTRRescorer reranking failed. ", e);
-        // If someone deployed a messed up model, we don't want to crash and burn.
-        // Return the original list at least
         topRerankDocs = mainDocs;
+        throw new LTRException("LTRRescorer reranking failed. ", e);
       }
 
       if (boostedPriority != null) {
