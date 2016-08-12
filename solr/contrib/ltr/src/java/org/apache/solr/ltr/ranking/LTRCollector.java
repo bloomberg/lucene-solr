@@ -41,7 +41,6 @@ import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.solr.ltr.util.LTRException;
 
 import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.IntIntHashMap;
