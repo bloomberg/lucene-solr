@@ -39,7 +39,7 @@ import org.apache.solr.request.SolrQueryRequest;
 /**
  * A 'recipe' for computing a feature
  */
-public abstract class Feature extends Query implements Cloneable {
+public abstract class Feature extends Query {
 
   protected String name;
   protected int id;
