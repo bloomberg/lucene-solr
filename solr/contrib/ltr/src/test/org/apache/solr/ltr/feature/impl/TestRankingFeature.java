@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.junit.Test;
 
+
 public class TestRankingFeature extends TestQueryFeature {
   @Test
   public void testRankingSolrFeature() throws Exception {
@@ -74,7 +75,19 @@ public class TestRankingFeature extends TestQueryFeature {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='6'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='7'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='8'");
+
+    //bad solr ranking feature
+    loadFeature("powdesS", SolrFeature.class.getCanonicalName(),
+        "{\"q\":\"{!func}pow(description,2)\"}");
+    loadModel("powdesS-model", RankSVMModel.class.getCanonicalName(),
+        new String[] {"powdesS"}, "{\"weights\":{\"powdesS\":1.0}}");
+
+    query.remove("rq");
+    query.add("rq", "{!ltr model=powdesS-model reRankDocs=4}");
+
+    assertJQ("/query" + query.toQueryString(), "/error/msg/=='java.lang.UnsupportedOperationException'");
     // aftertest();
 
   }
+  
 }
