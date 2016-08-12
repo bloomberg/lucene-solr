@@ -106,8 +106,7 @@ public class LTRCollector extends TopDocsCollector {
       }
 
       final TopDocs mainDocs = mainCollector.topDocs(0, reRankDocs);
-      TopDocs topRerankDocs;
-      topRerankDocs = reRankRescorer.rescore(searcher,
+      TopDocs topRerankDocs = reRankRescorer.rescore(searcher,
           mainDocs, howMany);
 
       if (boostedPriority != null) {
