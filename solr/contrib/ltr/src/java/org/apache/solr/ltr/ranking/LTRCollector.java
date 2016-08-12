@@ -108,13 +108,8 @@ public class LTRCollector extends TopDocsCollector {
 
       final TopDocs mainDocs = mainCollector.topDocs(0, reRankDocs);
       TopDocs topRerankDocs;
-      try {
-        topRerankDocs = reRankRescorer.rescore(searcher,
-            mainDocs, howMany);
-      } catch (final IOException e) {
-        topRerankDocs = mainDocs;
-        throw new LTRException("LTRRescorer reranking failed. ", e);
-      }
+      topRerankDocs = reRankRescorer.rescore(searcher,
+          mainDocs, howMany);
 
       if (boostedPriority != null) {
         final SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
