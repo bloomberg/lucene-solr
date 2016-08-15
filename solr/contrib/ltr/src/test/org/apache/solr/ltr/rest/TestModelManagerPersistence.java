@@ -16,6 +16,9 @@
  */
 package org.apache.solr.ltr.rest;
 
+import java.util.Map;
+import java.util.ArrayList;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.ltr.TestRerankBase;
@@ -24,6 +27,8 @@ import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.junit.Before;
 import org.junit.Test;
+import static org.junit.Assert.assertTrue;
+import org.noggit.ObjectBuilder;
 
 @SuppressSSL
 public class TestModelManagerPersistence extends TestRerankBase {
@@ -71,16 +76,51 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/features/[0]/name=='feature3'");
     loadModel("test-model", RankSVMModel.class.getCanonicalName(),
         new String[] {"feature"}, "test", "{\"weights\":{\"feature\":1.0}}");
+    loadModel("test-model2", RankSVMModel.class.getCanonicalName(),
+        new String[] {"feature1"}, "test1", "{\"weights\":{\"feature1\":1.0}}");
     final String fstorecontent = FileUtils
         .readFileToString(fstorefile, "UTF-8");
     final String mstorecontent = FileUtils
         .readFileToString(mstorefile, "UTF-8");
 
-    System.out.println("feature-store:\n");
-    System.out.println(fstorecontent);
+    //check feature/model stores on deletion
+    final ArrayList<Object> fStore = (ArrayList<Object>) ((Map<String,Object>) 
+        ObjectBuilder.fromJSON(fstorecontent)).get("managedList");
+    for (int idx = 0;idx < fStore.size(); ++ idx) {
+      String store = (String) ((Map<String,Object>)fStore.get(idx)).get("store");
+      assertTrue(store.equals("test") || store.equals("test2") || store.equals("test1"));
+    }
 
-    System.out.println("model-store:\n");
-    System.out.println(mstorecontent);
+    final ArrayList<Object> mStore = (ArrayList<Object>) ((Map<String,Object>) 
+        ObjectBuilder.fromJSON(mstorecontent)).get("managedList");
+    for (int idx = 0;idx < mStore.size(); ++ idx) {
+      String store = (String) ((Map<String,Object>)mStore.get(idx)).get("store");
+      assertTrue(store.equals("test") || store.equals("test1"));
+    }
+    
+    assertJDelete(CommonLTRParams.FEATURE_STORE_END_POINT + "/test2",
+        "/responseHeader/status==0");
+    assertJDelete(CommonLTRParams.MODEL_STORE_END_POINT + "/test-model2",
+        "/responseHeader/status==0");
+    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test2",
+        "/features/==[]");
+    assertJQ(CommonLTRParams.MODEL_STORE_END_POINT + "/test-model2",
+        "/models/[0]/name=='test-model'");
+    restTestHarness.reload();
+    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test2",
+        "/features/==[]");  
+    assertJQ(CommonLTRParams.MODEL_STORE_END_POINT + "/test-model2",
+        "/models/[0]/name=='test-model'");
+
+    assertJDelete(CommonLTRParams.MODEL_STORE_END_POINT + "/*",
+        "/responseHeader/status==0");
+    assertJDelete(CommonLTRParams.FEATURE_STORE_END_POINT + "/*",
+        "/responseHeader/status==0");
+    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test1",
+        "/features/==[]");
+    restTestHarness.reload();
+    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test1",
+        "/features/==[]");
 
   }
 
