@@ -18,10 +18,12 @@ package org.apache.solr.ltr.log;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.ltr.ranking.ModelQuery;
+import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -42,12 +44,12 @@ public abstract class FeatureLogger<FV_TYPE> {
    *
    * @param docid
    *          Solr document id whose features we are saving
-   * @param featureNames
+   * _@param featureNames
    *          List of all the feature names we are logging
-   * @param featureValues
+   * _@param featureValues
    *          Parallel list to featureNames that stores all the unnormalized
    *          feature values
-   * @param featuresUsed
+   * _@param featuresUsed
    *          Bitset indicating which featureValues to log
    *
    * @return true if the logger successfully logged the features, false
@@ -55,10 +57,8 @@ public abstract class FeatureLogger<FV_TYPE> {
    */
 
   public boolean log(int docid, ModelQuery modelQuery,
-      SolrIndexSearcher searcher, String[] featureNames, float[] featureValues,
-      boolean[] featuresUsed) {
-    final FV_TYPE featureVector = makeFeatureVector(featureNames, featureValues,
-        featuresUsed);
+      SolrIndexSearcher searcher, LinkedHashMap<Integer, FeatureInfo> featuresInfo) {
+    final FV_TYPE featureVector = makeFeatureVector(featuresInfo);
     if (featureVector == null) {
       return false;
     }
@@ -91,8 +91,7 @@ public abstract class FeatureLogger<FV_TYPE> {
 
   }
 
-  public abstract FV_TYPE makeFeatureVector(String[] featureNames,
-      float[] featureValues, boolean[] featuresUsed);
+  public abstract FV_TYPE makeFeatureVector(LinkedHashMap<Integer, FeatureInfo> featuresInfo);
 
   /**
    * populate the document with its feature vector
@@ -112,16 +111,15 @@ public abstract class FeatureLogger<FV_TYPE> {
   public static class MapFeatureLogger extends FeatureLogger<Map<String,Float>> {
 
     @Override
-    public Map<String,Float> makeFeatureVector(String[] featureNames,
-        float[] featureValues, boolean[] featuresUsed) {
+    public Map<String,Float> makeFeatureVector(LinkedHashMap<Integer, FeatureInfo> featuresInfo) {
       Map<String,Float> hashmap = Collections.emptyMap();
-      if (featureNames.length > 0) {
-        hashmap = new HashMap<String,Float>(featureValues.length);
-        for (int i = 0; i < featuresUsed.length; i++) {
-          if (featuresUsed[i]) {
-            hashmap.put(featureNames[i], featureValues[i]);
-          }
-        }
+      if (featuresInfo.size() > 0) {
+         hashmap = new HashMap<String,Float>(featuresInfo.size());
+         for (FeatureInfo featInfo:featuresInfo.values()){  
+            if (featInfo.getUsed()) {
+               hashmap.put(featInfo.getName(), featInfo.getValue());
+            }
+         }
       }
       return hashmap;
     }
@@ -144,12 +142,11 @@ public abstract class FeatureLogger<FV_TYPE> {
     }
 
     @Override
-    public String makeFeatureVector(String[] featureNames,
-        float[] featureValues, boolean[] featuresUsed) {
-      for (int i = 0; i < featuresUsed.length; i++) {
-        if (featuresUsed[i]) {
-          sb.append(featureNames[i]).append(keyValueSep)
-              .append(featureValues[i]);
+    public String makeFeatureVector(LinkedHashMap<Integer, FeatureInfo> featuresInfo) {
+      for (FeatureInfo featInfo:featuresInfo.values()) {
+        if (featInfo.getUsed()) {
+          sb.append(featInfo.getName()).append(keyValueSep)
+              .append(featInfo.getValue());
           sb.append(featureSep);
         }
       }

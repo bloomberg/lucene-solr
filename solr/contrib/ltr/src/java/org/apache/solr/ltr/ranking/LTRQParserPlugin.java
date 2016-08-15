@@ -79,15 +79,20 @@ public class LTRQParserPlugin extends QParserPlugin {
             "Must provide model in the request");
       }
       
-      String flString1 = params.get(CommonParams.FL, CommonLTRParams.FEATURE_REQUEST); 
-      String flString2 = params.get(CommonParams.FL, CommonLTRParams.FV_REQUEST); 
-      boolean featuresRequested = (flString1.indexOf(CommonLTRParams.FEATURE_REQUEST) >= 0 || flString2.indexOf(CommonLTRParams.FV_REQUEST) >= 0) ? true : false;
-      log.info("params: {} localParams: {} fl = {} featuresRequested {}", params.toString(), localParams.toString(), params.get(CommonParams.FL), featuresRequested);
+      
+      
+     
       final LTRScoringAlgorithm meta = mr.getModel(modelName);
       if (meta == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "cannot find " + CommonLTRParams.MODEL + " " + modelName);
       }
+      final String modelFeatureStoreName = meta.getFeatureStoreName();
+      final Boolean extractFeatures = (Boolean) req.getContext().get(CommonLTRParams.LOG_FEATURES_QUERY_PARAM);
+      final String fvStoreName = (String) req.getContext().get(CommonLTRParams.STORE);
+      boolean featuresRequested = (extractFeatures != null && (modelFeatureStoreName == fvStoreName || fvStoreName == null) ) ? extractFeatures.booleanValue():false;
+      log.info("params: {} localParams: {} fl = {} featuresRequested {}", params.toString(), localParams.toString(), params.get(CommonParams.FL), featuresRequested);
+      
       
       final ModelQuery reRankModel = new ModelQuery(meta, featuresRequested);
 
@@ -100,8 +105,8 @@ public class LTRQParserPlugin extends QParserPlugin {
 
       // Enable the feature vector cache if we are extracting features, and the features
       // we requested are the same ones we are reranking with
-      final Boolean extractFeatures = (Boolean) req.getContext().get(CommonLTRParams.LOG_FEATURES_QUERY_PARAM);
-      final String fvStoreName = (String) req.getContext().get(CommonLTRParams.STORE);
+     
+      
       final boolean fvCache = (extractFeatures != null && extractFeatures.booleanValue() &&
           (fvStoreName == null || fvStoreName.equals(reRankModel.getFeatureStoreName())));
       if (fvCache) {

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -38,13 +37,11 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
-import org.apache.solr.ltr.feature.norm.Normalizer;
+import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 import org.apache.solr.ltr.util.NamedParams;
@@ -54,46 +51,205 @@ import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x", "Lucene41", "Lucene40", "Appending"})
 public class TestSelectiveWeightCreation extends TestRerankBase {
+  private IndexSearcher getSearcher(IndexReader r) {
+    final IndexSearcher searcher = newSearcher(r, false, false);
+    return searcher;
+  }
+
+  private static List<Feature> makeFeatures(int[] featureIds) {
+    final List<Feature> features = new ArrayList<>();
+    for (final int i : featureIds) {
+      final ValueFeature f = new ValueFeature();
+      try {
+        f.init("f" + i, new NamedParams().add("value", i), i);
+      } catch (final FeatureException e) {
+        e.printStackTrace();
+      }
+      features.add(f);
+    }
+    return features;
+  }
+
+  private static NamedParams makeFeatureWeights(List<Feature> features) {
+    final NamedParams nameParams = new NamedParams();
+    final HashMap<String,Double> modelWeights = new HashMap<String,Double>();
+    for (final Feature feat : features) {
+      modelWeights.put(feat.name, 0.1);
+    }
+    if (modelWeights.isEmpty()) {
+      modelWeights.put("", 0.0);
+    }
+    nameParams.add("weights", modelWeights);
+    return nameParams;
+  }
+
+  private ModelQuery.ModelWeight performQuery(TopDocs hits,
+      IndexSearcher searcher, int docid, ModelQuery model) throws IOException,
+      ModelException {
+    final List<LeafReaderContext> leafContexts = searcher.getTopReaderContext()
+        .leaves();
+    final int n = ReaderUtil.subIndex(hits.scoreDocs[0].doc, leafContexts);
+    final LeafReaderContext context = leafContexts.get(n);
+    final int deBasedDoc = hits.scoreDocs[0].doc - context.docBase;
+
+    final Weight weight = searcher.createNormalizedWeight(model, true);
+    final Scorer scorer = weight.scorer(context);
+
+    // rerank using the field final-score
+    scorer.iterator().advance(deBasedDoc);
+    scorer.score();
+
+    // assertEquals(42.0f, score, 0.0001);
+    // assertTrue(weight instanceof AssertingWeight);
+    // (AssertingIndexSearcher)
+    assertTrue(weight instanceof ModelQuery.ModelWeight);
+    final ModelQuery.ModelWeight modelWeight = (ModelQuery.ModelWeight) weight;
+    return modelWeight;
+
+  }
+  
+  
+  
   @BeforeClass
   public static void before() throws Exception {
     setuptest("solrconfig-ltr.xml", "schema-ltr.xml");
-
-    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity",
-        "2"));
-    assertU(adoc("id", "3", "title", "w1 w2", "description", "w3", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "w1 w2 w3", "description", "w4", "popularity",
-        "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5"));
-    assertU(commit());
-
-    loadFeatures("features-ranksvm.json");
-    loadModels("ranksvm-model.json");
   }
 
   @AfterClass
   public static void after() throws Exception {
     aftertest();
   }
-  
+ 
   @Test
-  public void testModelQuerySlectiveWeights() throws Exception {
-    final SolrQuery query = new SolrQuery();
-    query.setQuery("title:w1");
-    query.add("fl", "*,score");
-    query.add("rows", "3");
-    query.add("fl", "[fv]");
+  public void testModelQueryWeightCreation() throws IOException, ModelException {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    doc.add(newStringField("id", "0", Field.Store.YES));
+    doc.add(newTextField("field", "wizard the the the the the oz",
+        Field.Store.NO));
+    doc.add(new FloatDocValuesField("final-score", 1.0f));
+
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("id", "1", Field.Store.YES));
+    // 1 extra token, but wizard and oz are close;
+    doc.add(newTextField("field", "wizard oz the the the the the the",
+        Field.Store.NO));
+    doc.add(new FloatDocValuesField("final-score", 2.0f));
+    w.addDocument(doc);
+
+    final IndexReader r = w.getReader();
+    w.close();
+
+    // Do ordinary BooleanQuery:
+    final Builder bqBuilder = new Builder();
+    bqBuilder.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
+    bqBuilder.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
+    final IndexSearcher searcher = getSearcher(r);
+    // first run the standard query
+    final TopDocs hits = searcher.search(bqBuilder.build(), 10);
+    assertEquals(2, hits.totalHits);
+    assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+
+    List<Feature> features = makeFeatures(new int[] {0, 1, 2});
+    final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5,
+        6, 7, 8, 9});
     
-
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv==''");
-
-    query.add("rq", "{!ltr reRankDocs=3 model=6029760550880411648}");
-
-
+    // when features are NOT requested in the response, only the modelFeature weights should be created
+    RankSVMModel meta1 = new RankSVMModel("test",
+        features, "test", allFeatures,
+        makeFeatureWeights(features));
+    ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
+        hits.scoreDocs[0].doc, new ModelQuery(meta1, false)); // features not requested in response
+    assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
+    assertEquals(features.size(), modelWeight.extractedFeatureWeights.length);
     
+    int numValidAllFeatureValues = 0;
+    for (FeatureInfo featInfo:modelWeight.featuresInfo.values()) {
+       if (featInfo.getUsed()){
+          numValidAllFeatureValues++;
+       }
+    }
+    assertEquals(numValidAllFeatureValues, features.size());
+    
+    // when features are requested in the response, weights should be created for all features
+    RankSVMModel meta2 = new RankSVMModel("test",
+        features, "test", allFeatures,
+        makeFeatureWeights(features));
+    modelWeight = performQuery(hits, searcher,
+        hits.scoreDocs[0].doc, new ModelQuery(meta2, true)); // features requested in response
+    assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
+    assertEquals(allFeatures.size(), modelWeight.extractedFeatureWeights.length);
+    
+    numValidAllFeatureValues = 0;
+    for (FeatureInfo featInfo:modelWeight.featuresInfo.values()) {
+      if (featInfo.getUsed()){
+         numValidAllFeatureValues++;
+      }
+   }
+    assertEquals(numValidAllFeatureValues, allFeatures.size());
+    
+    assertU(delI("0"));assertU(delI("1"));
+    r.close();
+    dir.close();
   }
+  
+ 
+  @Test
+  public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {
+    
+    assertU(adoc("id", "1", "title", "w1 w3", "description", "w1", "popularity",
+        "1"));
+    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity",
+        "2"));
+    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
+        "3"));
+    assertU(adoc("id", "4", "title", "w4 w3", "description", "w4", "popularity",
+        "4"));
+    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
+        "5"));
+    assertU(commit());
+
+    loadFeatures("external_features.json");
+    loadModels("external_model.json");
+    loadModels("external_model_store.json");
+    
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*,score");
+    query.add("rows", "4");
+  
+    query.add("rq", "{!ltr reRankDocs=4 model=externalmodel efi.user_query=w3}");
+    query.add("fl", "fv:[fv]");
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='4'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='matchedTitle:1.0;titlePhraseMatch:0.40254828'"); // extract all features in default store
+    
+    query.remove("fl");
+    query.remove("rq");
+    query.add("fl", "*,score");
+    query.add("rq", "{!ltr reRankDocs=4 model=externalmodel efi.user_query=w3}");
+    query.add("fl", "fv:[fv store=fstore4 efi.myPop=3]");
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.999");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='popularity:3.0;originalScore:1.0'"); // extract all features from fstore4
+    
+   
+    query.remove("fl");
+    query.remove("rq");
+    query.add("fl", "*,score");
+    query.add("rq", "{!ltr reRankDocs=4 model=externalmodelstore efi.user_query=w3 efi.myconf=0.8}");
+    query.add("fl", "fv:[fv store=fstore4 efi.myPop=3]");
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'"); // score using fstore2 used by externalmodelstore
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.7992");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='popularity:3.0;originalScore:1.0'"); // extract all features from fstore4
+  }
+  
 }
