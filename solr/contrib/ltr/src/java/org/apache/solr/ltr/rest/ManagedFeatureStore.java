@@ -172,14 +172,14 @@ public class ManagedFeatureStore extends ManagedResource implements
   }
 
   @Override
-  public void doDeleteChild(BaseSolrResource endpoint, String childId) {
+  public synchronized void doDeleteChild(BaseSolrResource endpoint, String childId) {
     if (childId.equals("*")) {
       stores.clear();
-      return;
     }
     if (stores.containsKey(childId)) {
       stores.remove(childId);
     }
+    storeManagedData(applyUpdatesToManagedData(null));
   }
 
   /**

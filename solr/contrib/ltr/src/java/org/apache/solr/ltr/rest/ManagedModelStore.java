@@ -239,7 +239,7 @@ public class ManagedModelStore extends ManagedResource implements
   }
 
   @Override
-  public void doDeleteChild(BaseSolrResource endpoint, String childId) {
+  public synchronized void doDeleteChild(BaseSolrResource endpoint, String childId) {
     // FIXME: hack to delete all the stores
     if (childId.equals("*")) {
       store.clear();
@@ -247,6 +247,7 @@ public class ManagedModelStore extends ManagedResource implements
     if (store.containsModel(childId)) {
       store.delete(childId);
     }
+    storeManagedData(applyUpdatesToManagedData(null));
   }
 
   /**
