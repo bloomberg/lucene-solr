@@ -77,7 +77,7 @@ public class TestModelQuery extends LuceneTestCase {
       f.name = "f" + i;
       f.setValue(i);
       f.id = i;
-      f.norm = new Normalizer() {
+      final Normalizer n = new Normalizer() {
 
         @Override
         public float normalize(float value) {
@@ -89,7 +89,7 @@ public class TestModelQuery extends LuceneTestCase {
           return null;
         }
       };
-      features.add(f);
+      features.add(new FilterFeature(f, n));
     }
     return features;
   }
@@ -98,7 +98,7 @@ public class TestModelQuery extends LuceneTestCase {
     final NamedParams nameParams = new NamedParams();
     final HashMap<String,Double> modelWeights = new HashMap<String,Double>();
     for (final Feature feat : features) {
-      modelWeights.put(feat.name, 0.1);
+      modelWeights.put(feat.getName(), 0.1);
     }
     if (modelWeights.isEmpty()) {
       modelWeights.put("", 0.0);
