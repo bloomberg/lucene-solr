@@ -87,5 +87,23 @@ public class TestFilterSolrFeature extends TestRerankBase {
     assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
         "/responseHeader/status==500");
   }
+  
+  @Test
+  public void testFeatureNotEqualWhenNormalizerDifferent() throws Exception {
+    loadFeatures("fq_features.json"); // features that use filter query
+    loadModels("fq-model.json"); // model that uses filter query features
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*,score");
+    query.add("rows", "4");
+  
+    query.add("rq", "{!ltr reRankDocs=4 model=fqmodel efi.user_query=w2}");
+    query.add("fl", "fv:[fv]");
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='2'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='matchedTitle:1.0;popularity:3.0'");
+  }
 
 }

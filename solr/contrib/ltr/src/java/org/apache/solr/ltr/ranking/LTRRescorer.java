@@ -185,9 +185,6 @@ public class LTRRescorer extends Rescorer {
 
       scorer.setDocInfoParam(CommonLTRParams.ORIGINAL_DOC_SCORE, new Float(hit.score));
       hit.score = scorer.score();
-      featureNames = modelWeight.allFeatureNames;
-      featureValues = modelWeight.allFeatureValues;
-      featuresUsed = modelWeight.allFeaturesUsed;
 
       if (hitUpto < topN) {
         reranked[hitUpto] = hit;
@@ -195,7 +192,7 @@ public class LTRRescorer extends Rescorer {
         // document
         if (featureLogger != null) {
           featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
-              featureNames, featureValues, featuresUsed);
+              modelWeight.featuresInfo);
         }
       } else if (hitUpto == topN) {
         // collected topN document, I create the heap
@@ -212,7 +209,7 @@ public class LTRRescorer extends Rescorer {
           heapAdjust(reranked, topN, 0);
           if (featureLogger != null) {
             featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
-                featureNames, featureValues, featuresUsed);
+                modelWeight.featuresInfo);
           }
         }
       }

@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.ranking;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.log.LoggingModel;
+import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
@@ -119,7 +121,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       resultsReranked = (reRankModel != null);
       String featureStoreName = params.get(CommonLTRParams.STORE);
       if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getFeatureStoreName())))) {
-        // if store is set in the trasformer we should overwrite the logger
+        // if store is set in the transformer we should overwrite the logger
         if (featureStoreName == null){
             featureStoreName =CommonLTRParams.DEFAULT_FEATURE_STORE_NAME;
         }
@@ -131,7 +133,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
         try {
           final LoggingModel lm = new LoggingModel(featureStoreName,store.getFeatures());
-          reRankModel = new ModelQuery(lm);
+          reRankModel = new ModelQuery(lm, true); // request feature weights to be created for all features
 
           // Local transformer efi if provided
           final Map<String,String> externalFeatureInfo = LTRUtils.extractEFIParams(params);
@@ -179,8 +181,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         final ModelScorer r = modelWeight.scorer(atomicContext);
         if (((r == null) || (r.iterator().advance(deBasedDoc) != docid))
             && (fv == null)) {
-          doc.addField(name, featureLogger.makeFeatureVector(new String[0],
-              new float[0], new boolean[0]));
+          doc.addField(name, featureLogger.makeFeatureVector(new LinkedHashMap<Integer, FeatureInfo>()));
         } else {
           if (!resultsReranked) {
             // If results have not been reranked, the score passed in is the original query's
@@ -188,11 +189,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
             r.setDocInfoParam(CommonLTRParams.ORIGINAL_DOC_SCORE, new Float(score));
           }
           r.score();
-          final String[] names = modelWeight.allFeatureNames;
-          final float[] values = modelWeight.allFeatureValues;
-          final boolean[] valuesUsed = modelWeight.allFeaturesUsed;
           doc.addField(name,
-              featureLogger.makeFeatureVector(names, values, valuesUsed));
+              featureLogger.makeFeatureVector(modelWeight.featuresInfo));
         }
       } else {
         doc.addField(name, fv);
