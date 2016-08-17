@@ -18,6 +18,7 @@ package org.apache.solr.ltr.log;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,7 +52,7 @@ public abstract class FeatureLogger<FV_TYPE> {
    */
 
   public boolean log(int docid, ModelQuery modelQuery,
-      SolrIndexSearcher searcher, HashMap<Integer, FeatureInfo> featuresInfo) {
+      SolrIndexSearcher searcher, LinkedHashMap<Integer, FeatureInfo> featuresInfo) {
     final FV_TYPE featureVector = makeFeatureVector(featuresInfo);
     if (featureVector == null) {
       return false;
@@ -85,7 +86,7 @@ public abstract class FeatureLogger<FV_TYPE> {
 
   }
 
-  public abstract FV_TYPE makeFeatureVector(HashMap<Integer, FeatureInfo> featuresInfo);
+  public abstract FV_TYPE makeFeatureVector(LinkedHashMap<Integer, FeatureInfo> featuresInfo);
 
   /**
    * populate the document with its feature vector
@@ -105,7 +106,7 @@ public abstract class FeatureLogger<FV_TYPE> {
   public static class MapFeatureLogger extends FeatureLogger<Map<String,Float>> {
 
     @Override
-    public Map<String,Float> makeFeatureVector(HashMap<Integer, FeatureInfo> featuresInfo) {
+    public Map<String,Float> makeFeatureVector(LinkedHashMap<Integer, FeatureInfo> featuresInfo) {
       Map<String,Float> hashmap = Collections.emptyMap();
       if (featuresInfo.size() > 0) {
          hashmap = new HashMap<String,Float>(featuresInfo.size());
@@ -134,7 +135,7 @@ public abstract class FeatureLogger<FV_TYPE> {
     }
 
     @Override
-    public String makeFeatureVector(HashMap<Integer, FeatureInfo> featuresInfo) {
+    public String makeFeatureVector(LinkedHashMap<Integer, FeatureInfo> featuresInfo) {
       for (FeatureInfo featInfo:featuresInfo.values()) {
           sb.append(featInfo.getName()).append(keyValueSep)
               .append(featInfo.getValue());

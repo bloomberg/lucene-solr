@@ -231,10 +231,11 @@ public class TestModelQuery extends LuceneTestCase {
     for (int i = 0; i < 3; i++) {
       assertEquals(i, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
     }
+    int[] posVals = new int[] {1, 0, 2};
     int pos = 0;
     for (FeatureInfo fInfo:modelWeight.featuresInfo.values()) {
-        assertEquals(pos, fInfo.getValue(), 0.0001);
-        assertEquals("f"+pos, fInfo.getName());
+        assertEquals(posVals[pos], fInfo.getValue(), 0.0001);
+        assertEquals("f"+posVals[pos], fInfo.getName());
         pos++;
     }
 

@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -305,7 +306,7 @@ public class ModelQuery extends Query {
      *     we need a map which holds just the features that were triggered by the documents in the result set. 
      *  
     */
-    HashMap<Integer, FeatureInfo> featuresInfo;
+    LinkedHashMap<Integer, FeatureInfo> featuresInfo;
     /* 
      * @param modelFeatureWeights 
      *     - should be the same size as the number of features used by the model
@@ -324,7 +325,7 @@ public class ModelQuery extends Query {
       this.extractedFeatureWeights = extractedFeatureWeights;
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
-      this.featuresInfo = new HashMap<Integer, FeatureInfo>(extractedFeatureWeights.length);
+      this.featuresInfo = new LinkedHashMap<Integer, FeatureInfo>(extractedFeatureWeights.length);
  
       if (modelFeatNorms == null){
         modelFeatureNorms = new Normalizer[modelFeatureWeights.length];
