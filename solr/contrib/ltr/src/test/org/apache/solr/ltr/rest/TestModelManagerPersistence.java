@@ -27,7 +27,6 @@ import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.assertTrue;
 import org.noggit.ObjectBuilder;
 
 @SuppressSSL

@@ -25,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -205,12 +204,15 @@ public class ModelQuery extends Query {
     final SolrQueryRequest req = getRequest();
     // since the feature store is a linkedhashmap order is preserved
     if (this.extractAllFeatures) {
-      final HashSet<Feature> modelFeatSet = new HashSet<Feature>(modelFeatures);
+      final HashMap<Integer, Feature> modelFeatMap = new HashMap<Integer, Feature>();
+      for (final Feature f: modelFeatures){
+        modelFeatMap.put(f.getId(), f);
+      }
       for (final Feature f : allFeatures) {
         try{
         FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
         allFeatureWeights[i++] = fw;
-        if (modelFeatSet.contains(f)){  
+        if (modelFeatMap.containsKey(f.getId())){  
           // Note: by assigning fw created using allFeatures, we lose the normalizer associated with the modelFeature, for this reason, 
           // we store it in the modelFeatureNorms, ahead of time, to use in normalize() and explain()
           modelFeaturesWeights[j++] = fw; 
