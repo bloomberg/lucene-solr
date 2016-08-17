@@ -32,7 +32,6 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     setuptest("solrconfig-ltr.xml", "schema-ltr.xml");
     // store = getModelStore();
     bulkIndex();
-
     loadFeatures("features-ranksvm.json");
     loadModels("ranksvm-model.json");
   }
@@ -46,8 +45,6 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   @Test
   public void ltrModelIdMissingTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
-    // SolrQueryRequest req = req("q", solrQuery, "rows", "4", "fl", "*,score",
-    // "fv", "true", "rq", "{!ltr reRankDocs=100}");
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "*, score");
@@ -56,18 +53,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("Must provide model in the request"));
-
-    // h.query("/query", req);
-
-    /*
-     * String solrQuery =
-     * "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
-     * SolrQueryRequest req = req("q", solrQuery, "rows", "4", "fl", "*,score",
-     * "fv", "true", "rq", "{!ltr reRankDocs=100}");
-     *
-     * h.query("/query", req);
-     */
+    assert (res.contains("cannot find a model in the request"));
   }
 
   @Test
@@ -82,14 +68,6 @@ public class TestLTRQParserPlugin extends TestRerankBase {
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
     assert (res.contains("cannot find model"));
-    /*
-     * String solrQuery =
-     * "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
-     * SolrQueryRequest req = req("q", solrQuery, "rows", "4", "fl", "*,score",
-     * "fv", "true", "rq", "{!ltr model=-1 reRankDocs=100}");
-     *
-     * h.query("/query", req);
-     */
   }
 
   @Test
@@ -105,15 +83,6 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     final String res = restTestHarness.query("/query" + query.toQueryString());
     System.out.println(res);
     assert (res.contains("Requesting more documents than being reranked."));
-    /*
-     * String solrQuery =
-     * "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
-     * SolrQueryRequest req = req("q", solrQuery, "rows", "999999", "fl",
-     * "*,score", "fv", "true", "rq",
-     * "{!ltr model=6029760550880411648 reRankDocs=100}");
-     *
-     * h.query("/query", req);
-     */
   }
 
   @Test
@@ -125,7 +94,6 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("debugQuery", "on");
     query.add("rq", "{!ltr reRankDocs=3 model=6029760550880411648}");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==0");
-    // assertJQ("/query?" + query.toString(), "/response/numFound/==0");
   }
 
 }
