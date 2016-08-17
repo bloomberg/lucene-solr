@@ -18,16 +18,12 @@ package org.apache.solr.ltr.ranking;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Rescorer;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.FilterWeight;

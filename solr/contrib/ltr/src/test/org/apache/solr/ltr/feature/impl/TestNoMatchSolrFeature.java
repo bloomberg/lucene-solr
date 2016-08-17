@@ -81,7 +81,7 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
   public static void after() throws Exception {
     aftertest();
   }
-/*
+
   @Test
   public void test2NoMatch1YesMatchFeatureReturnsFvWith1FeatureAndDocScoreScaledByModel() throws Exception {
     // Tests model with all no matching features but 1
@@ -122,7 +122,7 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/fv==''");
   }
-*/
+
   @Test
   public void test1NoMatchFeatureReturnsFvWith1MatchingFeatureFromStoreAndDocWith0Score() throws Exception {
     // Tests model with all no matching features, but 1 feature store feature matching for extraction

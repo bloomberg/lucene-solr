@@ -41,7 +41,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
-import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 import org.apache.solr.ltr.util.NamedParams;
@@ -167,13 +166,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
     assertEquals(features.size(), modelWeight.extractedFeatureWeights.length);
     
-    int numValidAllFeatureValues = 0;
-    for (FeatureInfo featInfo:modelWeight.featuresInfo.values()) {
-       if (featInfo.getUsed()){
-          numValidAllFeatureValues++;
-       }
-    }
-    assertEquals(numValidAllFeatureValues, features.size());
+    assertEquals(modelWeight.featuresInfo.size(), features.size());
     
     // when features are requested in the response, weights should be created for all features
     RankSVMModel meta2 = new RankSVMModel("test",
@@ -184,13 +177,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
     assertEquals(allFeatures.size(), modelWeight.extractedFeatureWeights.length);
     
-    numValidAllFeatureValues = 0;
-    for (FeatureInfo featInfo:modelWeight.featuresInfo.values()) {
-      if (featInfo.getUsed()){
-         numValidAllFeatureValues++;
-      }
-   }
-    assertEquals(numValidAllFeatureValues, allFeatures.size());
+    assertEquals(modelWeight.featuresInfo.size(), allFeatures.size());
     
     assertU(delI("0"));assertU(delI("1"));
     r.close();

@@ -43,6 +43,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.feature.norm.Normalizer;
+import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 import org.apache.solr.ltr.util.NamedParams;
@@ -230,14 +231,12 @@ public class TestModelQuery extends LuceneTestCase {
     for (int i = 0; i < 3; i++) {
       assertEquals(i, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
     }
-  //  for (int i = 0; i < 10; i++) {
-  //    assertEquals(i, modelWeight.allFeatureValues[i], 0.0001);
-  //  }
-
-  //  for (int i = 0; i < 10; i++) {
-   //   assertEquals("f" + i, modelWeight.allFeatureNames[i]);
-//
-  //  }
+    int pos = 0;
+    for (FeatureInfo fInfo:modelWeight.featuresInfo.values()) {
+        assertEquals(pos, fInfo.getValue(), 0.0001);
+        assertEquals("f"+pos, fInfo.getName());
+        pos++;
+    }
 
     final int[] mixPositions = new int[] {8, 2, 4, 9, 0};
     features = makeFeatures(mixPositions);
@@ -253,9 +252,6 @@ public class TestModelQuery extends LuceneTestCase {
       assertEquals(mixPositions[i],
           modelWeight.modelFeatureValuesNormalized[i], 0.0001);
     }
-  //  for (int i = 0; i < 10; i++) {
-  //    assertEquals(i, modelWeight.allFeatureValues[i], 0.0001);
-  //  }
 
     final int[] noPositions = new int[] {};
     features = makeFeatures(noPositions);
@@ -279,9 +275,6 @@ public class TestModelQuery extends LuceneTestCase {
     for (int i = 0; i < mixPositions.length; i++) {
       assertEquals(42.42f, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
     }
-   // for (int i = 0; i < 10; i++) {
-   //   assertEquals(i, modelWeight.allFeatureValues[i], 0.0001);
-   // }
     r.close();
     dir.close();
 

@@ -90,11 +90,12 @@ public class LTRQParserPlugin extends QParserPlugin {
       final String modelFeatureStoreName = meta.getFeatureStoreName();
       final Boolean extractFeatures = (Boolean) req.getContext().get(CommonLTRParams.LOG_FEATURES_QUERY_PARAM);
       final String fvStoreName = (String) req.getContext().get(CommonLTRParams.STORE);
-      boolean featuresRequested = (extractFeatures != null && (modelFeatureStoreName == fvStoreName || fvStoreName == null) ) ? extractFeatures.booleanValue():false;
-      log.info("params: {} localParams: {} fl = {} featuresRequested {}", params.toString(), localParams.toString(), params.get(CommonParams.FL), featuresRequested);
+      // Check if features are requested and if the model feature store and feature-transform feature store are the same
+      final boolean featuresRequestedFromSameStore = (extractFeatures != null && (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ) ? extractFeatures.booleanValue():false;
+      log.info("params: {} localParams: {} fl = {} featuresRequested {}", params.toString(), localParams.toString(), params.get(CommonParams.FL), featuresRequestedFromSameStore);
       
       
-      final ModelQuery reRankModel = new ModelQuery(meta, featuresRequested);
+      final ModelQuery reRankModel = new ModelQuery(meta, featuresRequestedFromSameStore);
 
       int reRankDocs = localParams.getInt(CommonLTRParams.RERANK_DOCS,
           CommonLTRParams.DEFAULT_RERANK_DOCS);
@@ -103,13 +104,11 @@ public class LTRQParserPlugin extends QParserPlugin {
       final int rows = params.getInt(CommonParams.ROWS,
           CommonParams.ROWS_DEFAULT);
 
-      // Enable the feature vector cache if we are extracting features, and the features
-      // we requested are the same ones we are reranking with
-     
       
-      final boolean fvCache = (extractFeatures != null && extractFeatures.booleanValue() &&
-          (fvStoreName == null || fvStoreName.equals(reRankModel.getFeatureStoreName())));
-      if (fvCache) {
+     
+      // Enable the feature vector caching if we are extracting features, and the features
+      // we requested are the same ones we are reranking with 
+      if (featuresRequestedFromSameStore) {
         final FeatureLogger<?> solrLogger = FeatureLogger
             .getFeatureLogger(params.get(CommonLTRParams.FV_RESPONSE_WRITER));
         reRankModel.setFeatureLogger(solrLogger);
