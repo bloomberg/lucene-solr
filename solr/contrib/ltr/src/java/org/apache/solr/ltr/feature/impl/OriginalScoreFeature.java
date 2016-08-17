@@ -32,6 +32,10 @@ import org.apache.solr.request.SolrQueryRequest;
 
 public class OriginalScoreFeature extends Feature {
 
+  public OriginalScoreFeature(String name) {
+    super(name);
+  }
+
   @Override
   protected LinkedHashMap<String,Object> paramsToMap() {
     return null;

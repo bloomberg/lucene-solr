@@ -41,7 +41,7 @@ import org.apache.solr.request.SolrQueryRequest;
  */
 public abstract class Feature extends Query {
 
-  protected String name;
+  final protected String name;
   protected int id;
 
   @Deprecated
@@ -49,23 +49,16 @@ public abstract class Feature extends Query {
 
 
   /**
-   * @param name
-   *          Name of the feature
    * @param params
    *          Custom parameters that the feature may use
-   * @param id
-   *          Unique ID for this feature. Similar to feature name, except it can
-   *          be used to directly access the feature in the global list of
-   *          features.
    */
-  public void init(String name, NamedParams params, int id)
+  public void init(NamedParams params)
       throws FeatureException {
-    this.name = name;
     this.params = params;
-    this.id = id;
   }
 
-  public Feature() {
+  public Feature(String name) {
+    this.name = name;
   }
 
   @Override
@@ -139,6 +132,16 @@ public abstract class Feature extends Query {
    */
   public int getId() {
     return id;
+  }
+
+  /**
+   * @param id
+   *          Unique ID for this feature. Similar to feature name, except it can
+   *          be used to directly access the feature in the global list of
+   *          features.
+   */
+  public void setId(int id) {
+    this.id = id;
   }
 
   protected abstract LinkedHashMap<String,Object> paramsToMap();
