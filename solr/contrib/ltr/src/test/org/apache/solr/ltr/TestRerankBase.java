@@ -343,8 +343,9 @@ public class TestRerankBase extends RestTestBase {
     final List<Feature> features = new ArrayList<>();
     int pos = 0;
     for (final String name : names) {
-      final ValueFeature f = new ValueFeature();
-      f.init(name, new NamedParams().add("value", 10), pos);
+      final ValueFeature f = new ValueFeature(name);
+      f.init(new NamedParams().add("value", 10));
+      f.setId(pos);
       features.add(f);
       ++pos;
     }
