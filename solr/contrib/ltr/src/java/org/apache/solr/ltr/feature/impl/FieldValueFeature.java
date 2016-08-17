@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.feature.impl;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,6 +47,13 @@ public class FieldValueFeature extends Feature {
   public void setField(String field) {
     this.field = field;
     fieldAsSet = Sets.newHashSet(field);
+  }
+
+  @Override
+  protected LinkedHashMap<String,Object> paramsToMap() {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<>(1, 1.0f);
+    params.put("field", field);
+    return params;
   }
 
   public FieldValueFeature() {

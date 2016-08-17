@@ -66,7 +66,7 @@ public class TestReRankingPipeline extends LuceneTestCase {
     for (final int i : featureIds) {
       final FieldValueFeature f = new FieldValueFeature();
       f.name = "f" + i;
-      f.params = new NamedParams().add("field", field);
+      f.setField(field);
       features.add(f);
     }
     return features;

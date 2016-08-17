@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.feature.impl;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -30,6 +31,11 @@ import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class OriginalScoreFeature extends Feature {
+
+  @Override
+  protected LinkedHashMap<String,Object> paramsToMap() {
+    return null;
+  }
 
   @Override
   public OriginalScoreWeight createWeight(IndexSearcher searcher,

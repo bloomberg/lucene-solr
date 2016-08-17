@@ -18,6 +18,7 @@ package org.apache.solr.ltr.ranking;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,12 +39,13 @@ import org.apache.solr.request.SolrQueryRequest;
 /**
  * A 'recipe' for computing a feature
  */
-public abstract class Feature extends Query implements Cloneable {
+public abstract class Feature extends Query {
 
   protected String name;
-  protected Normalizer norm = IdentityNormalizer.INSTANCE;
   protected int id;
-  protected NamedParams params = NamedParams.EMPTY;
+
+  @Deprecated
+  private NamedParams params = NamedParams.EMPTY;
 
 
   /**
@@ -64,27 +66,19 @@ public abstract class Feature extends Query implements Cloneable {
   }
 
   public Feature() {
-
-  }
-
-  /** Returns a clone of this feature query. */
-  @Override
-  public Query clone() {
-
-    try {
-      return (Query) super.clone();
-    } catch (final CloneNotSupportedException e) {
-      // FIXME throw the exception, wrap into another exception?
-      e.printStackTrace();
-    }
-    return null;
   }
 
   @Override
   public String toString(String field) {
-    return getClass().getSimpleName() 
-        + " [name=" + name 
-        + ", params=" + params + "]";
+    final StringBuilder sb = new StringBuilder(64); // default initialCapacity of 16 won't be enough
+    sb.append(getClass().getSimpleName());
+    sb.append(" [name=").append(name);
+    final LinkedHashMap<String,Object> params = paramsToMap();
+    if (params != null) {
+      sb.append(", params=").append(params);
+    }
+    sb.append(']');
+    return sb.toString();
   }
 
   public abstract FeatureWeight createWeight(IndexSearcher searcher,
@@ -137,7 +131,7 @@ public abstract class Feature extends Query implements Cloneable {
    * @return the norm
    */
   public Normalizer getNorm() {
-    return norm;
+    return IdentityNormalizer.INSTANCE;
   }
 
   /**
@@ -147,16 +141,15 @@ public abstract class Feature extends Query implements Cloneable {
     return id;
   }
 
-  /**
-   * @return the params
-   */
-  public NamedParams getParams() {
-    return params;
-  }
+  protected abstract LinkedHashMap<String,Object> paramsToMap();
 
-  public void setNorm(Normalizer norm) {
-    this.norm = norm;
-
+  public LinkedHashMap<String,Object> toMap(String storeName) {
+    final LinkedHashMap<String,Object> o = new LinkedHashMap<>(4, 1.0f);
+    o.put("name", name);
+    o.put("type", getClass().getCanonicalName());
+    o.put("store", storeName);
+    o.put("params", paramsToMap());
+    return o;
   }
   
   
@@ -168,6 +161,8 @@ public abstract class Feature extends Query implements Cloneable {
     final protected Map<String,String> efi;
     final protected MacroExpander macroExpander;
     final protected Query originalQuery;
+
+    private Normalizer norm;
 
     /**
      * Initialize a feature without the normalizer from the feature file. This is
@@ -194,12 +189,16 @@ public abstract class Feature extends Query implements Cloneable {
       return Feature.this.name;
     }
 
-    public Normalizer getNorm() {
-      return Feature.this.norm;
+    public void setNorm(Normalizer norm) {
+      this.norm = norm;
     }
 
-    public NamedParams getParams() {
-      return Feature.this.params;
+    public Normalizer getNorm() {
+      if (norm != null) {
+        return norm;
+      } else {
+        return Feature.this.getNorm();
+      }
     }
 
     public int getId() {

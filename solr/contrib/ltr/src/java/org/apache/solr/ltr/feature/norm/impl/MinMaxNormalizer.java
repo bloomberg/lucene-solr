@@ -16,7 +16,7 @@
  */
 package org.apache.solr.ltr.feature.norm.impl;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.solr.ltr.feature.norm.Normalizer;
@@ -65,8 +65,8 @@ public class MinMaxNormalizer extends Normalizer {
   }
 
   @Override
-  protected Map<String,Object> paramsToMap() {
-    final Map<String,Object> params = new HashMap<>(2, 1.0f);
+  protected LinkedHashMap<String,Object> paramsToMap() {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<>(2, 1.0f);
     params.put("min", min);
     params.put("max", max);
     return params;
