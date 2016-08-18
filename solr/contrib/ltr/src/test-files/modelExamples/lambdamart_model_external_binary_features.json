@@ -1,5 +1,5 @@
 {
-  "type":"org.apache.solr.ltr.ranking.LambdaMARTModel",
+  "class":"org.apache.solr.ltr.ranking.LambdaMARTModel",
   "name":"external_model_binary_feature",
   "features":[
     { "name": "user_device_smartphone"},

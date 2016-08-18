@@ -82,7 +82,7 @@ public class ManagedFeatureStore extends ManagedResource implements
 
   public void update(Map<String,Object> map) {
     final String name = (String) map.get(CommonLTRParams.MODEL_NAME);
-    final String type = (String) map.get(CommonLTRParams.MODEL_TYPE);
+    final String type = (String) map.get(CommonLTRParams.MODEL_CLASS);
     final String store = (String) map.get(CommonLTRParams.MODEL_FEATURE_STORE);
 
     NamedParams params = null;

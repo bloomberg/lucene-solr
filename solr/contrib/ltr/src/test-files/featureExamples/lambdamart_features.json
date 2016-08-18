@@ -1,14 +1,14 @@
 [
     {
         "name": "matchedTitle",
-        "type": "org.apache.solr.ltr.feature.impl.SolrFeature",
+        "class": "org.apache.solr.ltr.feature.impl.SolrFeature",
         "params": {
             "q": "{!terms f=title}${user_query}"
         }
     },
     {
         "name": "constantScoreToForceLambdaMARTScoreAllDocs",
-        "type": "org.apache.solr.ltr.feature.impl.ValueFeature",
+        "class": "org.apache.solr.ltr.feature.impl.ValueFeature",
         "params": {
             "value": 1
         }

@@ -1,5 +1,5 @@
 {
-	"type":"org.apache.solr.ltr.ranking.RankSVMModel,
+	"class":"org.apache.solr.ltr.ranking.RankSVMModel,
 	"name":"svm1",
 	"features":[
 	    {"name":"constant2"},

@@ -1,6 +1,6 @@
 [
 {
 	"name":"constant";
-	"type":"org.apache.solr.ltr.feature.impl.ValueFeature"
+	"class":"org.apache.solr.ltr.feature.impl.ValueFeature"
 }
 ]

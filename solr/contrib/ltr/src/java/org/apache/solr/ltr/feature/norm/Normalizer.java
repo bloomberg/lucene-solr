@@ -31,7 +31,7 @@ import org.apache.solr.util.SolrPluginUtils;
 public abstract class Normalizer {
 
   /** name of the attribute containing the normalizer type **/
-  private static final String TYPE_KEY = "type";
+  private static final String CLASS_KEY = "class";
   /** name of the attribute containing the normalizer params **/
   private static final String PARAMS_KEY = "params";
 
@@ -58,7 +58,7 @@ public abstract class Normalizer {
   public static Normalizer fromMap(SolrResourceLoader solrResourceLoader,
       Map<String,Object> normMap) {
     final String type =
-        (String) normMap.get(TYPE_KEY);
+        (String) normMap.get(CLASS_KEY);
 
     @SuppressWarnings("unchecked")
     final Map<String,Object> params =
@@ -71,7 +71,7 @@ public abstract class Normalizer {
   public LinkedHashMap<String,Object> toMap() {
     final LinkedHashMap<String,Object> normalizer = new LinkedHashMap<>(2, 1.0f);
 
-    normalizer.put(TYPE_KEY, getClass().getCanonicalName());
+    normalizer.put(CLASS_KEY, getClass().getCanonicalName());
 
     final LinkedHashMap<String,Object> params = paramsToMap();
     if (params != null) {

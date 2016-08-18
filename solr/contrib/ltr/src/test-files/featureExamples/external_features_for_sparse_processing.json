@@ -1,13 +1,13 @@
 [{
   "name" : "user_device_smartphone",
-  "type":"org.apache.solr.ltr.feature.impl.ValueFeature",
+  "class":"org.apache.solr.ltr.feature.impl.ValueFeature",
   "params" : {
     "value": "${user_device_smartphone}"
   }
 },
   {
     "name" : "user_device_tablet",
-    "type":"org.apache.solr.ltr.feature.impl.ValueFeature",
+    "class":"org.apache.solr.ltr.feature.impl.ValueFeature",
     "params" : {
       "value": "${user_device_tablet}"
     }
