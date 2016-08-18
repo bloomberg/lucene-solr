@@ -49,8 +49,6 @@ public class TestSolrCloud extends TestRerankBase {
 
   private MiniSolrCloudCluster solrCluster;
   
-  private SortedMap<ServletHolder,String> extraServlets ;
-  
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -91,7 +89,7 @@ public class TestSolrCloud extends TestRerankBase {
               + "/collection1/conf/schema.xml"));
     }
     
-    extraServlets = new TreeMap<>();
+    SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
     final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi",
         ServerServlet.class);
     solrRestApi.setInitParameter("org.restlet.application",
