@@ -166,7 +166,7 @@ public abstract class Feature extends Query implements Cloneable {
   public LinkedHashMap<String,Object> toMap(String storeName) {
     final LinkedHashMap<String,Object> o = new LinkedHashMap<>(4, 1.0f);
     o.put("name", name);
-    o.put("type", getClass().getCanonicalName());
+    o.put("class", getClass().getCanonicalName());
     o.put("store", storeName);
     o.put("params", paramsToMap());
     return o;

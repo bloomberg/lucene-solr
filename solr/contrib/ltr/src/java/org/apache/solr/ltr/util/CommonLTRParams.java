@@ -29,7 +29,7 @@ public class CommonLTRParams {
   /** name of the attribute containing the model name **/
   public static final Object MODEL_NAME = "name";
   /** name of the attribute containing the model type **/
-  public static final Object MODEL_TYPE = "type";
+  public static final Object MODEL_CLASS = "class";
   /** name of the attribute containing the feature store used **/
   public static final Object MODEL_FEATURE_STORE = "store";
   /** name of the attribute containing the model params **/

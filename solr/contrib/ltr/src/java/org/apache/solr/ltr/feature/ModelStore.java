@@ -61,7 +61,7 @@ public class ModelStore {
     for (final LTRScoringAlgorithm modelmeta : availableModels.values()) {
       final Map<String,Object> modelMap = new HashMap<>(5, 1.0f);
       modelMap.put("name", modelmeta.getName());
-      modelMap.put("type", modelmeta.getClass().getCanonicalName());
+      modelMap.put("class", modelmeta.getClass().getCanonicalName());
       modelMap.put("store", modelmeta.getFeatureStoreName());
       final List<Map<String,Object>> features = new ArrayList<>(modelmeta.numFeatures());
       for (final Feature meta : modelmeta.getFeatures()) {
