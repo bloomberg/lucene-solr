@@ -24,7 +24,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.NamedParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -47,7 +46,7 @@ public class FilterFeature extends Feature {
    *          features.
    */
   @Override
-  public void init(String name, NamedParams params, int id)
+  public void init(String name, Map<String,Object> params, int id)
       throws FeatureException {
     super.init(name, params, id);
     throw new FeatureException(getClass().getCanonicalName()

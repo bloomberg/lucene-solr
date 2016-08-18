@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.client.utils.CloneUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -36,7 +37,6 @@ import org.apache.solr.ltr.ranking.FilterFeature;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
-import org.apache.solr.ltr.util.NamedParams;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
@@ -146,7 +146,7 @@ public class ManagedModelStore extends ManagedResource implements
     final Object modelStoreObj = map.get(CommonLTRParams.MODEL_FEATURE_STORE);
     final String featureStoreName = (modelStoreObj == null) ? CommonLTRParams.DEFAULT_FEATURE_STORE_NAME
         : (String) modelStoreObj;
-    NamedParams params = null;
+    Map<String,Object> params = null;
     final FeatureStore fstore = featureStores.getFeatureStore(featureStoreName);
     if (!map.containsKey(CommonLTRParams.MODEL_FEATURE_LIST)) {
       // check if the model has a list of features to be used for computing the
@@ -177,7 +177,11 @@ public class ManagedModelStore extends ManagedResource implements
     if (map.containsKey(CommonLTRParams.MODEL_PARAMS)) {
       final Map<String,Object> paramsMap = (Map<String,Object>) map
           .get(CommonLTRParams.MODEL_PARAMS);
-      params = new NamedParams(paramsMap);
+      try {
+        params = (Map<String,Object>) CloneUtils.clone(paramsMap);
+      } catch (CloneNotSupportedException e) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, e);
+      }
     }
 
     final String type = (String) map.get(CommonLTRParams.MODEL_TYPE);
@@ -188,7 +192,7 @@ public class ManagedModelStore extends ManagedResource implements
           type,
           LTRScoringAlgorithm.class,
           new String[0], // no sub packages
-          new Class[] { String.class, List.class, String.class, List.class, NamedParams.class },
+          new Class[] { String.class, List.class, String.class, List.class, Map.class },
           new Object[] { name, features, featureStoreName, fstore.getFeatures(), params });
     } catch (final Exception e) {
       throw new ModelException("Model type does not exist " + type, e);

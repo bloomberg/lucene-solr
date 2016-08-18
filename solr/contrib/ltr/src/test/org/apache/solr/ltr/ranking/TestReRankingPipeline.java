@@ -19,7 +19,9 @@ package org.apache.solr.ltr.ranking;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -43,7 +45,6 @@ import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.feature.impl.FieldValueFeature;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
-import org.apache.solr.ltr.util.NamedParams;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -76,7 +77,7 @@ public class TestReRankingPipeline extends LuceneTestCase {
 
     public MockModel(String name, List<Feature> features,
         String featureStoreName, List<Feature> allFeatures,
-        NamedParams params) {
+        Map<String,Object> params) {
       super(name, features, featureStoreName, allFeatures, params);
     }
 
@@ -251,8 +252,8 @@ public class TestReRankingPipeline extends LuceneTestCase {
 
   @Test
   public void testDocParam() throws Exception {
-    final NamedParams test = new NamedParams();
-    test.add("fake", 2);
+    final Map<String,Object> test = new HashMap<String,Object>();
+    test.put("fake", 2);
     List<Feature> features = makeFieldValueFeatures(new int[] {0},
         "final-score");
     List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0},

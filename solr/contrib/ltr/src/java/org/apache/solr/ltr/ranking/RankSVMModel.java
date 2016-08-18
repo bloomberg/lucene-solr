@@ -24,7 +24,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.util.ModelException;
-import org.apache.solr.ltr.util.NamedParams;
 
 public class RankSVMModel extends LTRScoringAlgorithm {
 
@@ -35,7 +34,7 @@ public class RankSVMModel extends LTRScoringAlgorithm {
 
   public RankSVMModel(String name, List<Feature> features,
       String featureStoreName, List<Feature> allFeatures,
-      NamedParams params) throws ModelException {
+      Map<String,Object> params) throws ModelException {
     super(name, features, featureStoreName, allFeatures, params);
 
     if (!hasParams()) {

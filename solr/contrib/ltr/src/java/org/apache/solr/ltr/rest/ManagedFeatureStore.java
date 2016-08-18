@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.client.utils.CloneUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -30,7 +31,7 @@ import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.NamedParams;
+import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
@@ -85,13 +86,17 @@ public class ManagedFeatureStore extends ManagedResource implements
     final String type = (String) map.get(CommonLTRParams.MODEL_TYPE);
     final String store = (String) map.get(CommonLTRParams.MODEL_FEATURE_STORE);
 
-    NamedParams params = null;
+    Map<String,Object> params = null;
 
     if (map.containsKey(CommonLTRParams.MODEL_PARAMS)) {
       @SuppressWarnings("unchecked")
       final Map<String,Object> np = (Map<String,Object>) map
           .get(CommonLTRParams.MODEL_PARAMS);
-      params = new NamedParams(np);
+      try {
+        params = (Map<String,Object>) CloneUtils.clone(np);
+      } catch (CloneNotSupportedException e) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, e);
+      }
     }
 
     try {
@@ -103,7 +108,7 @@ public class ManagedFeatureStore extends ManagedResource implements
   }
 
   public synchronized void addFeature(String name, String type,
-      String featureStore, NamedParams params)
+      String featureStore, Map<String,Object> params)
       throws FeatureException {
     if (featureStore == null) {
       featureStore = CommonLTRParams.DEFAULT_FEATURE_STORE_NAME;
@@ -120,7 +125,7 @@ public class ManagedFeatureStore extends ManagedResource implements
     }
 
     if (params == null) {
-      params = NamedParams.EMPTY;
+      params = LTRUtils.EMPTY_MAP;
     }
 
     final Feature feature = createFeature(name, type, params, fstore.size());
@@ -131,7 +136,7 @@ public class ManagedFeatureStore extends ManagedResource implements
   /**
    * generates an instance this feature.
    */
-  private Feature createFeature(String name, String type, NamedParams params,
+  private Feature createFeature(String name, String type, Map<String,Object> params,
       int id) throws FeatureException {
     try {
       final Feature f = solrResourceLoader.newInstance(type, Feature.class);

@@ -24,7 +24,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -45,7 +47,6 @@ import org.apache.solr.ltr.rest.ManagedModelStore;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
-import org.apache.solr.ltr.util.NamedParams;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.RestTestBase;
@@ -344,7 +345,9 @@ public class TestRerankBase extends RestTestBase {
     int pos = 0;
     for (final String name : names) {
       final ValueFeature f = new ValueFeature();
-      f.init(name, new NamedParams().add("value", 10), pos);
+      final Map<String,Object> params = new HashMap<String,Object>();
+      params.put("value", 10);
+      f.init(name, params, pos);
       features.add(f);
       ++pos;
     }

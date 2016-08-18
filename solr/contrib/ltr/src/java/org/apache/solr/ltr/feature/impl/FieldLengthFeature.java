@@ -30,7 +30,6 @@ import org.apache.lucene.util.SmallFloat;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.NamedParams;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class FieldLengthFeature extends Feature {
@@ -79,7 +78,7 @@ public class FieldLengthFeature extends Feature {
   }
 
   @Override
-  public void init(String name, NamedParams params, int id)
+  public void init(String name, Map<String,Object> params, int id)
       throws FeatureException {
     super.init(name, params, id);
     if (!params.containsKey(CommonLTRParams.FEATURE_FIELD_PARAM)) {

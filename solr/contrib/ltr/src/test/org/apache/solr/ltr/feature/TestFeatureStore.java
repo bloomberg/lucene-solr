@@ -16,6 +16,9 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.impl.FieldValueFeature;
 import org.apache.solr.ltr.feature.impl.OriginalScoreFeature;
@@ -23,7 +26,7 @@ import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.NamedParams;
+import org.apache.solr.ltr.util.LTRUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,7 +46,7 @@ public class TestFeatureStore extends TestRerankBase {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature");
     for (int i = 0; i < 5; i++) {
       fstore.addFeature("c" + i, OriginalScoreFeature.class.getCanonicalName(),
-          "fstore-testFeature", NamedParams.EMPTY);
+          "fstore-testFeature", LTRUtils.EMPTY_MAP);
 
       assertTrue(fs.containsFeature("c" + i));
 
@@ -58,8 +61,10 @@ public class TestFeatureStore extends TestRerankBase {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature2");
     for (int i = 0; i < 5; i++) {
 
+      Map<String,Object> params = new HashMap<String,Object>();
+      params.put("value", i);
       fstore.addFeature("c" + i, ValueFeature.class.getCanonicalName(),
-          "fstore-testFeature2", new NamedParams().add("value", i));
+          "fstore-testFeature2", params);
 
     }
 
@@ -76,9 +81,11 @@ public class TestFeatureStore extends TestRerankBase {
   public void testMissingFeatureReturnsNull() {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature3");
     for (int i = 0; i < 5; i++) {
+      Map<String,Object> params = new HashMap<String,Object>();
+      params.put("value", i);
       fstore.addFeature("testc" + (float) i,
           ValueFeature.class.getCanonicalName(), "fstore-testFeature3",
-          new NamedParams().add("value", i));
+          params);
 
     }
     assertNull(fs.get("missing_feature_name"));
@@ -89,14 +96,16 @@ public class TestFeatureStore extends TestRerankBase {
   {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature4");
     for (int i = 0; i < 5; i++) {
+      Map<String,Object> params = new HashMap<String,Object>();
+      params.put("value", i);
       fstore.addFeature("testc" + (float) i,
           ValueFeature.class.getCanonicalName(), "fstore-testFeature4",
-          new NamedParams().add("value", i));
+          params);
 
     }
     fstore.addFeature("invalidparam",
         FieldValueFeature.class.getCanonicalName(), "fstore-testFeature4",
-        NamedParams.EMPTY);
+        LTRUtils.EMPTY_MAP);
   }
 
 }

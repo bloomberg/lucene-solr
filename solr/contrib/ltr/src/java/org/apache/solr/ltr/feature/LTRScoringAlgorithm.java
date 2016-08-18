@@ -19,11 +19,11 @@ package org.apache.solr.ltr.feature;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.util.NamedParams;
 
 /**
  * Contains all the data needed for loading a model.
@@ -35,11 +35,11 @@ public abstract class LTRScoringAlgorithm {
   private final String featureStoreName;
   private final List<Feature> features;
   private final List<Feature> allFeatures;
-  private final NamedParams params;
+  private final Map<String,Object> params;
 
   public LTRScoringAlgorithm(String name, List<Feature> features,
       String featureStoreName, List<Feature> allFeatures,
-      NamedParams params) {
+      Map<String,Object> params) {
     this.name = name;
     this.features = features;
     this.featureStoreName = featureStoreName;
@@ -65,7 +65,7 @@ public abstract class LTRScoringAlgorithm {
     return features.size();
   }
 
-  public NamedParams getParams() {
+  public Map<String,Object> getParams() {
     return params;
   }
 

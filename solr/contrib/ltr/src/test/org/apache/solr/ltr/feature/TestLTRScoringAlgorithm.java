@@ -24,7 +24,6 @@ import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.apache.solr.ltr.rest.ManagedModelStore;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
-import org.apache.solr.ltr.util.NamedParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -48,10 +47,12 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     weights.put("constant1", 1d);
     weights.put("constant5", 1d);
 
+    Map<String,Object> params = new HashMap<String,Object>();
+    params.put("weights", weights);
     final LTRScoringAlgorithm meta = new RankSVMModel("test1",
         getFeatures(new String[] {
             "constant1", "constant5"}), "test", fstore.getFeatures(),
-        new NamedParams().add("weights", weights));
+        params);
 
     store.addMetadataModel(meta);
     final LTRScoringAlgorithm m = store.getModel("test1");
@@ -82,10 +83,12 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     weights.put("constant1", 1d);
     weights.put("constant5", 1d);
 
+    Map<String,Object> params = new HashMap<String,Object>();
+    params.put("weights", weights);
     final LTRScoringAlgorithm meta = new RankSVMModel("test3",
         getFeatures(new String[] {
             "constant1", "constant5"}), "test", fstore.getFeatures(),
-        new NamedParams().add("weights", weights));
+        params);
     store.addMetadataModel(meta);
     final LTRScoringAlgorithm m = store.getModel("test3");
     assertEquals(meta, m);
@@ -98,10 +101,12 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     weights.put("constant1", 1d);
     weights.put("constant5", 1d);
 
+    Map<String,Object> params = new HashMap<String,Object>();
+    params.put("weights", weights);
     final LTRScoringAlgorithm meta = new RankSVMModel("test4",
         getFeatures(new String[] {
             "constant1", "constant1"}), "test", fstore.getFeatures(),
-        new NamedParams().add("weights", weights));
+        params);
     store.addMetadataModel(meta);
 
   }
@@ -112,10 +117,12 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     weights.put("constant1", 1d);
     weights.put("constant5missing", 1d);
 
+    Map<String,Object> params = new HashMap<String,Object>();
+    params.put("weights", weights);
     final LTRScoringAlgorithm meta = new RankSVMModel("test5",
         getFeatures(new String[] {
             "constant1", "constant1"}), "test", fstore.getFeatures(),
-        new NamedParams().add("weights", weights));
+        params);
     store.addMetadataModel(meta);
 
   }
@@ -126,10 +133,12 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     weights.put("constant1", 1d);
     weights.put("constant5missing", 1d);
 
+    Map<String,Object> params = new HashMap<String,Object>();
+    params.put("weights", weights);
     final LTRScoringAlgorithm meta = new RankSVMModel("test6",
         getFeatures(new String[] {
             "constant1", "constant5"}), "test", fstore.getFeatures(),
-        new NamedParams().add("weights", weights));
+        params);
     store.addMetadataModel(meta);
 
   }
@@ -140,10 +149,12 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     weights.put("constant1", 1d);
     weights.put("constant5missing", 1d);
 
+    Map<String,Object> params = new HashMap<String,Object>();
+    params.put("weights", weights);
     final LTRScoringAlgorithm meta = new RankSVMModel("test7",
         getFeatures(new String[] {
             "constant1", "constant5"}), "test", fstore.getFeatures(),
-        new NamedParams().add("weights", weights));
+        params);
     store.addMetadataModel(meta);
 
   }

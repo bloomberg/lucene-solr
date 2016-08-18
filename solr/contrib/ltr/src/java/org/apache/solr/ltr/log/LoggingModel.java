@@ -17,13 +17,14 @@
 package org.apache.solr.ltr.log;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.util.NamedParams;
 
 /**
  * a stubbed reranking model that will be used only for computing the features.
@@ -33,12 +34,12 @@ public class LoggingModel extends LTRScoringAlgorithm {
   final static String LOGGING_MODEL_NAME = "logging-model";
 
   public LoggingModel(String featureStoreName, List<Feature> allFeatures){
-    this(LOGGING_MODEL_NAME, Collections.emptyList(), featureStoreName, allFeatures, NamedParams.EMPTY);
+    this(LOGGING_MODEL_NAME, Collections.emptyList(), featureStoreName, allFeatures, new HashMap<String,Object>());
   }
 
 
   protected LoggingModel(String name, List<Feature> features, String featureStoreName,
-      List<Feature> allFeatures, NamedParams params) {
+      List<Feature> allFeatures, Map<String,Object> params) {
     super(name, features, featureStoreName, allFeatures, params);
   }
 

@@ -24,6 +24,8 @@ import org.apache.solr.common.params.SolrParams;
 
 public class LTRUtils {
 
+  static public final Map<String,Object> EMPTY_MAP = new HashMap<String,Object>();
+  
   /**
    * Given a set of local SolrParams, extract all of the efi.key=value params into a map
    * @param localParams Local request parameters that might conatin efi params
@@ -42,6 +44,38 @@ public class LTRUtils {
       }
     }
     return externalFeatureInfo;
+  }
+  
+  public static float convertToFloat(Object o) {
+    float f = 0;
+    if (o instanceof Double) {
+      final double d = (Double) o;
+      f = (float) d;
+      return f;
+    }
+    if (o instanceof Integer) {
+      final int d = (Integer) o;
+      f = d;
+      return f;
+    }
+    if (o instanceof Long) {
+      final long l = (Long) o;
+      f = l;
+      return f;
+    }
+    if (o instanceof Float) {
+      final Float ff = (Float) o;
+      f = ff;
+      return f;
+    }
+    if (o instanceof String) {
+      final Float ff = Float.parseFloat((String)o);
+      f = ff;
+      return f;
+    }
+
+    throw new NumberFormatException(o.getClass().getName()
+        + " cannot be converted to float");
   }
 
 }

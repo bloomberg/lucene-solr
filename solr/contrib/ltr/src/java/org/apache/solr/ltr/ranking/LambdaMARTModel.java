@@ -25,8 +25,8 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
+import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.ltr.util.ModelException;
-import org.apache.solr.ltr.util.NamedParams;
 
 public class LambdaMARTModel extends LTRScoringAlgorithm {
 
@@ -91,7 +91,7 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
     public RegressionTreeNode(Map<String,Object> map,
         HashMap<String,Integer> fname2index) throws ModelException {
       if (map.containsKey("value")) {
-        value = NamedParams.convertToFloat(map.get("value"));
+        value = LTRUtils.convertToFloat(map.get("value"));
       } else {
 
         final Object of = map.get("feature");
@@ -116,7 +116,7 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
               "LambdaMARTModel tree node is missing threshold");
         }
 
-        threshold = NamedParams.convertToFloat(ot) + NODE_SPLIT_SLACK;
+        threshold = LTRUtils.convertToFloat(ot) + NODE_SPLIT_SLACK;
 
         final Object ol = map.get("left");
         if (null == ol) {
@@ -156,7 +156,7 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
             "LambdaMARTModel tree doesn't contain a weight");
       }
 
-      weight = NamedParams.convertToFloat(ow);
+      weight = LTRUtils.convertToFloat(ow);
 
       final Object ot = map.get("tree");
 
@@ -170,7 +170,7 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
 
   public LambdaMARTModel(String name, List<Feature> features,
       String featureStoreName, List<Feature> allFeatures,
-      NamedParams params) throws ModelException {
+      Map<String,Object> params) throws ModelException {
     super(name, features, featureStoreName, allFeatures, params);
 
     if (!hasParams()) {
@@ -183,7 +183,9 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
       fname2index.put(key, i);
     }
 
-    final List<Object> jsonTrees = getParams().getList("trees");
+    
+    final List<Object> jsonTrees = getParams().containsKey("trees") ?
+        (List<Object>) getParams().get("trees") : null;
 
     if ((jsonTrees == null) || jsonTrees.isEmpty()) {
       throw new ModelException("LambdaMARTModel doesn't contain any trees");

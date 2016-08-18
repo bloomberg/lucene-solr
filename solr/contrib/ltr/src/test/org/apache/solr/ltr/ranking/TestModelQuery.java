@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -45,7 +46,6 @@ import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
-import org.apache.solr.ltr.util.NamedParams;
 import org.junit.Test;
 
 @SuppressCodecs("Lucene3x")
@@ -60,8 +60,10 @@ public class TestModelQuery extends LuceneTestCase {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
       final ValueFeature f = new ValueFeature();
+      Map<String,Object> params = new HashMap<String,Object>();
+      params.put("value", i);
       try {
-        f.init("f" + i, new NamedParams().add("value", i), i);
+        f.init("f" + i, params, i);
       } catch (final FeatureException e) {
         e.printStackTrace();
       }
@@ -94,8 +96,8 @@ public class TestModelQuery extends LuceneTestCase {
     return features;
   }
 
-  private static NamedParams makeFeatureWeights(List<Feature> features) {
-    final NamedParams nameParams = new NamedParams();
+  private static Map<String,Object> makeFeatureWeights(List<Feature> features) {
+    final Map<String,Object> nameParams = new HashMap<String,Object>();
     final HashMap<String,Double> modelWeights = new HashMap<String,Double>();
     for (final Feature feat : features) {
       modelWeights.put(feat.getName(), 0.1);
@@ -103,7 +105,7 @@ public class TestModelQuery extends LuceneTestCase {
     if (modelWeights.isEmpty()) {
       modelWeights.put("", 0.0);
     }
-    nameParams.add("weights", modelWeights);
+    nameParams.put("weights", modelWeights);
     return nameParams;
   }
 
@@ -137,7 +139,7 @@ public class TestModelQuery extends LuceneTestCase {
     final List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Feature> allFeatures = makeFeatures(
         new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
-    final NamedParams modelParams = makeFeatureWeights(features);
+    final Map<String,Object> modelParams = makeFeatureWeights(features);
 
     final LTRScoringAlgorithm algorithm1 = new RankSVMModel(
         "testModelName",

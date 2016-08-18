@@ -26,7 +26,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.NamedParams;
+import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class ValueFeature extends Feature {
@@ -53,7 +53,7 @@ public class ValueFeature extends Feature {
       }
     } else {
       try {
-        configValue = NamedParams.convertToFloat(value);
+        configValue = LTRUtils.convertToFloat(value);
       } catch (final NumberFormatException e) {
         throw new FeatureException("Invalid type for 'value' in params for "
             + this);
@@ -82,7 +82,7 @@ public class ValueFeature extends Feature {
   public ValueFeature() {}
 
   @Override
-  public void init(String name, NamedParams params, int id)
+  public void init(String name, Map<String,Object> params, int id)
       throws FeatureException {
     super.init(name, params, id);
     final Object paramRequired = params.get(REQUIRED_PARAM);
