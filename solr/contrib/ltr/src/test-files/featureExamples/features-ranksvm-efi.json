@@ -1,14 +1,14 @@
 [
   {
     "name": "sampleConstant",
-    "type": "org.apache.solr.ltr.feature.impl.ValueFeature",
+    "class": "org.apache.solr.ltr.feature.impl.ValueFeature",
     "params": {
       "value": 5
     }
   },
   {
     "name" : "search_number_of_nights",
-    "type":"org.apache.solr.ltr.feature.impl.ValueFeature",
+    "class":"org.apache.solr.ltr.feature.impl.ValueFeature",
     "params" : {
       "value": "${search_number_of_nights}"
     }

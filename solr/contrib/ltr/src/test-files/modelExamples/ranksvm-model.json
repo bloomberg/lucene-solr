@@ -1,5 +1,5 @@
 {
-	"type":"org.apache.solr.ltr.ranking.RankSVMModel",
+	"class":"org.apache.solr.ltr.ranking.RankSVMModel",
 	"name":"6029760550880411648",
 	"features":[
         {"name":"title"},
@@ -8,7 +8,7 @@
         {
             "name":"popularity",
             "norm": {
-                "type":"org.apache.solr.ltr.feature.norm.impl.MinMaxNormalizer",
+                "class":"org.apache.solr.ltr.feature.norm.impl.MinMaxNormalizer",
                 "params":{ "min":"0.0f", "max":"10.0f" }
             }
         },

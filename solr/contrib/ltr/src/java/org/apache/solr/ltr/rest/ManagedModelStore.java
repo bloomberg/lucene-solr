@@ -180,7 +180,7 @@ public class ManagedModelStore extends ManagedResource implements
       params = new NamedParams(paramsMap);
     }
 
-    final String type = (String) map.get(CommonLTRParams.MODEL_TYPE);
+    final String type = (String) map.get(CommonLTRParams.MODEL_CLASS);
     LTRScoringAlgorithm meta = null;
     try {
       // create an instance of the model
