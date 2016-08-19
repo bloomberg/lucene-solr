@@ -52,53 +52,12 @@ public class TestSolrCloud extends TestRerankBase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    
-    tmpSolrHome = createTempDir().toFile();
+
     String solrconfig = "solrconfig-ltr.xml";
     String schema = "schema-ltr.xml";
-    FileUtils.copyDirectory(new File(TEST_HOME()),
-        tmpSolrHome.getAbsoluteFile());
     
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-    
-    final File fstore = new File(tmpConfDir, FEATURE_FILE_NAME);
-    final File mstore = new File(tmpConfDir, MODEL_FILE_NAME);
-
-    if (fstore.exists()) {
-      log.info("remove feature store config file in {}",
-          fstore.getAbsolutePath());
-      Files.delete(fstore.toPath());
-    }
-    if (mstore.exists()) {
-      log.info("remove model store config file in {}",
-          mstore.getAbsolutePath());
-      Files.delete(mstore.toPath());
-    }
-    
-    if (!solrconfig.equals("solrconfig.xml")) {
-      FileUtils.copyFile(new File(tmpSolrHome.getAbsolutePath()
-          + "/collection1/conf/" + solrconfig),
-          new File(tmpSolrHome.getAbsolutePath()
-              + "/collection1/conf/solrconfig.xml"));
-    }
-    if (!schema.equals("schema.xml")) {
-      FileUtils.copyFile(new File(tmpSolrHome.getAbsolutePath()
-          + "/collection1/conf/" + schema),
-          new File(tmpSolrHome.getAbsolutePath()
-              + "/collection1/conf/schema.xml"));
-    }
-    
-    SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi",
-        ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application",
-        "org.apache.solr.rest.SolrSchemaRestApi");
-    solrRestApi.setInitParameter("storageIO",
-        "org.apache.solr.rest.ManagedResourceStorage$InMemoryStorageIO");
-    extraServlets.put(solrRestApi, PARENT_ENDPOINT);
-
-    System.setProperty("managed.schema.mutable", "true");
+    SortedMap<ServletHolder,String> extraServlets = 
+        setupTestInit(solrconfig,schema,true);
     System.setProperty("enable.update.log", "true");
     
     

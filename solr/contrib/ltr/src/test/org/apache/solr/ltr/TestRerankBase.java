@@ -101,18 +101,23 @@ public class TestRerankBase extends RestTestBase {
         .getManagedResource(CommonLTRParams.MODEL_STORE_END_POINT);
     return fs;
   }
-
-  public static void setuptest(String solrconfig, String schema)
-      throws Exception {
-    initCore(solrconfig, schema);
-
+  
+  protected static SortedMap<ServletHolder,String>  setupTestInit(
+      String solrconfig, String schema,
+      boolean isPersistent) throws Exception {
     tmpSolrHome = createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, CONF_DIR);
     tmpConfDir.deleteOnExit();
     FileUtils.copyDirectory(new File(TEST_HOME()),
         tmpSolrHome.getAbsoluteFile());
+    
     final File fstore = new File(tmpConfDir, FEATURE_FILE_NAME);
     final File mstore = new File(tmpConfDir, MODEL_FILE_NAME);
+    
+    if (isPersistent) {
+      fstorefile = fstore;
+      mstorefile = mstore;
+    }
 
     if (fstore.exists()) {
       log.info("remove feature store config file in {}",
@@ -147,6 +152,18 @@ public class TestRerankBase extends RestTestBase {
     extraServlets.put(solrRestApi, PARENT_ENDPOINT);
 
     System.setProperty("managed.schema.mutable", "true");
+    
+    return extraServlets;
+  }
+
+  public static void setuptest(String solrconfig, String schema)
+      throws Exception {
+    initCore(solrconfig, schema);
+
+    File mstore = null;
+    File fstore = null;
+    SortedMap<ServletHolder,String> extraServlets = 
+        setupTestInit(solrconfig,schema,false);
     System.setProperty("enable.update.log", "false");
 
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
@@ -157,42 +174,9 @@ public class TestRerankBase extends RestTestBase {
       throws Exception {
     initCore(solrconfig, schema);
 
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, CONF_DIR);
-    tmpConfDir.deleteOnExit();
-    FileUtils.copyDirectory(new File(TEST_HOME()),
-        tmpSolrHome.getAbsoluteFile());
-    fstorefile = new File(tmpConfDir, FEATURE_FILE_NAME);
-    mstorefile = new File(tmpConfDir, MODEL_FILE_NAME);
-
-    if (fstorefile.exists()) {
-      log.info("remove feature store config file in {}",
-          fstorefile.getAbsolutePath());
-      Files.delete(fstorefile.toPath());
-    }
-    if (mstorefile.exists()) {
-      log.info("remove model store config file in {}",
-          mstorefile.getAbsolutePath());
-      Files.delete(mstorefile.toPath());
-    }
-    // clearModelStore();
-
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi",
-        ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application",
-        "org.apache.solr.rest.SolrSchemaRestApi");
-    solrRestApi.setInitParameter("storageIO",
-        "org.apache.solr.rest.ManagedResourceStorage$JsonStorageIO");
-
-    extraServlets.put(solrRestApi, PARENT_ENDPOINT); // '/schema/*' matches
-    // '/schema',
-    // '/schema/', and
-    // '/schema/whatever...'
-
-    System.setProperty("managed.schema.mutable", "true");
-    // System.setProperty("enable.update.log", "false");
-
+    SortedMap<ServletHolder,String> extraServlets = 
+        setupTestInit(solrconfig,schema,true);
+    
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
         "/solr", true, extraServlets);
   }
