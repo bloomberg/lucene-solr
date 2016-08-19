@@ -85,15 +85,11 @@ public class ManagedFeatureStore extends ManagedResource implements
     final String type = (String) map.get(CommonLTRParams.MODEL_TYPE);
     final String store = (String) map.get(CommonLTRParams.MODEL_FEATURE_STORE);
 
-    Map<String,Object> params = null;
+    final Map<String,Object> paramsMap = LTRUtils.createParams(map);
 
-    final Map<String,Object> paramsMap = 
-        LTRUtils.createParams(map);
-    params = (null == paramsMap) ? params : paramsMap;
-    
     try {
 
-      addFeature(name, type, store, params);
+      addFeature(name, type, store, paramsMap);
     } catch (final FeatureException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
