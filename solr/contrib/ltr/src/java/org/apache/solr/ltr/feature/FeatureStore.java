@@ -42,15 +42,6 @@ public class FeatureStore {
     return store.get(name);
   }
 
-  public int size() {
-    return store.size();
-  }
-
-  @SuppressWarnings("unused")
-  public boolean containsFeature(String name) {
-    return store.containsKey(name);
-  }
-
   public void add(Feature feature) {
     final String name = feature.getName();
     if (store.containsKey(name)) {

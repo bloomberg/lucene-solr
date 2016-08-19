@@ -60,7 +60,7 @@ public class TestFeatureStore extends TestRerankBase {
       assertNotNull(f);
 
     }
-    assertEquals(5, fs.size());
+    assertEquals(5, fs.getFeatures().size());
 
   }
 

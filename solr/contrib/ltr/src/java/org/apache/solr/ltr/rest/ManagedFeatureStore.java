@@ -50,7 +50,7 @@ public class ManagedFeatureStore extends ManagedResource implements
   /** name of the attribute containing the feature params **/
   public static final String PARAMS_KEY = "params";
   /** name of the attribute containing the feature store used **/
-  private static final String FEATURE_STORE_NAME_KEY = "store";
+  private static final String STORE_KEY = "store";
 
   private final Map<String,FeatureStore> stores = new HashMap<>();
 
@@ -82,7 +82,7 @@ public class ManagedFeatureStore extends ManagedResource implements
       @SuppressWarnings("unchecked")
       final List<Map<String,Object>> up = (List<Map<String,Object>>) managedData;
       for (final Map<String,Object> u : up) {
-        final String featureStore = (String) u.get(FEATURE_STORE_NAME_KEY);
+        final String featureStore = (String) u.get(STORE_KEY);
         addFeature(u, featureStore);
       }
     }
@@ -101,7 +101,7 @@ public class ManagedFeatureStore extends ManagedResource implements
     if (updates instanceof List) {
       final List<Map<String,Object>> up = (List<Map<String,Object>>) updates;
       for (final Map<String,Object> u : up) {
-        final String featureStore = (String) u.get(FEATURE_STORE_NAME_KEY);
+        final String featureStore = (String) u.get(STORE_KEY);
         addFeature(u, featureStore);
       }
     }
@@ -109,7 +109,7 @@ public class ManagedFeatureStore extends ManagedResource implements
     if (updates instanceof Map) {
       // a unique feature
       Map<String,Object> updatesMap = (Map<String,Object>) updates;
-      final String featureStore = (String) updatesMap.get(FEATURE_STORE_NAME_KEY);
+      final String featureStore = (String) updatesMap.get(STORE_KEY);
       addFeature(updatesMap, featureStore);
     }
 
@@ -160,10 +160,10 @@ public class ManagedFeatureStore extends ManagedResource implements
   }
 
   private static List<Object> featuresAsManagedResources(FeatureStore store) {
-    final List<Object> features = new ArrayList<Object>(store.size());
+    final List<Object> features = new ArrayList<Object>();
     for (final Feature f : store.getFeatures()) {
       final LinkedHashMap<String,Object> m = toFeatureMap(f);
-      m.put(FEATURE_STORE_NAME_KEY, store.getName());
+      m.put(STORE_KEY, store.getName());
       features.add(m);
     }
     return features;

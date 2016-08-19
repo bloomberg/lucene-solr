@@ -64,7 +64,7 @@ public class TestRerankBase extends RestTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
+  protected static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
   
   protected static File tmpSolrHome;
   protected static File tmpConfDir;
@@ -284,7 +284,7 @@ public class TestRerankBase extends RestTestBase {
         "/responseHeader/status==0");
   }
 
-  public static void createModelFromFiles(String modelFileName,
+  public static LTRScoringModel createModelFromFiles(String modelFileName,
       String featureFileName) throws ModelException, Exception {
     URL url = TestRerankBase.class.getResource("/modelExamples/"
         + modelFileName);
@@ -311,10 +311,23 @@ public class TestRerankBase extends RestTestBase {
     // "getNewManagedFeatureStore()"
     // is actually returning a new feature store each time
     fs.applyUpdatesToManagedData(parsedFeatureJson);
-    ms.init(fs);
+    ms.setManagedFeatureStore(fs); // can we skip this and just use fs directly below?
 
-    final LTRScoringModel meta = ms.makeLTRScoringModel(modelJson);
+    final LTRScoringModel meta = ManagedModelStore.makeLTRScoringModel(
+        solrResourceLoader, ms.getManagedFeatureStore(), mapFromJson(modelJson));
     ms.addModel(meta);
+    return meta;
+  }
+
+  @SuppressWarnings("unchecked")
+  static private Map<String,Object> mapFromJson(String json) throws ModelException {
+    Object parsedJson = null;
+    try {
+      parsedJson = ObjectBuilder.fromJSON(json);
+    } catch (final IOException ioExc) {
+      throw new ModelException("ObjectBuilder failed parsing json", ioExc);
+    }
+    return (Map<String,Object>) parsedJson;
   }
 
   public static void loadFeatures(String fileName) throws Exception {

@@ -8,29 +8,29 @@
     "params":{
         "trees": [
             {
-                "weight" : 1,
+                "weight" : "1f",
                 "tree": {
                     "feature": "matchedTitle",
-                    "threshold": 0.5,
+                    "threshold": "0.5f",
                     "left" : {
-                        "value" : -100
+                        "value" : "-100"
                     },
                     "right": {
                         "feature" : "this_feature_doesnt_exist",
-                        "threshold": 10.0,
+                        "threshold": "10.0f",
                         "left" : {
-                            "value" : 50
+                            "value" : "50"
                         },
                         "right" : {
-                            "value" : 75
+                            "value" : "75"
                         }
                     }
                 }
             },
             {
-                "weight" : 2,
+                "weight" : "2f",
                 "tree": {
-                    "value" : -10
+                    "value" : "-10"
                 }
             }
         ]

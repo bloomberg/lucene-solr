@@ -184,7 +184,7 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
         LambdaMARTModel.class.getCanonicalName(),
         new String[] {"nomatchfeature4"},
         "noMatchFeaturesStore",
-        "{\"trees\":[{\"weight\":1.0, \"tree\":{\"feature\": \"matchedTitle\",\"threshold\": 0.5,\"left\":{\"value\" : -10},\"right\":{\"value\" : 9}}}]}");
+        "{\"trees\":[{\"weight\":\"1f\", \"tree\":{\"feature\": \"matchedTitle\",\"threshold\": \"0.5f\",\"left\":{\"value\" : \"-10\"},\"right\":{\"value\" : \"9\"}}}]}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");

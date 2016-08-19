@@ -30,53 +30,44 @@ public class RankSVMModel extends LTRScoringModel {
 
   protected Float[] featureToWeight;
 
-  /** name of the attribute containing the weight of the SVM model **/
-  public static final String WEIGHTS_PARAM = "weights";
-
-  public static RankSVMModel create(String name, List<Feature> features,
-      List<Normalizer> norms,
-      String featureStoreName, List<Feature> allFeatures,
-      Map<String,Object> params) throws ModelException {
-    final RankSVMModel model = new RankSVMModel(name, features,
-        norms, featureStoreName, allFeatures, params);
-    model.validate();
-    return model;
+  public void setWeights(Object weights) {
+    final Map<String,Double> modelWeights = (Map<String,Double>) weights;
+    if (modelWeights != null) {
+      for (int ii = 0; ii < modelFeatures.size(); ++ii) {
+        final String key = modelFeatures.get(ii).getFeatureName();
+        final Double val = modelWeights.get(key);
+        featureToWeight[ii] = (val == null ? null : new Float(val.floatValue()));
+      }
+    }
   }
 
+  public RankSVMModel(String name, List<ModelFeature> modelFeatures,
+      String featureStoreName, List<Feature> allFeatures,
+      Map<String,Object> params) {
+    super(name, modelFeatures, featureStoreName, allFeatures, params);
+    featureToWeight = new Float[modelFeatures.size()];
+  }
+
+  @Deprecated
   public RankSVMModel(String name, List<Feature> features,
       List<Normalizer> norms,
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
-
-    final Map<String,Double> modelWeights = (params == null ? null
-        : (Map<String,Double>) params.get(WEIGHTS_PARAM));
-
     featureToWeight = new Float[features.size()];
-
-    if (modelWeights != null) {
-      for (int i = 0; i < features.size(); ++i) {
-        final String key = features.get(i).getName();
-        final Double val = modelWeights.get(key);
-        featureToWeight[i] = (val == null ? null : new Float(val.floatValue()));
-      }
-    }
   }
 
   @Override
   public void validate() throws ModelException {
-    if (features.isEmpty()) {
-      // unusual but not an error
-      return;
-    }
+    super.validate();
 
     final ArrayList<String> missingWeightFeatureNames = new ArrayList<String>();
-    for (int i = 0; i < features.size(); ++i) {
+    for (int i = 0; i < modelFeatures.size(); ++i) {
       if (featureToWeight[i] == null) {
-        missingWeightFeatureNames.add(features.get(i).getName());
+        missingWeightFeatureNames.add(modelFeatures.get(i).getFeatureName());
       }
     }
-    if (missingWeightFeatureNames.size() == features.size()) {
+    if (missingWeightFeatureNames.size() == modelFeatures.size()) {
       throw new ModelException("Model " + name + " doesn't contain any weights");
     }
     if (!missingWeightFeatureNames.isEmpty()) {
@@ -119,9 +110,9 @@ public class RankSVMModel extends LTRScoringModel {
     final StringBuilder sb = new StringBuilder(getClass().getSimpleName());
     sb.append("(name=").append(getName());
     sb.append(",featureWeights=[");
-    for (int ii = 0; ii < features.size(); ++ii) {
+    for (int ii = 0; ii < modelFeatures.size(); ++ii) {
       if (ii>0) sb.append(',');
-      final String key = features.get(ii).getName();
+      final String key = modelFeatures.get(ii).getFeatureName();
       sb.append(key).append('=').append(featureToWeight[ii]);
     }
     sb.append("])");
