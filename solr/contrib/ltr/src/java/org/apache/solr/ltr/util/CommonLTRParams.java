@@ -22,6 +22,12 @@ public class CommonLTRParams {
 
   /** name of the attribute containing the feature name **/
   public static final String FEATURE_NAME = "name";
+  /** name of the attribute containing the feature type **/
+  public static final Object FEATURE_CLASS = "class";
+  /** name of the attribute containing the feature store used **/
+  public static final Object FEATURE_STORE = "store";
+  /** name of the attribute containing the feature params **/
+  public static final Object FEATURE_PARAMS = "params";
   /** name of the attribute containing the normalizer **/
   public static final String FEATURE_NORM = "norm";
   /** name of the attribute containing the a field in a document **/

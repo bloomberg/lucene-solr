@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.ranking.Feature;
+import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.ModelException;
 
 /**
@@ -60,9 +61,9 @@ public class ModelStore {
     final List<Object> list = new ArrayList<>(availableModels.size());
     for (final LTRScoringAlgorithm modelmeta : availableModels.values()) {
       final Map<String,Object> modelMap = new HashMap<>(5, 1.0f);
-      modelMap.put("name", modelmeta.getName());
-      modelMap.put("class", modelmeta.getClass().getCanonicalName());
-      modelMap.put("store", modelmeta.getFeatureStoreName());
+      modelMap.put((String)CommonLTRParams.MODEL_NAME, modelmeta.getName());
+      modelMap.put((String)CommonLTRParams.MODEL_CLASS, modelmeta.getClass().getCanonicalName());
+      modelMap.put((String)CommonLTRParams.MODEL_FEATURE_STORE, modelmeta.getFeatureStoreName());
       final List<Map<String,Object>> features = new ArrayList<>(modelmeta.numFeatures());
       for (final Feature meta : modelmeta.getFeatures()) {
         final Map<String,Object> map = new HashMap<String,Object>(2, 1.0f);

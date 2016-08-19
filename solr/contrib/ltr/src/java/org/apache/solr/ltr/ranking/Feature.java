@@ -31,6 +31,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
+import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.MacroExpander;
 import org.apache.solr.ltr.util.NamedParams;
@@ -145,10 +146,10 @@ public abstract class Feature extends Query {
 
   public LinkedHashMap<String,Object> toMap(String storeName) {
     final LinkedHashMap<String,Object> o = new LinkedHashMap<>(4, 1.0f);
-    o.put("name", name);
-    o.put("class", getClass().getCanonicalName());
-    o.put("store", storeName);
-    o.put("params", paramsToMap());
+    o.put((String)CommonLTRParams.FEATURE_NAME, name);
+    o.put((String)CommonLTRParams.FEATURE_CLASS, getClass().getCanonicalName());
+    o.put((String)CommonLTRParams.FEATURE_STORE, storeName);
+    o.put((String)CommonLTRParams.FEATURE_PARAMS, paramsToMap());
     return o;
   }
   
