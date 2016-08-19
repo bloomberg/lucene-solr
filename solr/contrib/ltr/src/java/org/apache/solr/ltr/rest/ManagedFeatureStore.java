@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.http.client.utils.CloneUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -88,17 +87,10 @@ public class ManagedFeatureStore extends ManagedResource implements
 
     Map<String,Object> params = null;
 
-    if (map.containsKey(CommonLTRParams.MODEL_PARAMS)) {
-      @SuppressWarnings("unchecked")
-      final Map<String,Object> np = (Map<String,Object>) map
-          .get(CommonLTRParams.MODEL_PARAMS);
-      try {
-        params = (Map<String,Object>) CloneUtils.clone(np);
-      } catch (CloneNotSupportedException e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, e);
-      }
-    }
-
+    final Map<String,Object> paramsMap = 
+        LTRUtils.createParams(map);
+    params = (null == paramsMap) ? params : paramsMap;
+    
     try {
 
       addFeature(name, type, store, params);

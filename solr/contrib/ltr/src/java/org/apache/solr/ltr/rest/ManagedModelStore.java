@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.http.client.utils.CloneUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -36,6 +35,7 @@ import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.ranking.FilterFeature;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
+import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.ltr.util.ModelException;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
@@ -174,15 +174,9 @@ public class ManagedModelStore extends ManagedResource implements
       }
     }
 
-    if (map.containsKey(CommonLTRParams.MODEL_PARAMS)) {
-      final Map<String,Object> paramsMap = (Map<String,Object>) map
-          .get(CommonLTRParams.MODEL_PARAMS);
-      try {
-        params = (Map<String,Object>) CloneUtils.clone(paramsMap);
-      } catch (CloneNotSupportedException e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, e);
-      }
-    }
+    final Map<String,Object> paramsMap = 
+        LTRUtils.createParams(map);
+    params = (null == paramsMap) ? params : paramsMap;
 
     final String type = (String) map.get(CommonLTRParams.MODEL_TYPE);
     LTRScoringAlgorithm meta = null;

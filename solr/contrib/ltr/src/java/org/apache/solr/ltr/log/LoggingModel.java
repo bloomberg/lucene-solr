@@ -25,6 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.ranking.Feature;
+import org.apache.solr.ltr.util.LTRUtils;
 
 /**
  * a stubbed reranking model that will be used only for computing the features.
@@ -34,7 +35,7 @@ public class LoggingModel extends LTRScoringAlgorithm {
   final static String LOGGING_MODEL_NAME = "logging-model";
 
   public LoggingModel(String featureStoreName, List<Feature> allFeatures){
-    this(LOGGING_MODEL_NAME, Collections.emptyList(), featureStoreName, allFeatures, new HashMap<String,Object>());
+    this(LOGGING_MODEL_NAME, Collections.emptyList(), featureStoreName, allFeatures, LTRUtils.EMPTY_MAP);
   }
 
 
