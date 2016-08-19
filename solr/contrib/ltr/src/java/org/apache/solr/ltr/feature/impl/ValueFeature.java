@@ -79,12 +79,14 @@ public class ValueFeature extends Feature {
     return params;
   }
 
-  public ValueFeature() {}
+  public ValueFeature(String name) {
+    super(name);
+  }
 
   @Override
-  public void init(String name, Map<String,Object> params, int id)
+  public void init(Map<String,Object> params)
       throws FeatureException {
-    super.init(name, params, id);
+    super.init(params);
     final Object paramRequired = params.get(REQUIRED_PARAM);
     if (paramRequired != null)
       this.required = (boolean) paramRequired;

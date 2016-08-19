@@ -59,11 +59,12 @@ public class TestModelQuery extends LuceneTestCase {
   private static List<Feature> makeFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      final ValueFeature f = new ValueFeature();
+      final ValueFeature f = new ValueFeature("f" + i);
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
       try {
-        f.init("f" + i, params, i);
+        f.init(params);
+        f.setId(i);
       } catch (final FeatureException e) {
         e.printStackTrace();
       }
@@ -75,8 +76,7 @@ public class TestModelQuery extends LuceneTestCase {
   private static List<Feature> makeNormalizedFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      final ValueFeature f = new ValueFeature();
-      f.name = "f" + i;
+      final ValueFeature f = new ValueFeature("f" + i);
       f.setValue(i);
       f.id = i;
       final Normalizer n = new Normalizer() {

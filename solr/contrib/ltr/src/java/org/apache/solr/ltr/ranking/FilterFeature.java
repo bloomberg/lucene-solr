@@ -36,25 +36,19 @@ public class FilterFeature extends Feature {
 
 
   /**
-   * @param name
-   *          Name of the feature
    * @param params
    *          Custom parameters that the feature may use
-   * @param id
-   *          Unique ID for this feature. Similar to feature name, except it can
-   *          be used to directly access the feature in the global list of
-   *          features.
    */
   @Override
-  public void init(String name, Map<String,Object> params, int id)
+  public void init(Map<String,Object> params)
       throws FeatureException {
-    super.init(name, params, id);
+    super.init(params);
     throw new FeatureException(getClass().getCanonicalName()
         + " init is not supported ("+this+")");
   }
 
   public FilterFeature(Feature in, Normalizer norm) {
-    super();
+    super(null);
     this.in = in;
     this.norm = norm;
   }
@@ -114,6 +108,16 @@ public class FilterFeature extends Feature {
   @Override
   public int getId() {
     return in.getId();
+  }
+
+  /**
+   * @param id
+   *          Unique ID for this feature. Similar to feature name, except it can
+   *          be used to directly access the feature in the global list of
+   *          features.
+   */
+  public void setId(int id) {
+    in.setId(id);
   }
 
   protected LinkedHashMap<String,Object> paramsToMap() {
