@@ -35,6 +35,7 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.QueryElevationComponent;
+import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -128,7 +129,10 @@ public class LTRCollector extends TopDocsCollector {
 
       return topRerankDocs;
 
-    } catch (final Exception e) {
+    } catch (final FeatureException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+    catch (final Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
