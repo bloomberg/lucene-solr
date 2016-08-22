@@ -146,7 +146,6 @@ public class ManagedModelStore extends ManagedResource implements
     final Object modelStoreObj = map.get(CommonLTRParams.MODEL_FEATURE_STORE);
     final String featureStoreName = (modelStoreObj == null) ? CommonLTRParams.DEFAULT_FEATURE_STORE_NAME
         : (String) modelStoreObj;
-    Map<String,Object> params = null;
     final FeatureStore fstore = featureStores.getFeatureStore(featureStoreName);
     if (!map.containsKey(CommonLTRParams.MODEL_FEATURE_LIST)) {
       // check if the model has a list of features to be used for computing the
@@ -174,9 +173,7 @@ public class ManagedModelStore extends ManagedResource implements
       }
     }
 
-    final Map<String,Object> paramsMap = 
-        LTRUtils.createParams(map);
-    params = (null == paramsMap) ? params : paramsMap;
+    final Map<String,Object> params = LTRUtils.createParams(map);
 
     final String type = (String) map.get(CommonLTRParams.MODEL_TYPE);
     LTRScoringAlgorithm meta = null;
