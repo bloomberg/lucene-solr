@@ -102,24 +102,9 @@ public class ModelStore {
       throws ModelException {
     final String name = modeldata.getName();
 
-    if (modeldata.getFeatures().isEmpty()) {
-      throw new ModelException("no features declared for model "
-          + modeldata.getName());
-    }
-
     if (containsModel(name)) {
       throw new ModelException("model '" + name
           + "' already exists. Please use a different name");
-    }
-
-    // checks for duplicates in the feature
-    final Set<String> names = new HashSet<>();
-    for (final Feature feature : modeldata.getFeatures()) {
-      final String fname = feature.getName();
-      if (!names.add(fname)) {
-        throw new ModelException("duplicated feature " + fname + " in model "
-            + name);
-      }
     }
 
     availableModels.put(modeldata.getName(), modeldata);
