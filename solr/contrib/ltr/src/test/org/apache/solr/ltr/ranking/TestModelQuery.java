@@ -64,6 +64,7 @@ public class TestModelQuery extends LuceneTestCase {
       params.put("value", i);
       try {
         f.init(params);
+        f.setValue(i);
         f.setId(i);
       } catch (final FeatureException e) {
         e.printStackTrace();
