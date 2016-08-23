@@ -129,10 +129,7 @@ public class LTRCollector extends TopDocsCollector {
 
       return topRerankDocs;
 
-    } catch (final FeatureException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
-    catch (final Exception e) {
+    } catch (final Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }

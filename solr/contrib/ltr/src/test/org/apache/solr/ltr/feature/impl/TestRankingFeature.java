@@ -86,7 +86,8 @@ public class TestRankingFeature extends TestQueryFeature {
 
     assertJQ("/query" + query.toQueryString(), 
         "/error/msg/=='org.apache.solr.ltr.util.FeatureException: " +
-        "Unable to extract feature during scoring'");
+        "java.lang.UnsupportedOperationException: " +
+        "Unable to extract feature (powdesS) during scoring'");
     // aftertest();
 
   }

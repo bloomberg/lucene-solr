@@ -250,7 +250,9 @@ public class SolrFeature extends Feature {
         try {
           return solrScorer.score();
         } catch (UnsupportedOperationException e) {
-          throw new FeatureException("Unable to extract feature during scoring");
+          throw new FeatureException(
+              e.toString() + ": Unable to extract feature ("
+              + name + ") during scoring");
         }
       }
 
