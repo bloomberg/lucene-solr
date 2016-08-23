@@ -127,8 +127,14 @@ public class ManagedFeatureStore extends ManagedResource implements
   private Feature createFeature(String name, String type, Map<String,Object> params,
       int id) throws FeatureException {
     try {
-      final Feature f = solrResourceLoader.newInstance(type, Feature.class);
-      f.init(name, params, id);
+      final Feature f = solrResourceLoader.newInstance(
+          type,
+          Feature.class,
+          new String[0], // no sub packages
+          new Class[] { String.class },
+          new Object[] { name });
+      f.init(params);
+      f.setId(id);
       SolrPluginUtils.invokeSetters(f, params.entrySet());
       return f;
 

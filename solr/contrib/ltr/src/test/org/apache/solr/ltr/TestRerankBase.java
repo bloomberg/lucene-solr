@@ -328,10 +328,11 @@ public class TestRerankBase extends RestTestBase {
     final List<Feature> features = new ArrayList<>();
     int pos = 0;
     for (final String name : names) {
-      final ValueFeature f = new ValueFeature();
+      final ValueFeature f = new ValueFeature(name);
       final Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", 10);
-      f.init(name, params, pos);
+      f.init(params);
+      f.setId(pos);
       features.add(f);
       ++pos;
     }

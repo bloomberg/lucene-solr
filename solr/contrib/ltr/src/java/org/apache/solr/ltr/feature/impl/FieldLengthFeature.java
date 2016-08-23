@@ -73,14 +73,14 @@ public class FieldLengthFeature extends Feature {
     // positive above 127
   }
 
-  public FieldLengthFeature() {
-
+  public FieldLengthFeature(String name) {
+    super(name);
   }
 
   @Override
-  public void init(String name, Map<String,Object> params, int id)
+  public void init(Map<String,Object> params)
       throws FeatureException {
-    super.init(name, params, id);
+    super.init(params);
     if (!params.containsKey(CommonLTRParams.FEATURE_FIELD_PARAM)) {
       throw new FeatureException("missing param field");
     }
