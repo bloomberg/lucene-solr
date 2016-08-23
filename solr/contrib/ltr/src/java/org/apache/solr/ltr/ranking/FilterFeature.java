@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -32,7 +31,6 @@ import org.apache.solr.request.SolrQueryRequest;
 public class FilterFeature extends Feature {
 
   protected final Feature in;
-  protected final Normalizer norm;
 
 
   /**
@@ -53,10 +51,9 @@ public class FilterFeature extends Feature {
         + " init is not supported ("+this+")");
   }
 
-  public FilterFeature(Feature in, Normalizer norm) {
+  public FilterFeature(Feature in) {
     super();
     this.in = in;
-    this.norm = norm;
   }
 
   @Override
@@ -69,7 +66,6 @@ public class FilterFeature extends Feature {
       boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi) throws IOException {
     final FeatureWeight featureWeight =
         in.createWeight(searcher, needsScores, request, originalQuery, efi);
-    featureWeight.setNorm(norm);
     return featureWeight;
   }
 
@@ -77,7 +73,7 @@ public class FilterFeature extends Feature {
   public int hashCode() {
     final int prime = 31;
     int result = in.hashCode();
-    result = (prime * result) + norm.hashCode();
+    result = (prime * result);
     return result;
   }
 
@@ -88,8 +84,7 @@ public class FilterFeature extends Feature {
 
   private boolean equalsTo(FilterFeature other) {
     return
-        in.equals(other.in) &&
-        norm.equals(other.norm);
+        in.equals(other.in);
   }
 
   /**
@@ -98,14 +93,6 @@ public class FilterFeature extends Feature {
   @Override
   public String getName() {
     return in.getName();
-  }
-
-  /**
-   * @return the norm
-   */
-  @Override
-  public Normalizer getNorm() {
-    return norm;
   }
 
   /**

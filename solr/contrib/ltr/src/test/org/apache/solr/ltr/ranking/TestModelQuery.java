@@ -18,6 +18,7 @@ package org.apache.solr.ltr.ranking;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,6 +45,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.feature.norm.Normalizer;
+import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 import org.junit.Test;
@@ -72,26 +74,14 @@ public class TestModelQuery extends LuceneTestCase {
     return features;
   }
 
-  private static List<Feature> makeNormalizedFeatures(int[] featureIds) {
+  private static List<Feature> makeFilterFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
       final ValueFeature f = new ValueFeature();
       f.name = "f" + i;
       f.setValue(i);
       f.id = i;
-      final Normalizer n = new Normalizer() {
-
-        @Override
-        public float normalize(float value) {
-          return 42.42f;
-        }
-
-        @Override
-        protected LinkedHashMap<String,Object> paramsToMap() {
-          return null;
-        }
-      };
-      features.add(new FilterFeature(f, n));
+      features.add(new FilterFeature(f));
     }
     return features;
   }
@@ -137,13 +127,16 @@ public class TestModelQuery extends LuceneTestCase {
   @Test
   public void testModelQueryEquality() throws ModelException {
     final List<Feature> features = makeFeatures(new int[] {0, 1, 2});
+    final List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     final List<Feature> allFeatures = makeFeatures(
         new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
     final Map<String,Object> modelParams = makeFeatureWeights(features);
 
     final LTRScoringAlgorithm algorithm1 = new RankSVMModel(
         "testModelName",
-        features, "testStoreName", allFeatures, modelParams);
+        features, norms, "testStoreName", allFeatures, modelParams);
 
     final ModelQuery m1 = new ModelQuery(algorithm1);
     final ModelQuery m2 = new ModelQuery(algorithm1);
@@ -167,7 +160,7 @@ public class TestModelQuery extends LuceneTestCase {
 
     final LTRScoringAlgorithm algorithm2 = new RankSVMModel(
         "testModelName2",
-        features, "testStoreName", allFeatures, modelParams);
+        features, norms, "testStoreName", allFeatures, modelParams);
     final ModelQuery m3 = new ModelQuery(algorithm2);
 
     assertFalse(m1.equals(m3));
@@ -175,7 +168,7 @@ public class TestModelQuery extends LuceneTestCase {
 
     final LTRScoringAlgorithm algorithm3 = new RankSVMModel(
         "testModelName",
-        features, "testStoreName3", allFeatures, modelParams);
+        features, norms, "testStoreName3", allFeatures, modelParams);
     final ModelQuery m4 = new ModelQuery(algorithm3);
 
     assertFalse(m1.equals(m4));
@@ -219,17 +212,20 @@ public class TestModelQuery extends LuceneTestCase {
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5,
         6, 7, 8, 9});
+    List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     RankSVMModel meta = new RankSVMModel("test",
-        features, "test", allFeatures,
+        features, norms, "test", allFeatures,
         makeFeatureWeights(features));
 
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta));
-    assertEquals(3, modelWeight.modelFeatureValuesNormalized.length);
+    assertEquals(3, modelWeight.modelFeatureValues.length);
     assertEquals(10, modelWeight.allFeatureValues.length);
 
     for (int i = 0; i < 3; i++) {
-      assertEquals(i, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
+      assertEquals(i, modelWeight.modelFeatureValues[i], 0.0001);
     }
     for (int i = 0; i < 10; i++) {
       assertEquals(i, modelWeight.allFeatureValues[i], 0.0001);
@@ -242,17 +238,20 @@ public class TestModelQuery extends LuceneTestCase {
 
     final int[] mixPositions = new int[] {8, 2, 4, 9, 0};
     features = makeFeatures(mixPositions);
+    norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     meta = new RankSVMModel("test",
-        features, "test", allFeatures, makeFeatureWeights(features));
+        features, norms, "test", allFeatures, makeFeatureWeights(features));
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(meta));
     assertEquals(mixPositions.length,
-        modelWeight.modelFeatureValuesNormalized.length);
+        modelWeight.modelFeatureValues.length);
 
     for (int i = 0; i < mixPositions.length; i++) {
       assertEquals(mixPositions[i],
-          modelWeight.modelFeatureValuesNormalized[i], 0.0001);
+          modelWeight.modelFeatureValues[i], 0.0001);
     }
     for (int i = 0; i < 10; i++) {
       assertEquals(i, modelWeight.allFeatureValues[i], 0.0001);
@@ -260,25 +259,45 @@ public class TestModelQuery extends LuceneTestCase {
 
     final int[] noPositions = new int[] {};
     features = makeFeatures(noPositions);
+    norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     meta = new RankSVMModel("test",
-        features, "test", allFeatures, makeFeatureWeights(features));
+        features, norms, "test", allFeatures, makeFeatureWeights(features));
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(meta));
-    assertEquals(0, modelWeight.modelFeatureValuesNormalized.length);
+    assertEquals(0, modelWeight.modelFeatureValues.length);
 
     // test normalizers
-    features = makeNormalizedFeatures(mixPositions);
+    features = makeFilterFeatures(mixPositions);
+    final Normalizer n = new Normalizer() {
+
+      @Override
+      public float normalize(float value) {
+        return 42.42f;
+      }
+
+      @Override
+      protected LinkedHashMap<String,Object> paramsToMap() {
+        return null;
+      }
+    };
+    norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),n));
     final RankSVMModel normMeta = new RankSVMModel("test",
-        features, "test", allFeatures,
+        features, norms, "test", allFeatures,
         makeFeatureWeights(features));
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(normMeta));
+    float[] modelFeatureValuesNormalized = 
+        normMeta.getNormalizedFeatures(modelWeight.modelFeatureValues);
     assertEquals(mixPositions.length,
-        modelWeight.modelFeatureValuesNormalized.length);
+        modelFeatureValuesNormalized.length);
     for (int i = 0; i < mixPositions.length; i++) {
-      assertEquals(42.42f, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
+      assertEquals(42.42f, modelFeatureValuesNormalized[i], 0.0001);
     }
     for (int i = 0; i < 10; i++) {
       assertEquals(i, modelWeight.allFeatureValues[i], 0.0001);

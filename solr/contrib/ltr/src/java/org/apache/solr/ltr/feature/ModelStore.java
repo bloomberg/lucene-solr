@@ -65,14 +65,16 @@ public class ModelStore {
       modelMap.put((String)CommonLTRParams.MODEL_CLASS, modelmeta.getClass().getCanonicalName());
       modelMap.put((String)CommonLTRParams.MODEL_FEATURE_STORE, modelmeta.getFeatureStoreName());
       final List<Map<String,Object>> features = new ArrayList<>(modelmeta.numFeatures());
-      for (final Feature meta : modelmeta.getFeatures()) {
+      final List<Feature> featureList = modelmeta.getFeatures();
+      final List<Normalizer> normList = modelmeta.getNorms();
+      for (int idx = 0; idx <  featureList.size(); ++idx) {
+        final Feature feature = featureList.get(idx);
+        final Normalizer norm = idx < normList.size() ? normList.get(idx) : null;
         final Map<String,Object> map = new HashMap<String,Object>(2, 1.0f);
-        map.put("name", meta.getName());
+        map.put("name", feature.getName());
 
-        final Normalizer n = meta.getNorm();
-
-        if (n != null) {
-          map.put("norm", n.toMap());
+        if (norm != null) {
+          map.put("norm", norm.toMap());
         }
         features.add(map);
 

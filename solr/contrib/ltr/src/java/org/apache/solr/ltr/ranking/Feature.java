@@ -29,8 +29,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.ltr.feature.norm.Normalizer;
-import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.LTRUtils;
@@ -129,13 +127,6 @@ public abstract class Feature extends Query {
   }
 
   /**
-   * @return the norm
-   */
-  public Normalizer getNorm() {
-    return IdentityNormalizer.INSTANCE;
-  }
-
-  /**
    * @return the id
    */
   public int getId() {
@@ -163,8 +154,6 @@ public abstract class Feature extends Query {
     final protected MacroExpander macroExpander;
     final protected Query originalQuery;
 
-    private Normalizer norm;
-
     /**
      * Initialize a feature without the normalizer from the feature file. This is
      * called on initial construction since multiple models share the same
@@ -188,18 +177,6 @@ public abstract class Feature extends Query {
 
     public String getName() {
       return Feature.this.name;
-    }
-
-    public void setNorm(Normalizer norm) {
-      this.norm = norm;
-    }
-
-    public Normalizer getNorm() {
-      if (norm != null) {
-        return norm;
-      } else {
-        return Feature.this.getNorm();
-      }
     }
 
     public int getId() {

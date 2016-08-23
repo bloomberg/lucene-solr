@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
+import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.ltr.util.ModelException;
 
@@ -169,9 +170,10 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
   }
 
   public LambdaMARTModel(String name, List<Feature> features,
+      List<Normalizer> norms,
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) throws ModelException {
-    super(name, features, featureStoreName, allFeatures, params);
+    super(name, features, norms, featureStoreName, allFeatures, params);
 
     if (!hasParams()) {
       throw new ModelException("LambdaMARTModel doesn't contain any params");
@@ -200,7 +202,7 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
   }
 
   @Override
-  public float score(float[] modelFeatureValuesNormalized) {
+  protected float scoreNormalized(float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (final RegressionTree t : trees) {
       score += t.score(modelFeatureValuesNormalized);

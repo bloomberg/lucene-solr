@@ -186,7 +186,7 @@ public class ModelQuery extends Query {
     // List of the model's features used for scoring. This is a subset of the
     // features used for logging.
     FeatureWeight[] modelFeatures;
-    float[] modelFeatureValuesNormalized;
+    float[] modelFeatureValues;
 
     // List of all the feature values, used for both scoring and logging
     FeatureWeight[] allFeatureWeights;
@@ -200,7 +200,7 @@ public class ModelQuery extends Query {
       this.searcher = searcher;
       allFeatureWeights = allFeatures;
       this.modelFeatures = modelFeatures;
-      modelFeatureValuesNormalized = new float[modelFeatures.length];
+      modelFeatureValues = new float[modelFeatures.length];
       allFeatureValues = new float[allFeatures.length];
       allFeatureNames = new String[allFeatures.length];
       allFeaturesUsed = new boolean[allFeatures.length];
@@ -214,16 +214,15 @@ public class ModelQuery extends Query {
      * Goes through all the stored feature values, and calculates the normalized
      * values for all the features that will be used for scoring.
      */
-    public void normalize() {
+    public void makeRawFeatures() {
       int pos = 0;
       for (final FeatureWeight feature : modelFeatures) {
         final int featureId = feature.getId();
         if (allFeaturesUsed[featureId]) {
-          final Normalizer norm = feature.getNorm();
-          modelFeatureValuesNormalized[pos] = norm
-              .normalize(allFeatureValues[featureId]);
+          modelFeatureValues[pos] =
+              allFeatureValues[featureId];
         } else {
-          modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
+          modelFeatureValues[pos] = feature.getDefaultValue();
         }
         pos++;
       }
@@ -240,9 +239,12 @@ public class ModelQuery extends Query {
         explanations[index++] = feature.explain(context, doc);
       }
 
+      final List<Normalizer> norms = meta.getNorms();
       final List<Explanation> featureExplanations = new ArrayList<>();
-      for (final FeatureWeight f : modelFeatures) {
-        final Normalizer n = f.getNorm();
+      for (int idx = 0; idx < modelFeatures.length; ++idx) {
+        final FeatureWeight f = modelFeatures[idx];
+        final Normalizer n = idx < norms.size() ? 
+            norms.get(idx) : IdentityNormalizer.INSTANCE;
         Explanation e = explanations[f.getId()];
         if (n != IdentityNormalizer.INSTANCE) {
           e = n.explain(e);
@@ -385,8 +387,8 @@ public class ModelQuery extends Query {
               allFeatureValues[featureId] = subScorer.score();
             }
           }
-          normalize();
-          return meta.score(modelFeatureValuesNormalized);
+          makeRawFeatures();
+          return meta.score(modelFeatureValues);
         }
 
         @Override
@@ -479,8 +481,8 @@ public class ModelQuery extends Query {
               }
             }
           }
-          normalize();
-          return meta.score(modelFeatureValuesNormalized);
+          makeRawFeatures();
+          return meta.score(modelFeatureValues);
         }
 
         @Override
