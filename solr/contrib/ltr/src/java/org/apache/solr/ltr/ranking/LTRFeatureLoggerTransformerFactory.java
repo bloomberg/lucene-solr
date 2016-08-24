@@ -31,6 +31,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.log.LoggingModel;
+import org.apache.solr.ltr.ranking.Feature.FeatureWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
@@ -61,7 +62,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
     // Hint to enable feature vector cache since we are requesting features
     req.getContext().put(CommonLTRParams.LOG_FEATURES_QUERY_PARAM, true);
-    req.getContext().put(CommonLTRParams.STORE, params.get(CommonLTRParams.STORE));
+    req.getContext().put(CommonLTRParams.FV_STORE, params.get(CommonLTRParams.FV_STORE));
+    req.getContext().put(CommonLTRParams.FV_FORMAT, params.get(CommonLTRParams.FV_FORMAT));
 
     return new FeatureTransformer(name, params, req);
   }
@@ -117,7 +119,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       // Setup ModelQuery
       reRankModel = (ModelQuery) req.getContext().get(CommonLTRParams.MODEL);
       resultsReranked = (reRankModel != null);
-      String featureStoreName = params.get(CommonLTRParams.STORE);
+      String featureStoreName = params.get(CommonLTRParams.FV_STORE);
       if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getFeatureStoreName())))) {
         // if store is set in the trasformer we should overwrite the logger
         if (featureStoreName == null){
@@ -147,7 +149,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       if (reRankModel.getFeatureLogger() == null){
         final String featureResponseFormat = req.getParams().get(CommonLTRParams.FV_RESPONSE_WRITER,"csv");
-        reRankModel.setFeatureLogger(FeatureLogger.getFeatureLogger(featureResponseFormat));
+        final String featureFormat = req.getParams().get(CommonLTRParams.FV_FORMAT,"sparse");
+        reRankModel.setFeatureLogger(FeatureLogger.getFeatureLogger(featureResponseFormat,featureFormat));
       }
       reRankModel.setRequest(req);
 
@@ -180,7 +183,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         if (((r == null) || (r.iterator().advance(deBasedDoc) != docid))
             && (fv == null)) {
           doc.addField(name, featureLogger.makeFeatureVector(new String[0],
-              new float[0], new boolean[0]));
+              new float[0], new FeatureWeight[0], new boolean[0]));
         } else {
           if (!resultsReranked) {
             // If results have not been reranked, the score passed in is the original query's
@@ -191,8 +194,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           final String[] names = modelWeight.allFeatureNames;
           final float[] values = modelWeight.allFeatureValues;
           final boolean[] valuesUsed = modelWeight.allFeaturesUsed;
+          final FeatureWeight[] fWeights = modelWeight.allFeatureWeights;
           doc.addField(name,
-              featureLogger.makeFeatureVector(names, values, valuesUsed));
+              featureLogger.makeFeatureVector(names, values, fWeights, valuesUsed));
         }
       } else {
         doc.addField(name, fv);

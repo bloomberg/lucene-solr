@@ -114,7 +114,9 @@ public class CommonLTRParams {
   // models/features?
   public static final String EXTERNAL_FEATURE_INFO = "efi.";
   // used inside fl to specify the feature store to use for the feature extraction
-  public static final String STORE = "store";
+  public static final String FV_STORE = "store";
+  // used inside fl to specify the format (dense|sparse) of the extracted features
+  public static final String FV_FORMAT = "format";
 
   // Name of key used to store the original score of a doc
   public static final String ORIGINAL_DOC_SCORE = "ORIGINAL_DOC_SCORE";

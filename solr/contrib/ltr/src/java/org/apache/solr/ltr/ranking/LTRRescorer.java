@@ -195,7 +195,8 @@ public class LTRRescorer extends Rescorer {
         // document
         if (featureLogger != null) {
           featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
-              featureNames, featureValues, featuresUsed);
+              featureNames, featureValues, 
+              modelWeight.allFeatureWeights, featuresUsed);
         }
       } else if (hitUpto == topN) {
         // collected topN document, I create the heap
@@ -212,7 +213,8 @@ public class LTRRescorer extends Rescorer {
           heapAdjust(reranked, topN, 0);
           if (featureLogger != null) {
             featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
-                featureNames, featureValues, featuresUsed);
+                featureNames, featureValues,
+                modelWeight.allFeatureWeights, featuresUsed);
           }
         }
       }
