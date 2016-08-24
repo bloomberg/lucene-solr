@@ -194,7 +194,6 @@ public class LTRRescorer extends Rescorer {
         // if the heap is not full, maybe I want to log the features for this
         // document
         if (featureLogger != null) {
-          System.out.println(java.util.Arrays.toString(modelWeight.allFeatureValues));
           featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
               featureNames, featureValues, featuresUsed);
         }
