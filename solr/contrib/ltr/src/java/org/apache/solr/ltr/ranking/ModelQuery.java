@@ -19,7 +19,6 @@ package org.apache.solr.ltr.ranking;
 import java.util.concurrent.Future;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -56,8 +55,6 @@ import org.apache.solr.ltr.ranking.LTRThreadInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-
 /**
  * The ranking query that is run, reranking results using the
  * LTRScoringAlgorithm algorithm
@@ -78,24 +75,6 @@ public class ModelQuery extends Query {
   protected boolean extractAllFeatures;
   static boolean newCode = true;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
- /* ThreadMXBean tmxb = ManagementFactory.getThreadMXBean();
-  public static Semaphore ltrSemaphore = null; 
-  public static int maxThreads = 1;
-  public static final Executor directExecutor = new Executor() {
-    @Override
-    public void execute(Runnable r) {
-      r.run();
-    }
-   };
-
-   public static final Executor createWeightScoreExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          0,
-          Integer.MAX_VALUE,
-          10, TimeUnit.SECONDS, // terminate idle threads after 10 sec
-          new SynchronousQueue<Runnable>()  // directly hand off tasks
-          , new DefaultSolrThreadFactory("ltrExecutor")
-    );*/
-
 
   public ModelQuery(LTRScoringAlgorithm meta) {
     this(meta, false);
@@ -407,26 +386,6 @@ public class ModelQuery extends Query {
   }
 
   
-  private FeatureWeight[] createWeights(Collection<Feature> features,
-      IndexSearcher searcher, boolean needsScores) throws IOException {
-    final FeatureWeight[] arr = new FeatureWeight[features.size()];
-    int i = 0;
-    final SolrQueryRequest req = getRequest();
-    // since the feature store is a linkedhashmap order is preserved
-    for (final Feature f : features) {
-      try {
-        final FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
-
-        arr[i] = fw;
-        ++i;
-      } catch (final Exception e) {
-        throw new FeatureException("Exception from createWeight for " + f.toString() + " "
-            + e.getMessage(), e);
-      }
-    }
-    return arr;
-  }
-
   @Override
   public String toString(String field) {
     return field;

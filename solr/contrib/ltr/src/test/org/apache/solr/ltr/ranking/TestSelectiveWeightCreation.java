@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -43,7 +44,6 @@ import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
-import org.apache.solr.ltr.util.NamedParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,9 +58,12 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   private static List<Feature> makeFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      final ValueFeature f = new ValueFeature();
+      final ValueFeature f = new ValueFeature("f" + i);
+      Map<String,Object> params = new HashMap<String,Object>();
+      params.put("value", i);
       try {
-        f.init("f" + i, new NamedParams().add("value", i), i);
+        f.init(params);
+        f.setId(i);
       } catch (final FeatureException e) {
         e.printStackTrace();
       }
@@ -69,8 +72,8 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     return features;
   }
 
-  private static NamedParams makeFeatureWeights(List<Feature> features) {
-    final NamedParams nameParams = new NamedParams();
+  private static Map<String,Object> makeFeatureWeights(List<Feature> features) {
+    final Map<String,Object> nameParams = new HashMap<String,Object>();
     final HashMap<String,Double> modelWeights = new HashMap<String,Double>();
     for (final Feature feat : features) {
       modelWeights.put(feat.name, 0.1);
@@ -78,7 +81,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     if (modelWeights.isEmpty()) {
       modelWeights.put("", 0.0);
     }
-    nameParams.add("weights", modelWeights);
+    nameParams.put("weights", modelWeights);
     return nameParams;
   }
 
