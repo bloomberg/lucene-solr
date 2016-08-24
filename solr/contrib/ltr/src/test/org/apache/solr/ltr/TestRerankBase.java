@@ -332,6 +332,7 @@ public class TestRerankBase extends RestTestBase {
       final Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", 10);
       f.init(params);
+      f.setValue(10);
       f.setId(pos);
       features.add(f);
       ++pos;

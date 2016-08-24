@@ -53,7 +53,7 @@ public abstract class Feature extends Query {
    * @param params
    *          Custom parameters that the feature may use
    */
-  public void init(Map<String,Object> params)
+  final public void init(Map<String,Object> params)
       throws FeatureException {
     this.params = params;
   }

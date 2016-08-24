@@ -35,18 +35,6 @@ public class FilterFeature extends Feature {
   protected final Normalizer norm;
 
 
-  /**
-   * @param params
-   *          Custom parameters that the feature may use
-   */
-  @Override
-  public void init(Map<String,Object> params)
-      throws FeatureException {
-    super.init(params);
-    throw new FeatureException(getClass().getCanonicalName()
-        + " init is not supported ("+this+")");
-  }
-
   public FilterFeature(Feature in, Normalizer norm) {
     super(null);
     this.in = in;

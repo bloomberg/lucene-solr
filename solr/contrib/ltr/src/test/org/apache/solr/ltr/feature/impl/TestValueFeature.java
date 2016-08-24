@@ -49,11 +49,6 @@ public class TestValueFeature extends TestRerankBase {
   }
 
   @Test(expected = Exception.class)
-  public void testValueFeatureWithBlankParams() throws Exception {
-    loadFeature("c1", ValueFeature.class.getCanonicalName(), "{}");
-  }
-
-  @Test(expected = Exception.class)
   public void testValueFeatureWithEmptyValue() throws Exception {
     loadFeature("c2", ValueFeature.class.getCanonicalName(), "{\"value\":\"\"}");
   }

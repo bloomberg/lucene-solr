@@ -159,4 +159,17 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
 
   }
 
+  @Test(expected = ModelException.class)
+  public void misingFeaturesTest() throws ModelException, FeatureException {
+    final Map<String,Object> weights = new HashMap<>();
+    weights.put("constant1", 1d);
+    weights.put("constant5missing", 1d);
+
+    Map<String,Object> params = new HashMap<String,Object>();
+    params.put("weights", weights);
+    final LTRScoringAlgorithm meta = new RankSVMModel("test8",
+        getFeatures(new String[] {}), "test", fstore.getFeatures(),
+        params);
+    store.addMetadataModel(meta);
+  }
 }
