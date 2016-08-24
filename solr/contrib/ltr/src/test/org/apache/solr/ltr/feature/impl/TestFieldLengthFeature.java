@@ -115,5 +115,6 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
   }
+  
 
 }
