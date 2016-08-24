@@ -181,7 +181,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     assertJQ(
         "/query" + query.toQueryString(),
-        "/grouped/title/groups/[0]/doclist/docs/[0]/fv/=={'c3':3.0,'pop':5.0,'c1':1.0,'c2':2.0}");
+        "/grouped/title/groups/[0]/doclist/docs/[0]/fv/=={'c1':1.0,'c2':2.0,'c3':3.0,'pop':5.0}");
   }
 
 }

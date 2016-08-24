@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -77,6 +78,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   // Effectively immutable
   private Boolean testMode = null;
+  static int queryCount = 0;
 
   /**
    * Enum to define action that needs to be processed.
@@ -272,6 +274,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     } finally {
       consumeInputFully((HttpServletRequest) request);
+      /*if (queryCount % 5 == 0 ){
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+          @Override 
+          public void run() {
+            System.gc();
+          }
+        });
+        
+      }
+      queryCount += 1;*/
     }
   }
   

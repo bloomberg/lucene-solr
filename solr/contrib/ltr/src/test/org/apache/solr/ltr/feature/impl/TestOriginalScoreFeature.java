@@ -23,7 +23,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.ranking.RankSVMModel;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -138,12 +137,12 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     final String doc3Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(3)).get("score")).toString();
     System.out.println(doc0Score);
-
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/fv=='origScore:" + doc0Score + ";c2:2.0'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='8'");
+    System.out.println(res);
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[1]/fv=='origScore:" + doc1Score + ";c2:2.0'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
