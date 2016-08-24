@@ -194,9 +194,9 @@ public class LTRRescorer extends Rescorer {
         // if the heap is not full, maybe I want to log the features for this
         // document
         if (featureLogger != null) {
+          System.out.println(java.util.Arrays.toString(modelWeight.allFeatureValues));
           featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
-              featureNames, featureValues, 
-              modelWeight.allFeatureWeights, featuresUsed);
+              featureNames, featureValues, featuresUsed);
         }
       } else if (hitUpto == topN) {
         // collected topN document, I create the heap
@@ -213,8 +213,7 @@ public class LTRRescorer extends Rescorer {
           heapAdjust(reranked, topN, 0);
           if (featureLogger != null) {
             featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
-                featureNames, featureValues,
-                modelWeight.allFeatureWeights, featuresUsed);
+                featureNames, featureValues, featuresUsed);
           }
         }
       }

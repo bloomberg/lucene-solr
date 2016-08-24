@@ -63,9 +63,9 @@ public abstract class FeatureLogger<FV_TYPE> {
 
   public boolean log(int docid, ModelQuery modelQuery,
       SolrIndexSearcher searcher, String[] featureNames, float[] featureValues,
-      FeatureWeight[] featureWeights, boolean[] featuresUsed) {
+      boolean[] featuresUsed) {
     final FV_TYPE featureVector = makeFeatureVector(featureNames, featureValues,
-        featureWeights, featuresUsed);
+        featuresUsed);
     if (featureVector == null) {
       return false;
     }
@@ -115,8 +115,7 @@ public abstract class FeatureLogger<FV_TYPE> {
   }
 
   public abstract FV_TYPE makeFeatureVector(String[] featureNames,
-      float[] featureValues, FeatureWeight[] featureWeights, 
-      boolean[] featuresUsed);
+      float[] featureValues, boolean[] featuresUsed);
 
   /**
    * populate the document with its feature vector
@@ -142,25 +141,14 @@ public abstract class FeatureLogger<FV_TYPE> {
     
     @Override
     public Map<String,Float> makeFeatureVector(String[] featureNames,
-        float[] featureValues, FeatureWeight[] featureWeights, 
-        boolean[] featuresUsed) {
+        float[] featureValues, boolean[] featuresUsed) {
+      boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
       Map<String,Float> hashmap = Collections.emptyMap();
-      if (featureFormat.equals(FeatureFormat.SPARSE)) {
-        if (featureNames.length > 0) {
-          hashmap = new HashMap<String,Float>(featureValues.length);
-          for (int i = 0; i < featuresUsed.length; i++) {
-            if (featuresUsed[i]) {
-              hashmap.put(featureNames[i], featureValues[i]);
-            }
-          }
-        }
-      } else { //assumes dense
-        hashmap = new HashMap<String,Float>(featureWeights.length);
-        for(int idx = 0; idx < featureWeights.length; ++ idx) {
-          if(featuresUsed[idx] == true) {
-            hashmap.put(featureNames[idx], featureValues[idx]);
-          } else {
-            hashmap.put(featureNames[idx], featureWeights[idx].getDefaultValue());
+      if (featureNames.length > 0) {
+        hashmap = new HashMap<String,Float>(featureValues.length);
+        for (int i = 0; i < featuresUsed.length; i++) {
+          if (featuresUsed[i] || isDense) {
+            hashmap.put(featureNames[i], featureValues[i]);
           }
         }
       }
@@ -190,12 +178,12 @@ public abstract class FeatureLogger<FV_TYPE> {
 
     @Override
     public String makeFeatureVector(String[] featureNames,
-        float[] featureValues, FeatureWeight[] featureWeights, 
-        boolean[] featuresUsed) {
+        float[] featureValues, boolean[] featuresUsed) {
+      boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
       for (int i = 0; i < featuresUsed.length; i++) {
-        if (featuresUsed[i]) {
+        if (featuresUsed[i] || isDense) {
           sb.append(featureNames[i]).append(keyValueSep)
-              .append(featureValues[i]);
+          .append(featureValues[i]);
           sb.append(featureSep);
         }
       }

@@ -269,6 +269,7 @@ public class ModelQuery extends Query {
     protected void reset() {
       for (int i = 0, len = allFeaturesUsed.length; i < len; i++) {
         allFeaturesUsed[i] = false;
+        allFeatureValues[i] = allFeatureWeights[i].getDefaultValue();
       }
     }
 

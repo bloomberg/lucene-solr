@@ -183,7 +183,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         if (((r == null) || (r.iterator().advance(deBasedDoc) != docid))
             && (fv == null)) {
           doc.addField(name, featureLogger.makeFeatureVector(new String[0],
-              new float[0], new FeatureWeight[0], new boolean[0]));
+              new float[0], new boolean[0]));
         } else {
           if (!resultsReranked) {
             // If results have not been reranked, the score passed in is the original query's
@@ -194,9 +194,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           final String[] names = modelWeight.allFeatureNames;
           final float[] values = modelWeight.allFeatureValues;
           final boolean[] valuesUsed = modelWeight.allFeaturesUsed;
-          final FeatureWeight[] fWeights = modelWeight.allFeatureWeights;
           doc.addField(name,
-              featureLogger.makeFeatureVector(names, values, fWeights, valuesUsed));
+              featureLogger.makeFeatureVector(names, values, valuesUsed));
         }
       } else {
         doc.addField(name, fv);
