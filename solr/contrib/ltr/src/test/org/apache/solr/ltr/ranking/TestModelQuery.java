@@ -81,7 +81,7 @@ public class TestModelQuery extends LuceneTestCase {
       final ValueFeature f = new ValueFeature("f" + i);
       f.setValue(i);
       f.id = i;
-      features.add(new FilterFeature(f));
+      features.add(f);
     }
     return features;
   }
@@ -293,7 +293,7 @@ public class TestModelQuery extends LuceneTestCase {
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(normMeta));
     float[] modelFeatureValuesNormalized = 
-        normMeta.getNormalizedFeatures(modelWeight.modelFeatureValues);
+        normMeta.normalizeFeatures(modelWeight.modelFeatureValues);
     assertEquals(mixPositions.length,
         modelFeatureValuesNormalized.length);
     for (int i = 0; i < mixPositions.length; i++) {

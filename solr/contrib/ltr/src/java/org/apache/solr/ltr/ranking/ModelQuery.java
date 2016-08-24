@@ -239,16 +239,11 @@ public class ModelQuery extends Query {
         explanations[index++] = feature.explain(context, doc);
       }
 
-      final List<Normalizer> norms = meta.getNorms();
       final List<Explanation> featureExplanations = new ArrayList<>();
       for (int idx = 0; idx < modelFeatures.length; ++idx) {
         final FeatureWeight f = modelFeatures[idx];
-        final Normalizer n = idx < norms.size() ? 
-            norms.get(idx) : IdentityNormalizer.INSTANCE;
         Explanation e = explanations[f.getId()];
-        if (n != IdentityNormalizer.INSTANCE) {
-          e = n.explain(e);
-        }
+        e = meta.getNormalizerExplanation(e, idx);
         featureExplanations.add(e);
       }
       // TODO this calls twice the scorers, could be optimized.

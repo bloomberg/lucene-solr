@@ -28,6 +28,7 @@ import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.ranking.Feature.FeatureWeight;
+import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.LTRException;
 
 /**
@@ -42,7 +43,6 @@ public abstract class LTRScoringAlgorithm {
   private final List<Feature> allFeatures;
   private final Map<String,Object> params;
   private final List<Normalizer> norms;
-  private float[] modelFeatureValuesNormalized;
 
   public LTRScoringAlgorithm(String name, List<Feature> features,
       List<Normalizer> norms,
@@ -162,7 +162,7 @@ public abstract class LTRScoringAlgorithm {
   }
   
   public float score(float[] modelFeatureValues) {
-    normalizeFeatures(modelFeatureValues);
+    float[] modelFeatureValuesNormalized = normalizeFeatures(modelFeatureValues);
     return scoreNormalized(modelFeatureValuesNormalized);
   }
 
@@ -203,19 +203,24 @@ public abstract class LTRScoringAlgorithm {
    * Goes through all the stored feature values, and calculates the normalized
    * values for all the features that will be used for scoring.
    */
-  private void normalizeFeatures(float[] modelFeatureValues) {
-    modelFeatureValuesNormalized = modelFeatureValues.clone();
-    for(int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
-      if (idx < norms.size()) {
-        modelFeatureValuesNormalized[idx] = 
-            norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
-      }
+  public float[] normalizeFeatures(float[] modelFeatureValues) {
+    float[] modelFeatureValuesNormalized = modelFeatureValues.clone();
+    if (modelFeatureValues.length != norms.size()) {
+      throw new FeatureException("Must have normalizer for every feature");
     }
+    for(int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
+      modelFeatureValuesNormalized[idx] = 
+          norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+    }
+    return modelFeatureValuesNormalized;
   }
   
-  public float[] getNormalizedFeatures(float[] modelFeatureValues) {
-    normalizeFeatures(modelFeatureValues);
-    return modelFeatureValuesNormalized.clone();
-  }
+  public Explanation getNormalizerExplanation(Explanation e, int idx) {
+    Normalizer n = norms.get(idx);
+    if (n != IdentityNormalizer.INSTANCE) {
+      return n.explain(e);
+    }
+    return e;
+  } 
 
 }

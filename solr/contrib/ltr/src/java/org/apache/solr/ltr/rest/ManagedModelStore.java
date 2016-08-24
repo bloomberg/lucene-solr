@@ -32,7 +32,6 @@ import org.apache.solr.ltr.feature.ModelStore;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.ranking.FilterFeature;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.LTRUtils;
@@ -131,8 +130,6 @@ public class ManagedModelStore extends ManagedResource implements
       throw new FeatureException("feature " + name
           + " not found in store " + featureStore.getName());
     }
-    meta = new FilterFeature(meta);
-
     return meta;
   }
 

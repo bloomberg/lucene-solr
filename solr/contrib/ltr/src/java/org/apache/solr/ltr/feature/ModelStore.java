@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.CommonLTRParams;
+import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 
 /**
@@ -67,17 +68,16 @@ public class ModelStore {
       final List<Map<String,Object>> features = new ArrayList<>(modelmeta.numFeatures());
       final List<Feature> featureList = modelmeta.getFeatures();
       final List<Normalizer> normList = modelmeta.getNorms();
+      if (normList.size() != featureList.size()) {
+        throw new FeatureException("Every feature must have a normalizer");
+      }
       for (int idx = 0; idx <  featureList.size(); ++idx) {
         final Feature feature = featureList.get(idx);
-        final Normalizer norm = idx < normList.size() ? normList.get(idx) : null;
+        final Normalizer norm = normList.get(idx);
         final Map<String,Object> map = new HashMap<String,Object>(2, 1.0f);
         map.put("name", feature.getName());
-
-        if (norm != null) {
-          map.put("norm", norm.toMap());
-        }
+        map.put("norm", norm.toMap());
         features.add(map);
-
       }
       modelMap.put("features", features);
       modelMap.put("params", modelmeta.getParams());
