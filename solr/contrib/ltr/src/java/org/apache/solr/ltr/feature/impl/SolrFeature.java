@@ -41,6 +41,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrIndexSearcher.ProcessedFilter;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.ltr.util.FeatureException;
 
 public class SolrFeature extends Feature {
 
@@ -250,7 +251,14 @@ public class SolrFeature extends Feature {
 
       @Override
       public float score() throws IOException {
-        return solrScorer.score();
+        try {
+          return solrScorer.score();
+        } catch (UnsupportedOperationException e) {
+          throw new FeatureException(
+              e.toString() + ": " +
+              "Unable to extract feature for "
+              + name, e);
+        }
       }
 
       @Override

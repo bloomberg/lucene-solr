@@ -19,8 +19,10 @@ package org.apache.solr.ltr.rest;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -144,6 +146,24 @@ public class ManagedModelStore extends ManagedResource implements
     }
     return makeLTRScoringAlgorithm((Map<String,Object>) parsedJson);
   }
+  
+  private void checkFeatureValidity(LTRScoringAlgorithm meta) throws ModelException {
+    final List<Feature> featureList = meta.getFeatures();
+    final String modelName = meta.getName();
+    if (featureList.isEmpty()) {
+      throw new ModelException("no features declared for model "
+          + modelName);
+    }
+
+    final Set<String> featureNames = new HashSet<>();
+    for (final Feature feature : featureList) {
+      final String fname = feature.getName();
+      if (!featureNames.add(fname)) {
+        throw new ModelException("duplicated feature " + fname + " in model "
+            + modelName);
+      }
+    }
+  }
 
   @SuppressWarnings("unchecked")
   public LTRScoringAlgorithm makeLTRScoringAlgorithm(Map<String,Object> map)
@@ -183,7 +203,7 @@ public class ManagedModelStore extends ManagedResource implements
         throw new SolrException(ErrorCode.BAD_REQUEST, e);
       }
     }
-
+    
     final Map<String,Object> params = LTRUtils.createParams(map);
 
     final String type = (String) map.get(CommonLTRParams.MODEL_CLASS);
@@ -200,6 +220,8 @@ public class ManagedModelStore extends ManagedResource implements
       throw new ModelException("Model type does not exist " + type, e);
     }
 
+    checkFeatureValidity(meta);
+    
     return meta;
   }
 
@@ -269,6 +291,7 @@ public class ManagedModelStore extends ManagedResource implements
   public synchronized void addMetadataModel(LTRScoringAlgorithm modeldata)
       throws ModelException {
     log.info("adding model {}", modeldata.getName());
+    checkFeatureValidity(modeldata);
     store.addModel(modeldata);
   }
 

@@ -78,16 +78,6 @@ public class FieldLengthFeature extends Feature {
   }
 
   @Override
-  public void init(Map<String,Object> params)
-      throws FeatureException {
-    super.init(params);
-    if (!params.containsKey(CommonLTRParams.FEATURE_FIELD_PARAM)) {
-      throw new FeatureException("missing param field");
-    }
-    field = (String) params.get(CommonLTRParams.FEATURE_FIELD_PARAM);
-  }
-
-  @Override
   public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi)
       throws IOException {
     return new FieldLengthFeatureWeight(searcher, request, originalQuery, efi);

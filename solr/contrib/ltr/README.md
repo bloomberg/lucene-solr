@@ -140,29 +140,29 @@ using standard Solr queries. As an example:
 ```json
 [
 { "name": "isBook",
-  "type": "org.apache.solr.ltr.feature.impl.SolrFeature",
+  "class": "org.apache.solr.ltr.feature.impl.SolrFeature",
   "params":{ "fq": ["{!terms f=category}book"] }
 },
 {
   "name":  "documentRecency",
-  "type": "org.apache.solr.ltr.feature.impl.SolrFeature",
+  "class": "org.apache.solr.ltr.feature.impl.SolrFeature",
   "params": {
       "q": "{!func}recip( ms(NOW,publish_date), 3.16e-11, 1, 1)"
   }
 },
 {
   "name":"originalScore",
-  "type":"org.apache.solr.ltr.feature.impl.OriginalScoreFeature",
+  "class":"org.apache.solr.ltr.feature.impl.OriginalScoreFeature",
   "params":{}
 },
 {
   "name" : "userTextTitleMatch",
-  "type" : "org.apache.solr.ltr.feature.impl.SolrFeature",
+  "class" : "org.apache.solr.ltr.feature.impl.SolrFeature",
   "params" : { "q" : "{!field f=title}${user_text}" }
 },
  {
    "name" : "userFromMobile",
-   "type" : "org.apache.solr.ltr.feature.impl.ValueFeature",
+   "class" : "org.apache.solr.ltr.feature.impl.ValueFeature",
    "params" : { "value" : ${userFromMobile}, "required":true }
  }
 ]
@@ -225,7 +225,7 @@ to the bias value you'd like and make a weight of 1.0 for that feature.
 ###### model.json
 ```json
 {
-    "type":"org.apache.solr.ltr.ranking.RankSVMModel",
+    "class":"org.apache.solr.ltr.ranking.RankSVMModel",
     "name":"myModelName",
     "features":[
         { "name": "userTextTitleMatch"},
@@ -262,7 +262,7 @@ libSVM model format to the format specified above.
 ###### model2.json
 ```json
 {
-    "type":"org.apache.solr.ltr.ranking.LambdaMARTModel",
+    "class":"org.apache.solr.ltr.ranking.LambdaMARTModel",
     "name":"lambdamartmodel",
     "features":[
         { "name": "userTextTitleMatch"},
