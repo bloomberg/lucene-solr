@@ -93,7 +93,8 @@ public class SolrFeature extends Feature {
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi)
+  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, 
+      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
       throws IOException {
     return new SolrFeatureWeight(searcher, request, originalQuery, efi);
   }
@@ -104,7 +105,7 @@ public class SolrFeature extends Feature {
     List<Query> queryAndFilters;
 
     public SolrFeatureWeight(IndexSearcher searcher, 
-        SolrQueryRequest request, Query originalQuery, Map<String,String> efi) throws IOException {
+        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
       super(SolrFeature.this, searcher, request, originalQuery, efi);
       try {
         String solrQuery = q;

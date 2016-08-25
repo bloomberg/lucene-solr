@@ -34,8 +34,8 @@ import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.LTRUtils;
-import org.apache.solr.ltr.util.MacroExpander;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.macro.MacroExpander;
 
 /**
  * A 'recipe' for computing a feature
@@ -76,7 +76,7 @@ public abstract class Feature extends Query {
   }
 
   public abstract FeatureWeight createWeight(IndexSearcher searcher,
-      boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi) throws IOException;
+      boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException;
 
   @Override
   public int hashCode() {
@@ -162,7 +162,7 @@ public abstract class Feature extends Query {
 
     final protected IndexSearcher searcher;
     final protected SolrQueryRequest request;
-    final protected Map<String,String> efi;
+    final protected Map<String,String[]> efi;
     final protected MacroExpander macroExpander;
     final protected Query originalQuery;
 
@@ -180,13 +180,13 @@ public abstract class Feature extends Query {
      *          Solr searcher available for features if they need them
      */
     public FeatureWeight(Query q, IndexSearcher searcher, 
-        SolrQueryRequest request, Query originalQuery, Map<String,String> efi) {
+        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(q);
       this.searcher = searcher;
       this.request = request;
       this.originalQuery = originalQuery;
       this.efi = efi;
-      macroExpander = new MacroExpander(efi);
+      macroExpander = new MacroExpander(efi,true);
     }
 
     public String getName() {

@@ -48,7 +48,7 @@ public class FilterFeature extends Feature {
 
   @Override
   public FeatureWeight createWeight(IndexSearcher searcher,
-      boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi) throws IOException {
+      boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
     final FeatureWeight featureWeight =
         in.createWeight(searcher, needsScores, request, originalQuery, efi);
     featureWeight.setNorm(norm);

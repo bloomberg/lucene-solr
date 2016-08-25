@@ -32,15 +32,15 @@ public class LTRUtils {
    * @return Map of efi params, where the key is the name of the efi param, and the
    *  value is the value of the efi param
    */
-  public static Map<String,String> extractEFIParams(SolrParams localParams) {
-    final Map<String,String> externalFeatureInfo = new HashMap<>();
+  public static Map<String,String[]> extractEFIParams(SolrParams localParams) {
+    final Map<String,String[]> externalFeatureInfo = new HashMap<>();
     for (final Iterator<String> it = localParams.getParameterNamesIterator(); it
         .hasNext();) {
       final String name = it.next();
       if (name.startsWith(CommonLTRParams.EXTERNAL_FEATURE_INFO)) {
         externalFeatureInfo.put(
             name.substring(CommonLTRParams.EXTERNAL_FEATURE_INFO.length()),
-            localParams.get(name));
+            new String[] {localParams.get(name)});
       }
     }
     return externalFeatureInfo;

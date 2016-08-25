@@ -84,7 +84,8 @@ public class ValueFeature extends Feature {
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi)
+  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, 
+      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
       throws IOException {
     return new ValueFeatureWeight(searcher, request, originalQuery, efi);
   }
@@ -94,7 +95,7 @@ public class ValueFeature extends Feature {
     final protected Float featureValue;
 
     public ValueFeatureWeight(IndexSearcher searcher, 
-        SolrQueryRequest request, Query originalQuery, Map<String,String> efi) {
+        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(ValueFeature.this, searcher, request, originalQuery, efi);
       if (configValueStr != null) {
         final String expandedValue = macroExpander.expand(configValueStr);
