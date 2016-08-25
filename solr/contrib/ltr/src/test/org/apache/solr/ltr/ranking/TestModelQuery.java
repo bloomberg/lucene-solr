@@ -222,11 +222,11 @@ public class TestModelQuery extends LuceneTestCase {
 
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta));
-    assertEquals(3, modelWeight.modelFeatureValues.length);
+    assertEquals(3, modelWeight.modelFeatureValuesNormalized.length);
     assertEquals(10, modelWeight.allFeatureValues.length);
 
     for (int i = 0; i < 3; i++) {
-      assertEquals(i, modelWeight.modelFeatureValues[i], 0.0001);
+      assertEquals(i, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
     }
     for (int i = 0; i < 10; i++) {
       assertEquals(i, modelWeight.allFeatureValues[i], 0.0001);
@@ -248,11 +248,11 @@ public class TestModelQuery extends LuceneTestCase {
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(meta));
     assertEquals(mixPositions.length,
-        modelWeight.modelFeatureValues.length);
+        modelWeight.modelFeatureValuesNormalized.length);
 
     for (int i = 0; i < mixPositions.length; i++) {
       assertEquals(mixPositions[i],
-          modelWeight.modelFeatureValues[i], 0.0001);
+          modelWeight.modelFeatureValuesNormalized[i], 0.0001);
     }
     for (int i = 0; i < 10; i++) {
       assertEquals(i, modelWeight.allFeatureValues[i], 0.0001);
@@ -268,7 +268,7 @@ public class TestModelQuery extends LuceneTestCase {
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(meta));
-    assertEquals(0, modelWeight.modelFeatureValues.length);
+    assertEquals(0, modelWeight.modelFeatureValuesNormalized.length);
 
     // test normalizers
     features = makeFilterFeatures(mixPositions);
@@ -293,12 +293,11 @@ public class TestModelQuery extends LuceneTestCase {
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(normMeta));
-    float[] modelFeatureValuesNormalized = 
-        normMeta.normalizeFeatures(modelWeight.modelFeatureValues);
+    normMeta.normalizeFeaturesInPlace(modelWeight.modelFeatureValuesNormalized);
     assertEquals(mixPositions.length,
-        modelFeatureValuesNormalized.length);
+        modelWeight.modelFeatureValuesNormalized.length);
     for (int i = 0; i < mixPositions.length; i++) {
-      assertEquals(42.42f, modelFeatureValuesNormalized[i], 0.0001);
+      assertEquals(42.42f, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
     }
     for (int i = 0; i < 10; i++) {
       assertEquals(i, modelWeight.allFeatureValues[i], 0.0001);

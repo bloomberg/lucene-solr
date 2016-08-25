@@ -161,11 +161,6 @@ public abstract class LTRScoringAlgorithm {
     return featureStoreName;
   }
   
-  public float score(float[] modelFeatureValues) {
-    float[] modelFeatureValuesNormalized = normalizeFeatures(modelFeatureValues);
-    return scoreNormalized(modelFeatureValuesNormalized);
-  }
-
   /**
    * Given a list of normalized values for all features a scoring algorithm
    * cares about, calculate and return a score.
@@ -175,7 +170,7 @@ public abstract class LTRScoringAlgorithm {
    *          its id, which is the index in the array
    * @return The final score for a document
    */
-  protected abstract float scoreNormalized(float[] modelFeatureValuesNormalized);
+  public abstract float score(float[] modelFeatureValuesNormalized);
 
   /**
    * Similar to the score() function, except it returns an explanation of how
@@ -203,8 +198,8 @@ public abstract class LTRScoringAlgorithm {
    * Goes through all the stored feature values, and calculates the normalized
    * values for all the features that will be used for scoring.
    */
-  public float[] normalizeFeatures(float[] modelFeatureValues) {
-    float[] modelFeatureValuesNormalized = modelFeatureValues.clone();
+  public void normalizeFeaturesInPlace(float[] modelFeatureValues) {
+    float[] modelFeatureValuesNormalized = modelFeatureValues;
     if (modelFeatureValues.length != norms.size()) {
       throw new FeatureException("Must have normalizer for every feature");
     }
@@ -212,7 +207,6 @@ public abstract class LTRScoringAlgorithm {
       modelFeatureValuesNormalized[idx] = 
           norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
     }
-    return modelFeatureValuesNormalized;
   }
   
   public Explanation getNormalizerExplanation(Explanation e, int idx) {

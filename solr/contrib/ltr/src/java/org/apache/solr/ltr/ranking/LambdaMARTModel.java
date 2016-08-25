@@ -202,7 +202,7 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
   }
 
   @Override
-  protected float scoreNormalized(float[] modelFeatureValuesNormalized) {
+  public float score(float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (final RegressionTree t : trees) {
       score += t.score(modelFeatureValuesNormalized);

@@ -48,7 +48,7 @@ public class LoggingModel extends LTRScoringAlgorithm {
   }
 
   @Override
-  protected float scoreNormalized(float[] modelFeatureValuesNormalized) {
+  public float score(float[] modelFeatureValuesNormalized) {
     return 0;
   }
 

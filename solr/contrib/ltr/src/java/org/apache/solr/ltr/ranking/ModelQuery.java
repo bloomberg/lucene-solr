@@ -186,7 +186,7 @@ public class ModelQuery extends Query {
     // List of the model's features used for scoring. This is a subset of the
     // features used for logging.
     FeatureWeight[] modelFeatures;
-    float[] modelFeatureValues;
+    float[] modelFeatureValuesNormalized;
 
     // List of all the feature values, used for both scoring and logging
     FeatureWeight[] allFeatureWeights;
@@ -200,7 +200,7 @@ public class ModelQuery extends Query {
       this.searcher = searcher;
       allFeatureWeights = allFeatures;
       this.modelFeatures = modelFeatures;
-      modelFeatureValues = new float[modelFeatures.length];
+      modelFeatureValuesNormalized = new float[modelFeatures.length];
       allFeatureValues = new float[allFeatures.length];
       allFeatureNames = new String[allFeatures.length];
       allFeaturesUsed = new boolean[allFeatures.length];
@@ -214,18 +214,19 @@ public class ModelQuery extends Query {
      * Goes through all the stored feature values, and calculates the normalized
      * values for all the features that will be used for scoring.
      */
-    public void makeRawFeatures() {
+    private void makeNormalizedFeatures() {
       int pos = 0;
       for (final FeatureWeight feature : modelFeatures) {
         final int featureId = feature.getId();
         if (allFeaturesUsed[featureId]) {
-          modelFeatureValues[pos] =
+          modelFeatureValuesNormalized[pos] =
               allFeatureValues[featureId];
         } else {
-          modelFeatureValues[pos] = feature.getDefaultValue();
+          modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
         }
         pos++;
       }
+      meta.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
     }
 
     @Override
@@ -382,8 +383,8 @@ public class ModelQuery extends Query {
               allFeatureValues[featureId] = subScorer.score();
             }
           }
-          makeRawFeatures();
-          return meta.score(modelFeatureValues);
+          makeNormalizedFeatures();
+          return meta.score(modelFeatureValuesNormalized);
         }
 
         @Override
@@ -476,8 +477,8 @@ public class ModelQuery extends Query {
               }
             }
           }
-          makeRawFeatures();
-          return meta.score(modelFeatureValues);
+          makeNormalizedFeatures();
+          return meta.score(modelFeatureValuesNormalized);
         }
 
         @Override

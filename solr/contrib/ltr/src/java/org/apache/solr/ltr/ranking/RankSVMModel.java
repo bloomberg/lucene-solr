@@ -62,7 +62,7 @@ public class RankSVMModel extends LTRScoringAlgorithm {
   }
 
   @Override
-  protected float scoreNormalized(float[] modelFeatureValuesNormalized) {
+  public float score(float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (int i = 0; i < modelFeatureValuesNormalized.length; ++i) {
       score += modelFeatureValuesNormalized[i] * featureToWeight[i];

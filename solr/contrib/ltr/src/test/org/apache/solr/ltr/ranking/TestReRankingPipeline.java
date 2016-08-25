@@ -85,7 +85,7 @@ public class TestReRankingPipeline extends LuceneTestCase {
     }
 
     @Override
-    protected float scoreNormalized(float[] modelFeatureValuesNormalized) {
+    public float score(float[] modelFeatureValuesNormalized) {
       return modelFeatureValuesNormalized[2];
     }
 
