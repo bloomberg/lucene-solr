@@ -42,7 +42,7 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
   }
 
   @Test
-  public void getInstanceTest() throws FeatureException, ModelException {
+  public void getInstanceTest() {
     final Map<String,Object> weights = new HashMap<>();
     weights.put("constant1", 1d);
     weights.put("constant5", 1d);
@@ -59,117 +59,107 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     assertEquals(meta, m);
   }
 
-  @Test(expected = ModelException.class)
-  public void getInvalidTypeTest() throws ModelException, FeatureException {
-    final LTRScoringAlgorithm meta = new RankSVMModel("test2",
-        getFeatures(new String[] {
-            "constant1", "constant5"}), "test", fstore.getFeatures(), null);
-    store.addMetadataModel(meta);
-    final LTRScoringAlgorithm m = store.getModel("test38290156821076");
+  @Test
+  public void nullFeatureWeightsTest() {
+    final ModelException expectedException = 
+        new ModelException("Model test2 doesn't contain any weights");
+    try {
+      final LTRScoringAlgorithm meta = new RankSVMModel("test2",
+          getFeatures(new String[] {
+              "constant1", "constant5"}), "test", fstore.getFeatures(), null);
+      fail("unexpectedly got here instead of catching "+expectedException);
+    } catch (ModelException actualException) {
+      assertEquals(expectedException.toString(), actualException.toString());
+    }
   }
 
-  @Test(expected = ModelException.class)
-  public void getInvalidNameTest() throws ModelException, FeatureException {
-    final LTRScoringAlgorithm meta = new RankSVMModel("!!!??????????",
-        getFeatures(new String[] {
-            "constant1", "constant5"}), "test", fstore.getFeatures(), null);
-    store.addMetadataModel(meta);
-    store.getModel("!!!??????????");
+  @Test
+  public void existingNameTest() {
+    final ModelException expectedException = 
+        new ModelException("model 'test3' already exists. Please use a different name");
+    try {
+      final Map<String,Object> weights = new HashMap<>();
+      weights.put("constant1", 1d);
+      weights.put("constant5", 1d);
+
+      Map<String,Object> params = new HashMap<String,Object>();
+      params.put("weights", weights);
+      final LTRScoringAlgorithm meta = new RankSVMModel("test3",
+          getFeatures(new String[] {
+              "constant1", "constant5"}), "test", fstore.getFeatures(),
+              params);
+      store.addMetadataModel(meta);
+      final LTRScoringAlgorithm m = store.getModel("test3");
+      assertEquals(meta, m);
+      store.addMetadataModel(meta);
+      fail("unexpectedly got here instead of catching "+expectedException);
+    } catch (ModelException actualException) {
+      assertEquals(expectedException.toString(), actualException.toString());
+    }
   }
 
-  @Test(expected = ModelException.class)
-  public void existingNameTest() throws ModelException, FeatureException {
-    final Map<String,Object> weights = new HashMap<>();
-    weights.put("constant1", 1d);
-    weights.put("constant5", 1d);
+  @Test
+  public void duplicateFeatureTest() {
+    final ModelException expectedException = 
+        new ModelException("duplicated feature constant1 in model test4");
+    try {
+      final Map<String,Object> weights = new HashMap<>();
+      weights.put("constant1", 1d);
+      weights.put("constant5", 1d);
 
-    Map<String,Object> params = new HashMap<String,Object>();
-    params.put("weights", weights);
-    final LTRScoringAlgorithm meta = new RankSVMModel("test3",
-        getFeatures(new String[] {
-            "constant1", "constant5"}), "test", fstore.getFeatures(),
-        params);
-    store.addMetadataModel(meta);
-    final LTRScoringAlgorithm m = store.getModel("test3");
-    assertEquals(meta, m);
-    store.addMetadataModel(meta);
-  }
-
-  @Test(expected = ModelException.class)
-  public void duplicateFeatureTest() throws ModelException, FeatureException {
-    final Map<String,Object> weights = new HashMap<>();
-    weights.put("constant1", 1d);
-    weights.put("constant5", 1d);
-
-    Map<String,Object> params = new HashMap<String,Object>();
-    params.put("weights", weights);
-    final LTRScoringAlgorithm meta = new RankSVMModel("test4",
-        getFeatures(new String[] {
-            "constant1", "constant1"}), "test", fstore.getFeatures(),
-        params);
-    store.addMetadataModel(meta);
-
-  }
-
-  @Test(expected = ModelException.class)
-  public void missingFeatureTest() throws ModelException, FeatureException {
-    final Map<String,Object> weights = new HashMap<>();
-    weights.put("constant1", 1d);
-    weights.put("constant5missing", 1d);
-
-    Map<String,Object> params = new HashMap<String,Object>();
-    params.put("weights", weights);
-    final LTRScoringAlgorithm meta = new RankSVMModel("test5",
-        getFeatures(new String[] {
-            "constant1", "constant1"}), "test", fstore.getFeatures(),
-        params);
-    store.addMetadataModel(meta);
+      Map<String,Object> params = new HashMap<String,Object>();
+      params.put("weights", weights);
+      final LTRScoringAlgorithm meta = new RankSVMModel("test4",
+          getFeatures(new String[] {
+              "constant1", "constant1"}), "test", fstore.getFeatures(),
+              params);
+      store.addMetadataModel(meta);
+      fail("unexpectedly got here instead of catching "+expectedException);
+    } catch (ModelException actualException) {
+      assertEquals(expectedException.toString(), actualException.toString());
+    }
 
   }
 
-  @Test(expected = ModelException.class)
-  public void notExistingClassTest() throws ModelException, FeatureException {
-    final Map<String,Object> weights = new HashMap<>();
-    weights.put("constant1", 1d);
-    weights.put("constant5missing", 1d);
+  @Test
+  public void missingFeatureWeightTest() {
+    final ModelException expectedException = 
+        new ModelException("no weight for feature constant5");
+    try {
+      final Map<String,Object> weights = new HashMap<>();
+      weights.put("constant1", 1d);
+      weights.put("constant5missing", 1d);
 
-    Map<String,Object> params = new HashMap<String,Object>();
-    params.put("weights", weights);
-    final LTRScoringAlgorithm meta = new RankSVMModel("test6",
-        getFeatures(new String[] {
-            "constant1", "constant5"}), "test", fstore.getFeatures(),
-        params);
-    store.addMetadataModel(meta);
-
+      Map<String,Object> params = new HashMap<String,Object>();
+      params.put("weights", weights);
+      final LTRScoringAlgorithm meta = new RankSVMModel("test5",
+          getFeatures(new String[] {
+              "constant1", "constant5"}), "test", fstore.getFeatures(),
+              params);
+      fail("unexpectedly got here instead of catching "+expectedException);
+    } catch (ModelException actualException) {
+      assertEquals(expectedException.toString(), actualException.toString());
+    }
   }
 
-  @Test(expected = ModelException.class)
-  public void badModelClassTest() throws ModelException, FeatureException {
-    final Map<String,Object> weights = new HashMap<>();
-    weights.put("constant1", 1d);
-    weights.put("constant5missing", 1d);
+  @Test
+  public void emptyFeaturesTest() {
+    final ModelException expectedException = 
+        new ModelException("no features declared for model test6");
+    try {
+      final Map<String,Object> weights = new HashMap<>();
+      weights.put("constant1", 1d);
+      weights.put("constant5missing", 1d);
 
-    Map<String,Object> params = new HashMap<String,Object>();
-    params.put("weights", weights);
-    final LTRScoringAlgorithm meta = new RankSVMModel("test7",
-        getFeatures(new String[] {
-            "constant1", "constant5"}), "test", fstore.getFeatures(),
-        params);
-    store.addMetadataModel(meta);
-
-  }
-
-  @Test(expected = ModelException.class)
-  public void misingFeaturesTest() throws ModelException, FeatureException {
-    final Map<String,Object> weights = new HashMap<>();
-    weights.put("constant1", 1d);
-    weights.put("constant5missing", 1d);
-
-    Map<String,Object> params = new HashMap<String,Object>();
-    params.put("weights", weights);
-    final LTRScoringAlgorithm meta = new RankSVMModel("test8",
-        getFeatures(new String[] {}), "test", fstore.getFeatures(),
-        params);
-    store.addMetadataModel(meta);
+      Map<String,Object> params = new HashMap<String,Object>();
+      params.put("weights", weights);
+      final LTRScoringAlgorithm meta = new RankSVMModel("test6",
+          getFeatures(new String[] {}), "test", fstore.getFeatures(),
+          params);
+      store.addMetadataModel(meta);
+      fail("unexpectedly got here instead of catching "+expectedException);
+    } catch (ModelException actualException) {
+      assertEquals(expectedException.toString(), actualException.toString());
+    }
   }
 }
