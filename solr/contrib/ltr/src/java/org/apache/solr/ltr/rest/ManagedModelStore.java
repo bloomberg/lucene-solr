@@ -34,7 +34,6 @@ import org.apache.solr.ltr.feature.ModelStore;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.ranking.FilterFeature;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.LTRUtils;
@@ -103,6 +102,21 @@ public class ManagedModelStore extends ManagedResource implements
   }
 
   @SuppressWarnings("unchecked")
+  private Normalizer parseNormalizer(Map<String,Object> featureMap) {
+    final Object normObj = featureMap.get(CommonLTRParams.FEATURE_NORM);
+    final Normalizer norm;
+    if (normObj != null) {
+      norm = Normalizer.fromMap(solrResourceLoader,
+          (Map<String,Object>) normObj);
+    }
+    else {
+      norm = IdentityNormalizer.INSTANCE;
+    }
+
+    return norm;
+  }
+
+  @SuppressWarnings("unchecked")
   private Feature parseFeature(Map<String,Object> featureMap,
       FeatureStore featureStore) throws FeatureException,
       CloneNotSupportedException {
@@ -118,14 +132,6 @@ public class ManagedModelStore extends ManagedResource implements
       throw new FeatureException("feature " + name
           + " not found in store " + featureStore.getName());
     }
-
-    final Object normObj = featureMap.get(CommonLTRParams.FEATURE_NORM);
-    if (normObj != null) {
-      final Normalizer norm = Normalizer.fromMap(solrResourceLoader,
-          (Map<String,Object>) normObj);
-      meta = new FilterFeature(meta, norm);
-    }
-
     return meta;
   }
 
@@ -176,16 +182,21 @@ public class ManagedModelStore extends ManagedResource implements
     final List<Object> featureList = (List<Object>) map
         .get(CommonLTRParams.MODEL_FEATURE_LIST);
     final List<Feature> features = new ArrayList<>();
+    final List<Normalizer> norms = new ArrayList<>();
     for (final Object modelFeature : featureList) {
       try {
         // check the declared features exist in the feature store
-        final Feature feature = parseFeature((Map<String,Object>) modelFeature,
+        final Map<String,Object> modelFeatureMap = 
+            (Map<String,Object>) modelFeature;
+        final Feature feature = parseFeature(modelFeatureMap,
             fstore);
         if (!fstore.containsFeature(feature.getName())) {
           throw new ModelException("missing feature " + feature.getName()
               + " in model " + name);
         }
-      features.add(feature);
+        final Normalizer norm = parseNormalizer(modelFeatureMap);
+        norms.add(norm);
+        features.add(feature);
       } catch (FeatureException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);
       } catch (final CloneNotSupportedException e) {
@@ -203,8 +214,8 @@ public class ManagedModelStore extends ManagedResource implements
           type,
           LTRScoringAlgorithm.class,
           new String[0], // no sub packages
-          new Class[] { String.class, List.class, String.class, List.class, Map.class },
-          new Object[] { name, features, featureStoreName, fstore.getFeatures(), params });
+          new Class[] { String.class, List.class, List.class, String.class, List.class, Map.class },
+          new Object[] { name, features, norms, featureStoreName, fstore.getFeatures(), params });
     } catch (final Exception e) {
       throw new ModelException("Model type does not exist " + type, e);
     }

@@ -96,12 +96,14 @@ public class LTRQParserPlugin extends QParserPlugin {
       // Enable the feature vector cache if we are extracting features, and the features
       // we requested are the same ones we are reranking with
       final Boolean extractFeatures = (Boolean) req.getContext().get(CommonLTRParams.LOG_FEATURES_QUERY_PARAM);
-      final String fvStoreName = (String) req.getContext().get(CommonLTRParams.STORE);
+      final String fvStoreName = (String) req.getContext().get(CommonLTRParams.FV_STORE);
       final boolean fvCache = (extractFeatures != null && extractFeatures.booleanValue() &&
           (fvStoreName == null || fvStoreName.equals(reRankModel.getFeatureStoreName())));
       if (fvCache) {
+        final String fvFeatureFormat = (String) req.getContext().get(CommonLTRParams.FV_FORMAT);
         final FeatureLogger<?> solrLogger = FeatureLogger
-            .getFeatureLogger(params.get(CommonLTRParams.FV_RESPONSE_WRITER));
+            .getFeatureLogger(params.get(CommonLTRParams.FV_RESPONSE_WRITER),
+                fvFeatureFormat);
         reRankModel.setFeatureLogger(solrLogger);
         req.getContext().put(CommonLTRParams.LOGGER_NAME, solrLogger);
       }

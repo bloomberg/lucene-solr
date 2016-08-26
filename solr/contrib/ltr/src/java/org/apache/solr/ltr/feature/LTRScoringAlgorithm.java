@@ -16,6 +16,7 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +24,12 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
+import org.apache.solr.ltr.feature.norm.Normalizer;
+import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.ranking.Feature;
+import org.apache.solr.ltr.ranking.Feature.FeatureWeight;
+import org.apache.solr.ltr.util.FeatureException;
+import org.apache.solr.ltr.util.LTRException;
 
 /**
  * Contains all the data needed for loading a model.
@@ -36,8 +42,10 @@ public abstract class LTRScoringAlgorithm {
   private final List<Feature> features;
   private final List<Feature> allFeatures;
   private final Map<String,Object> params;
+  private final List<Normalizer> norms;
 
   public LTRScoringAlgorithm(String name, List<Feature> features,
+      List<Normalizer> norms,
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) {
     this.name = name;
@@ -45,8 +53,16 @@ public abstract class LTRScoringAlgorithm {
     this.featureStoreName = featureStoreName;
     this.allFeatures = allFeatures;
     this.params = params;
+    this.norms = norms;
   }
 
+  /**
+   * @return the norms
+   */
+  public List<Normalizer> getNorms() {
+    return Collections.unmodifiableList(norms);
+  }
+  
   /**
    * @return the name
    */
@@ -76,6 +92,7 @@ public abstract class LTRScoringAlgorithm {
     result = (prime * result) + ((features == null) ? 0 : features.hashCode());
     result = (prime * result) + ((name == null) ? 0 : name.hashCode());
     result = (prime * result) + ((params == null) ? 0 : params.hashCode());
+    result = (prime * result) + ((norms == null) ? 0 : norms.hashCode());
     result = (prime * result) + ((featureStoreName == null) ? 0 : featureStoreName.hashCode());
     return result;
   }
@@ -97,6 +114,13 @@ public abstract class LTRScoringAlgorithm {
         return false;
       }
     } else if (!features.equals(other.features)) {
+      return false;
+    }
+    if (norms == null) {
+      if (other.norms != null) {
+        return false;
+      }
+    } else if (!norms.equals(other.norms)) {
       return false;
     }
     if (name == null) {
@@ -136,7 +160,7 @@ public abstract class LTRScoringAlgorithm {
   public String getFeatureStoreName() {
     return featureStoreName;
   }
-
+  
   /**
    * Given a list of normalized values for all features a scoring algorithm
    * cares about, calculate and return a score.
@@ -169,5 +193,28 @@ public abstract class LTRScoringAlgorithm {
   public String toString() {
     return  getClass().getSimpleName() + "(name="+getName()+")";
   }
+  
+  /**
+   * Goes through all the stored feature values, and calculates the normalized
+   * values for all the features that will be used for scoring.
+   */
+  public void normalizeFeaturesInPlace(float[] modelFeatureValues) {
+    float[] modelFeatureValuesNormalized = modelFeatureValues;
+    if (modelFeatureValues.length != norms.size()) {
+      throw new FeatureException("Must have normalizer for every feature");
+    }
+    for(int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
+      modelFeatureValuesNormalized[idx] = 
+          norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+    }
+  }
+  
+  public Explanation getNormalizerExplanation(Explanation e, int idx) {
+    Normalizer n = norms.get(idx);
+    if (n != IdentityNormalizer.INSTANCE) {
+      return n.explain(e);
+    }
+    return e;
+  } 
 
 }

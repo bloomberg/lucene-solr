@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
+import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.LTRUtils;
 
@@ -35,13 +36,15 @@ public class LoggingModel extends LTRScoringAlgorithm {
   final static String LOGGING_MODEL_NAME = "logging-model";
 
   public LoggingModel(String featureStoreName, List<Feature> allFeatures){
-    this(LOGGING_MODEL_NAME, Collections.emptyList(), featureStoreName, allFeatures, LTRUtils.EMPTY_MAP);
+    this(LOGGING_MODEL_NAME, Collections.emptyList(), Collections.emptyList(), 
+        featureStoreName, allFeatures, LTRUtils.EMPTY_MAP);
   }
 
 
-  protected LoggingModel(String name, List<Feature> features, String featureStoreName,
+  protected LoggingModel(String name, List<Feature> features, 
+      List<Normalizer> norms, String featureStoreName,
       List<Feature> allFeatures, Map<String,Object> params) {
-    super(name, features, featureStoreName, allFeatures, params);
+    super(name, features, norms, featureStoreName, allFeatures, params);
   }
 
   @Override
