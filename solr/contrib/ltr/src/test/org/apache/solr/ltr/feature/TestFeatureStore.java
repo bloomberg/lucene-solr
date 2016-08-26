@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.feature.impl.FieldValueFeature;
 import org.apache.solr.ltr.feature.impl.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.ranking.Feature;
@@ -38,6 +37,12 @@ public class TestFeatureStore extends TestRerankBase {
   public static void setup() throws Exception {
     setuptest();
     fstore = getNewManagedFeatureStore();
+  }
+
+  @Test
+  public void testDefaultFeatureStoreName()
+  {
+    assertEquals("_DEFAULT_", FeatureStore.DEFAULT_FEATURE_STORE_NAME);
   }
 
   @Test

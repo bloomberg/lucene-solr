@@ -31,7 +31,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.log.LoggingModel;
-import org.apache.solr.ltr.ranking.Feature.FeatureWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
@@ -122,14 +121,12 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       String featureStoreName = params.get(CommonLTRParams.FV_STORE);
       if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getFeatureStoreName())))) {
         // if store is set in the trasformer we should overwrite the logger
-        if (featureStoreName == null){
-            featureStoreName =CommonLTRParams.DEFAULT_FEATURE_STORE_NAME;
-        }
 
         final ManagedFeatureStore fr = (ManagedFeatureStore) req.getCore().getRestManager()
             .getManagedResource(CommonLTRParams.FEATURE_STORE_END_POINT);
 
         final FeatureStore store = fr.getFeatureStore(featureStoreName);
+        featureStoreName = store.getName(); // if featureStoreName was null before this gets actual name
 
         try {
           final LoggingModel lm = new LoggingModel(featureStoreName,store.getFeatures());

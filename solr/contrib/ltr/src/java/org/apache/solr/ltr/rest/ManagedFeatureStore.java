@@ -57,7 +57,7 @@ public class ManagedFeatureStore extends ManagedResource implements
 
   public synchronized FeatureStore getFeatureStore(String name) {
     if (name == null) {
-      name = CommonLTRParams.DEFAULT_FEATURE_STORE_NAME;
+      name = FeatureStore.DEFAULT_FEATURE_STORE_NAME;
     }
     if (!stores.containsKey(name)) {
       stores.put(name, new FeatureStore(name));
@@ -98,11 +98,10 @@ public class ManagedFeatureStore extends ManagedResource implements
   public synchronized void addFeature(String name, String type,
       String featureStore, Map<String,Object> params)
       throws FeatureException {
-    if (featureStore == null) {
-      featureStore = CommonLTRParams.DEFAULT_FEATURE_STORE_NAME;
-    }
-
-    log.info("register feature {} -> {} in store [" + featureStore + "]",
+    log.info("register feature {} -> {} in "
+        + (featureStore == null ? "default" : "")
+        + " store"
+        + (featureStore == null ? "" : (" [" + featureStore + "]")),
         name, type);
 
     final FeatureStore fstore = getFeatureStore(featureStore);

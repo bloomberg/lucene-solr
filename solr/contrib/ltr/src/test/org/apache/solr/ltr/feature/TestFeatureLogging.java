@@ -23,7 +23,6 @@ import org.apache.solr.ltr.feature.impl.FieldValueFeature;
 import org.apache.solr.ltr.feature.impl.SolrFeature;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.ranking.RankSVMModel;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -95,7 +94,7 @@ public class TestFeatureLogging extends TestRerankBase {
   @Test
   public void testDefaultStoreFeatureExtraction() throws Exception {
     loadFeature("defaultf1", ValueFeature.class.getCanonicalName(),
-        CommonLTRParams.DEFAULT_FEATURE_STORE_NAME,
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME,
         "{\"value\":1.0}");
     loadFeature("store8f1", ValueFeature.class.getCanonicalName(),
         "store8",

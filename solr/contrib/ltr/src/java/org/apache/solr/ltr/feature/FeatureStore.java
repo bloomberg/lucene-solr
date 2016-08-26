@@ -17,15 +17,16 @@
 package org.apache.solr.ltr.feature;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-
 import org.apache.solr.ltr.ranking.Feature;
 
 public class FeatureStore {
+
+  /** the name of the default feature store **/
+  public static final String DEFAULT_FEATURE_STORE_NAME = "_DEFAULT_";
+
   private final LinkedHashMap<String,Feature> store = new LinkedHashMap<>(); // LinkedHashMap because we need predictable iteration order
   private final String name;
 
