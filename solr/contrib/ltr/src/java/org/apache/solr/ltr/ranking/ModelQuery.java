@@ -226,9 +226,14 @@ public class ModelQuery extends Query {
   public class FeatureInfo {
       String name;
       float value;
+      boolean used;
       
-      FeatureInfo(String n, float v){
-        name = n; value = v; 
+      FeatureInfo(String n, float v, boolean u){
+        name = n; value = v; used = u; 
+      }
+      
+      public void setAll(String n, float v, boolean u){
+        name = n; value = v; used = u; 
       }
       
       
@@ -254,7 +259,6 @@ public class ModelQuery extends Query {
     FeatureWeight[] modelFeatureWeights;
     float[] modelFeatureValuesNormalized;
     FeatureWeight[] extractedFeatureWeights;
-    Normalizer[] modelFeatureNorms;
 
     // List of all the feature names, values - used for both scoring and logging
     /*
@@ -287,16 +291,6 @@ public class ModelQuery extends Query {
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
       this.featuresInfo = new FeatureInfo[allFeaturesSize];
-      if (modelFeatNorms == null){
-        modelFeatureNorms = new Normalizer[modelFeatureWeights.length];
-        int pos = 0;
-        for (final FeatureWeight feature : modelFeatureWeights){
-          modelFeatureNorms[pos++] = feature.getNorm();
-        }
-      }
-      else{
-         this.modelFeatureNorms = modelFeatNorms;
-      }
     }
 
     /**
@@ -308,28 +302,30 @@ public class ModelQuery extends Query {
       for (final FeatureWeight feature : modelFeatureWeights) {
         final int featureId = feature.getId();
         FeatureInfo fInfo = featuresInfo[featureId];
-        if (fInfo != null) {
-          final Normalizer norm = this.modelFeatureNorms[pos];
-          modelFeatureValuesNormalized[pos] = norm.normalize(fInfo.getValue());
+        if (fInfo.used) {
+          modelFeatureValuesNormalized[pos] = fInfo.getValue();
         } else {
           modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
         }
         pos++;
       }
+      meta.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc)
         throws IOException {
 
+      final Explanation[] explanations = new Explanation[extractedFeatureWeights.length];
+      int index = 0;
+      for (final FeatureWeight feature : extractedFeatureWeights) {
+        explanations[index++] = feature.explain(context, doc);
+      }
       final List<Explanation> featureExplanations = new ArrayList<>();
       int pos = 0;
-      for (final FeatureWeight f : modelFeatureWeights) {
-        final Normalizer n = modelFeatureNorms[pos++];
-        Explanation e = f.explain(context, doc); //explanations[f.getId()];
-        if (n != IdentityNormalizer.INSTANCE) {
-          e = n.explain(e);
-        }
+      for (int idx = 0 ;idx < modelFeatureWeights.length; ++idx) {
+        final FeatureWeight f = modelFeatureWeights[idx]; 
+        Explanation e = meta.getNormalizerExplanation(explanations[f.getId()], idx);
         featureExplanations.add(e);
       }
       // TODO this calls twice the scorers, could be optimized.
@@ -350,8 +346,16 @@ public class ModelQuery extends Query {
     }
 
     protected void reset() {
-       for (int i = 0; i < featuresInfo.length;++i)
-       featuresInfo[i] = null;
+       for (int i = 0; i < extractedFeatureWeights.length;++i){
+          String featName = extractedFeatureWeights[i].getName();
+          float value = extractedFeatureWeights[i].getDefaultValue();
+          if (featuresInfo[i] == null){
+            featuresInfo[i] = new FeatureInfo(featName,value,false);
+          }
+          else{
+            featuresInfo[i].setAll(featName, value, false);
+          }
+       }
     }
 
     @Override
