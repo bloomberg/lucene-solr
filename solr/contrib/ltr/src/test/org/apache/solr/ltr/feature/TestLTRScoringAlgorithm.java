@@ -16,10 +16,16 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.ltr.TestRerankBase;
+import org.apache.solr.ltr.feature.norm.Normalizer;
+import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
+import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.apache.solr.ltr.rest.ManagedModelStore;
 import org.apache.solr.ltr.util.FeatureException;
@@ -48,10 +54,14 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     weights.put("constant5", 1d);
 
     Map<String,Object> params = new HashMap<String,Object>();
+    final List<Feature> features = getFeatures(new String[] {
+        "constant1", "constant5"});
+    final List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     params.put("weights", weights);
     final LTRScoringAlgorithm meta = new RankSVMModel("test1",
-        getFeatures(new String[] {
-            "constant1", "constant5"}), "test", fstore.getFeatures(),
+        features, norms, "test", fstore.getFeatures(),
         params);
 
     store.addMetadataModel(meta);
@@ -64,9 +74,13 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     final ModelException expectedException = 
         new ModelException("Model test2 doesn't contain any weights");
     try {
+      final List<Feature> features = getFeatures(new String[] 
+          {"constant1", "constant5"});
+      final List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
       final LTRScoringAlgorithm meta = new RankSVMModel("test2",
-          getFeatures(new String[] {
-              "constant1", "constant5"}), "test", fstore.getFeatures(), null);
+          features, norms, "test", fstore.getFeatures(), null);
       fail("unexpectedly got here instead of catching "+expectedException);
     } catch (ModelException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
@@ -78,6 +92,11 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     final ModelException expectedException = 
         new ModelException("model 'test3' already exists. Please use a different name");
     try {
+      final List<Feature> features = getFeatures(new String[] 
+          {"constant1", "constant5"});
+      final List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
       final Map<String,Object> weights = new HashMap<>();
       weights.put("constant1", 1d);
       weights.put("constant5", 1d);
@@ -85,8 +104,7 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
       final LTRScoringAlgorithm meta = new RankSVMModel("test3",
-          getFeatures(new String[] {
-              "constant1", "constant5"}), "test", fstore.getFeatures(),
+          features, norms, "test", fstore.getFeatures(),
               params);
       store.addMetadataModel(meta);
       final LTRScoringAlgorithm m = store.getModel("test3");
@@ -103,6 +121,11 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     final ModelException expectedException = 
         new ModelException("duplicated feature constant1 in model test4");
     try {
+      final List<Feature> features = getFeatures(new String[] 
+          {"constant1", "constant1"});
+      final List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
       final Map<String,Object> weights = new HashMap<>();
       weights.put("constant1", 1d);
       weights.put("constant5", 1d);
@@ -110,8 +133,7 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
       final LTRScoringAlgorithm meta = new RankSVMModel("test4",
-          getFeatures(new String[] {
-              "constant1", "constant1"}), "test", fstore.getFeatures(),
+          features, norms, "test", fstore.getFeatures(),
               params);
       store.addMetadataModel(meta);
       fail("unexpectedly got here instead of catching "+expectedException);
@@ -126,6 +148,11 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     final ModelException expectedException = 
         new ModelException("no weight for feature constant5");
     try {
+      final List<Feature> features = getFeatures(new String[] 
+          {"constant1", "constant5"});
+      final List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
       final Map<String,Object> weights = new HashMap<>();
       weights.put("constant1", 1d);
       weights.put("constant5missing", 1d);
@@ -133,8 +160,7 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
       final LTRScoringAlgorithm meta = new RankSVMModel("test5",
-          getFeatures(new String[] {
-              "constant1", "constant5"}), "test", fstore.getFeatures(),
+          features, norms, "test", fstore.getFeatures(),
               params);
       fail("unexpectedly got here instead of catching "+expectedException);
     } catch (ModelException actualException) {
@@ -147,6 +173,10 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
     final ModelException expectedException = 
         new ModelException("no features declared for model test6");
     try {
+      final List<Feature> features = getFeatures(new String[] {});
+      final List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
       final Map<String,Object> weights = new HashMap<>();
       weights.put("constant1", 1d);
       weights.put("constant5missing", 1d);
@@ -154,7 +184,7 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
       final LTRScoringAlgorithm meta = new RankSVMModel("test6",
-          getFeatures(new String[] {}), "test", fstore.getFeatures(),
+          features, norms, "test", fstore.getFeatures(),
           params);
       store.addMetadataModel(meta);
       fail("unexpectedly got here instead of catching "+expectedException);

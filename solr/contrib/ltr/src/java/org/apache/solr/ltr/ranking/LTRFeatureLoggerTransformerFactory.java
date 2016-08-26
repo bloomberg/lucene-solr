@@ -31,6 +31,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.log.LoggingModel;
+import org.apache.solr.ltr.ranking.Feature.FeatureWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
@@ -61,7 +62,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
     // Hint to enable feature vector cache since we are requesting features
     req.getContext().put(CommonLTRParams.LOG_FEATURES_QUERY_PARAM, true);
-    req.getContext().put(CommonLTRParams.STORE, params.get(CommonLTRParams.STORE));
+    req.getContext().put(CommonLTRParams.FV_STORE, params.get(CommonLTRParams.FV_STORE));
+    req.getContext().put(CommonLTRParams.FV_FORMAT, params.get(CommonLTRParams.FV_FORMAT));
 
     return new FeatureTransformer(name, params, req);
   }
@@ -117,7 +119,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       // Setup ModelQuery
       reRankModel = (ModelQuery) req.getContext().get(CommonLTRParams.MODEL);
       resultsReranked = (reRankModel != null);
-      String featureStoreName = params.get(CommonLTRParams.STORE);
+      String featureStoreName = params.get(CommonLTRParams.FV_STORE);
       if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getFeatureStoreName())))) {
         // if store is set in the trasformer we should overwrite the logger
         if (featureStoreName == null){
@@ -147,7 +149,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       if (reRankModel.getFeatureLogger() == null){
         final String featureResponseFormat = req.getParams().get(CommonLTRParams.FV_RESPONSE_WRITER,"csv");
-        reRankModel.setFeatureLogger(FeatureLogger.getFeatureLogger(featureResponseFormat));
+        final String featureFormat = req.getParams().get(CommonLTRParams.FV_FORMAT,"sparse");
+        reRankModel.setFeatureLogger(FeatureLogger.getFeatureLogger(featureResponseFormat,featureFormat));
       }
       reRankModel.setRequest(req);
 

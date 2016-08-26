@@ -214,19 +214,19 @@ public class ModelQuery extends Query {
      * Goes through all the stored feature values, and calculates the normalized
      * values for all the features that will be used for scoring.
      */
-    public void normalize() {
+    private void makeNormalizedFeatures() {
       int pos = 0;
       for (final FeatureWeight feature : modelFeatures) {
         final int featureId = feature.getId();
         if (allFeaturesUsed[featureId]) {
-          final Normalizer norm = feature.getNorm();
-          modelFeatureValuesNormalized[pos] = norm
-              .normalize(allFeatureValues[featureId]);
+          modelFeatureValuesNormalized[pos] =
+              allFeatureValues[featureId];
         } else {
           modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
         }
         pos++;
       }
+      meta.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
     }
 
     @Override
@@ -241,12 +241,10 @@ public class ModelQuery extends Query {
       }
 
       final List<Explanation> featureExplanations = new ArrayList<>();
-      for (final FeatureWeight f : modelFeatures) {
-        final Normalizer n = f.getNorm();
+      for (int idx = 0; idx < modelFeatures.length; ++idx) {
+        final FeatureWeight f = modelFeatures[idx];
         Explanation e = explanations[f.getId()];
-        if (n != IdentityNormalizer.INSTANCE) {
-          e = n.explain(e);
-        }
+        e = meta.getNormalizerExplanation(e, idx);
         featureExplanations.add(e);
       }
       // TODO this calls twice the scorers, could be optimized.
@@ -269,6 +267,7 @@ public class ModelQuery extends Query {
     protected void reset() {
       for (int i = 0, len = allFeaturesUsed.length; i < len; i++) {
         allFeaturesUsed[i] = false;
+        allFeatureValues[i] = allFeatureWeights[i].getDefaultValue();
       }
     }
 
@@ -385,7 +384,7 @@ public class ModelQuery extends Query {
               allFeatureValues[featureId] = subScorer.score();
             }
           }
-          normalize();
+          makeNormalizedFeatures();
           return meta.score(modelFeatureValuesNormalized);
         }
 
@@ -479,7 +478,7 @@ public class ModelQuery extends Query {
               }
             }
           }
-          normalize();
+          makeNormalizedFeatures();
           return meta.score(modelFeatureValuesNormalized);
         }
 
