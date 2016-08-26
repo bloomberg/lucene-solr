@@ -487,36 +487,8 @@ public class HttpSolrCall {
       return RETURN;
     } finally {
       MDCLoggingContext.clear();
-     // long t1 = System.currentTimeMillis();
-      //clearGarbage();
-     // long t2 = System.currentTimeMillis();
-      //log.info("Time for clearGarbage() call: {}", (t2-t1));
     }
 
-  }
-  
-  class GCRunner implements Runnable {
-
-    @Override
-    public void run() {
-      // Sleep for a while
-      try {
-        Thread.sleep(20);
-        
-        long t1 = System.currentTimeMillis();
-        System.gc();
-        long t2 = System.currentTimeMillis();
-        log.info("Collected garbage after 100ms sleep, t1: {}, t2:{}", t1, t2);
-      } catch (InterruptedException e) {
-        log.info("Error clearing garbage");
-      }
-    } 
-  }
-  
-  private void clearGarbage(){
-    GCRunner runner = new GCRunner();  
-    Thread thread = new Thread(runner);
-    thread.start();
   }
 
   private boolean shouldAuthorize() {

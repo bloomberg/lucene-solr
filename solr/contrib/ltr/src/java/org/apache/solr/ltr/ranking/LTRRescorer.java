@@ -113,9 +113,160 @@ public class LTRRescorer extends Rescorer {
   @Override
   public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs,
       int topN) throws IOException {
-    if (ModelQuery.newCode){
-       return rescoreParallel(searcher, firstPassTopDocs,topN);
+    if ((topN == 0) || (firstPassTopDocs.totalHits == 0)) {
+      return firstPassTopDocs;
     }
+    
+    final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
+   
+
+    Arrays.sort(hits, new Comparator<ScoreDoc>() {
+      @Override
+      public int compare(ScoreDoc a, ScoreDoc b) {
+        return a.doc - b.doc;
+      }
+    });
+
+    topN = Math.min(topN, firstPassTopDocs.totalHits);
+    final ScoreDoc[] reranked = new ScoreDoc[topN];
+    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
+    final ModelWeight modelWeight = (ModelWeight) searcher
+        .createNormalizedWeight(reRankModel, true);
+
+    // FIXME: I dislike that we have no gaurentee this is actually a
+    // SolrIndexReader.
+    // We should do something about that
+    final SolrIndexSearcher solrIndexSearch = (SolrIndexSearcher) searcher;
+    if (LTRThreadInterface.maxThreads > 1){
+       scoreParallel(solrIndexSearch, firstPassTopDocs,topN, modelWeight, hits, leaves, reranked);
+    }
+    else{
+       scoreSimple(solrIndexSearch, firstPassTopDocs,topN, modelWeight, hits, leaves, reranked);
+    }
+    // Must sort all documents that we reranked, and then select the top 
+    Arrays.sort(reranked, new Comparator<ScoreDoc>() {
+      @Override
+      public int compare(ScoreDoc a, ScoreDoc b) {
+        // Sort by score descending, then docID ascending:
+        if (a.score > b.score) {
+          return -1;
+        } else if (a.score < b.score) {
+          return 1;
+        } else {
+          // This subtraction can't overflow int
+          // because docIDs are >= 0:
+          return a.doc - b.doc;
+        }
+      }
+    });
+
+    // if (topN < hits.length) {
+    // ScoreDoc[] subset = new ScoreDoc[topN];
+    // System.arraycopy(hits, 0, subset, 0, topN);
+    // hits = subset;
+    // }
+
+    return new TopDocs(firstPassTopDocs.totalHits, reranked, reranked[0].score);
+  }
+  
+  public void scoreSimple(SolrIndexSearcher solrIndexSearch, TopDocs firstPassTopDocs,
+      int topN, ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
+      ScoreDoc[] reranked) throws IOException {
+    
+
+
+    int readerUpto = -1;
+    int endDoc = 0;
+    int docBase = 0;
+
+    ModelScorer scorer = null;
+    int hitUpto = 0;
+    final FeatureLogger<?> featureLogger = reRankModel.getFeatureLogger();
+
+    // FIXME
+    // All of this heap code is only for logging. Wrap all this code in
+    // 1 outer if (fl != null) so we can skip heap stuff if the request doesn't
+    // call for a feature vector.
+    //
+    // that could be done but it would require a new vector of size $rerank,
+    // that in the end we would have to sort, while using the heap, also if
+    // we do not log, in the end we sort a smaller array of topN results (that
+    // is the heap array).
+    // The heap is just anticipating the sorting of the array, so I don't think
+    // it would
+    // save time.
+    long time1 = System.currentTimeMillis();
+    while (hitUpto < hits.length) {
+      final ScoreDoc hit = hits[hitUpto];
+      final int docID = hit.doc;
+      
+      LeafReaderContext readerContext = null;
+      while (docID >= endDoc) {
+        readerUpto++;
+        readerContext = leaves.get(readerUpto);
+        endDoc = readerContext.docBase + readerContext.reader().maxDoc();
+      }
+      long stime1 = System.currentTimeMillis();
+      // We advanced to another segment
+      if (readerContext != null) {
+        docBase = readerContext.docBase;
+        scorer = modelWeight.scorer(readerContext);
+      }
+      long stime2 = System.currentTimeMillis();
+      // Scorer for a ModelWeight should never be null since we always have to
+      // call score
+      // even if no feature scorers match, since a model might use that info to
+      // return a
+      // non-zero score. Same applies for the case of advancing a ModelScorer
+      // past the target
+      // doc since the model algorithm still needs to compute a potentially
+      // non-zero score from blank features.
+      assert (scorer != null);
+      final int targetDoc = docID - docBase;
+      scorer.docID();
+      scorer.iterator().advance(targetDoc);
+
+      scorer.setDocInfoParam(CommonLTRParams.ORIGINAL_DOC_SCORE, new Float(hit.score));
+      long stime3 = System.currentTimeMillis();
+      hit.score = scorer.score();
+      if (hitUpto < topN) {
+        reranked[hitUpto] = hit;
+        // if the heap is not full, maybe I want to log the features for this
+        // document
+        if (featureLogger != null) {
+          featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
+              scorer.featuresInfo);
+        }
+      } else if (hitUpto == topN) {
+        // collected topN document, I create the heap
+        heapify(reranked, topN);
+      }
+      if (hitUpto >= topN) {
+        // once that heap is ready, if the score of this document is lower that
+        // the minimum
+        // i don't want to log the feature. Otherwise I replace it with the
+        // minimum and fix the
+        // heap.
+        if (hit.score > reranked[0].score) {
+          reranked[0] = hit;
+          heapAdjust(reranked, topN, 0);
+          if (featureLogger != null) {
+            featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
+                scorer.featuresInfo);
+          }
+        }
+      }
+      log.info("In scorer loop: create scorer: {} score time: {}", (stime2-stime1), (stime3-stime2));
+      hitUpto++;
+    }
+    long time2 = System.currentTimeMillis();
+    log.info("Total rescore time: {}", (time2-time1));
+    
+  }
+  
+  /*
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs,
+      int topN) throws IOException {
     
     if ((topN == 0) || (firstPassTopDocs.totalHits == 0)) {
       return firstPassTopDocs;
@@ -132,9 +283,6 @@ public class LTRRescorer extends Rescorer {
 
     topN = Math.min(topN, firstPassTopDocs.totalHits);
     final ScoreDoc[] reranked = new ScoreDoc[topN];
-    String[] featureNames;
-    float[] featureValues;
-    boolean[] featuresUsed;
 
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
@@ -259,15 +407,24 @@ public class LTRRescorer extends Rescorer {
 
     return new TopDocs(firstPassTopDocs.totalHits, reranked, reranked[0].score);
     
-  }
+  } */
   
   
   class SegmentScores{
     List<ScoreDoc> scoreDocList = new ArrayList<ScoreDoc>();
     LeafReaderContext readerContext = null;
+    ModelScorer scorer = null;
 
     public SegmentScores(LeafReaderContext readerContext){
        this.readerContext = readerContext;
+    }
+    
+    public void setScorer(ModelScorer sc){
+      this.scorer = sc;
+    }
+    
+    public ModelScorer getScorer(){
+      return this.scorer;
     }
 
     public void setScoreDocs(List<ScoreDoc> scoreDocs){
@@ -299,6 +456,7 @@ class SegmentScorerCallable implements Callable<SegmentScores>{
           long time1 = System.currentTimeMillis();
          int docBase = readerContext.docBase;
          ModelScorer scorer = modelWeight.scorer(readerContext);
+         segScores.setScorer(scorer);
          for (final ScoreDoc sd: segScores.getScoreDocs()){
             final int targetDoc = sd.doc - docBase;
             scorer.docID(); /// ???? why is this needed?
@@ -318,38 +476,15 @@ class SegmentScorerCallable implements Callable<SegmentScores>{
       }
 } // end of call SegmentScorerCallable
   
-  private TopDocs rescoreParallel(IndexSearcher searcher, TopDocs firstPassTopDocs,
-      int topN) throws IOException{
-    if ((topN == 0) || (firstPassTopDocs.totalHits == 0)) {
-      return firstPassTopDocs;
-    }
-
-    final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
-
-    Arrays.sort(hits, new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        return a.doc - b.doc;
-      }
-    });
-
-    topN = Math.min(topN, firstPassTopDocs.totalHits);
-    final ScoreDoc[] reranked = new ScoreDoc[topN];
-
-    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
+  private void scoreParallel(SolrIndexSearcher solrIndexSearch, TopDocs firstPassTopDocs,
+      int topN, ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
+      ScoreDoc[] reranked) throws IOException{
 
     int readerUpto = -1;
     int endDoc = 0;
     int hitUpto = 0;
 
-    final ModelWeight modelWeight = (ModelWeight) searcher
-        .createNormalizedWeight(reRankModel, true);
     final FeatureLogger<?> featureLogger = reRankModel.getFeatureLogger();
-
-    // FIXME: I dislike that we have no gaurentee this is actually a
-    // SolrIndexReader.
-    // We should do something about that
-    final SolrIndexSearcher solrIndexSearch = (SolrIndexSearcher) searcher;
 
     // FIXME
     // All of this heap code is only for logging. Wrap all this code in
@@ -400,7 +535,7 @@ class SegmentScorerCallable implements Callable<SegmentScores>{
       segmentScoresList.add(segmentScores);
       scoreDocList.clear();
     }
-    Executor executor = LTRThreadInterface.maxThreads == 0 ? LTRThreadInterface.directExecutor : LTRThreadInterface.createWeightScoreExecutor;
+    Executor executor = LTRThreadInterface.createWeightScoreExecutor;
 
     List<Future<SegmentScores> > futures = new ArrayList<>(segmentScoresList.size());
     List< SegmentScores > updatedSegmentScoresList = new ArrayList< SegmentScores >();
@@ -437,7 +572,7 @@ class SegmentScorerCallable implements Callable<SegmentScores>{
             // document
             if (featureLogger != null) {
               featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
-                  modelWeight.featuresInfo);
+                  segScores.getScorer().featuresInfo);
             }
           } else if (hitUpto == topN) {
             // collected topN document, I create the heap
@@ -454,7 +589,7 @@ class SegmentScorerCallable implements Callable<SegmentScores>{
               heapAdjust(reranked, topN, 0);
               if (featureLogger != null) {
                 featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
-                    modelWeight.featuresInfo);
+                    segScores.getScorer().featuresInfo);
               }
             }
           }
@@ -464,30 +599,6 @@ class SegmentScorerCallable implements Callable<SegmentScores>{
     }
     long time2 = System.currentTimeMillis();
     log.info("Total rescore time: {}", (time2-time1));
-    // ScoreDoc[] reranked = heap.getArray();
-    Arrays.sort(reranked, new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        // Sort by score descending, then docID ascending:
-        if (a.score > b.score) {
-          return -1;
-        } else if (a.score < b.score) {
-          return 1;
-        } else {
-          // This subtraction can't overflow int
-          // because docIDs are >= 0:
-          return a.doc - b.doc;
-        }
-      }
-    });
-
-    // if (topN < hits.length) {
-    // ScoreDoc[] subset = new ScoreDoc[topN];
-    // System.arraycopy(hits, 0, subset, 0, topN);
-    // hits = subset;
-    // }
-
-    return new TopDocs(firstPassTopDocs.totalHits, reranked, reranked[0].score);
   }
 
   @Override

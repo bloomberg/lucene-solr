@@ -121,7 +121,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   public static void after() throws Exception {
     aftertest();
   }
- 
+ /*
   @Test
   public void testModelQueryWeightCreation() throws IOException, ModelException {
     final Directory dir = newDirectory();
@@ -197,7 +197,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     r.close();
     dir.close();
   }
-  
+  */
  
   @Test
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {

@@ -189,7 +189,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           }
           r.score();
           doc.addField(name,
-              featureLogger.makeFeatureVector(modelWeight.featuresInfo));
+              featureLogger.makeFeatureVector(r.featuresInfo));
         }
       } else {
         doc.addField(name, fv);

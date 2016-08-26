@@ -45,6 +45,7 @@ import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
+import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 import org.junit.Test;
@@ -227,14 +228,18 @@ public class TestModelQuery extends LuceneTestCase {
 
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta));
-    assertEquals(3, modelWeight.modelFeatureValuesNormalized.length);
-
+    assertEquals(3, modelWeight.modelFeatureWeights.length);
+    
+    final List<LeafReaderContext> leafContexts = searcher.getTopReaderContext().leaves();
+    final int n = ReaderUtil.subIndex(hits.scoreDocs[0].doc, leafContexts);
+    final LeafReaderContext context = leafContexts.get(n);
+    ModelScorer scorer = modelWeight.scorer(context);
     for (int i = 0; i < 3; i++) {
-      assertEquals(i, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
+      assertEquals(i, scorer.modelFeatureValuesNormalized[i], 0.0001);
     }
     int[] posVals = new int[] {0, 1, 2};
     int pos = 0;
-    for (FeatureInfo fInfo:modelWeight.featuresInfo) {
+    for (FeatureInfo fInfo:scorer.featuresInfo) {
         if (fInfo == null){
           continue;
         }
@@ -251,11 +256,16 @@ public class TestModelQuery extends LuceneTestCase {
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(meta));
     assertEquals(mixPositions.length,
-        modelWeight.modelFeatureValuesNormalized.length);
-
+        modelWeight.modelFeatureWeights.length);
+    
+    
+    final List<LeafReaderContext> leafContexts2 = searcher.getTopReaderContext().leaves();
+    final int n2 = ReaderUtil.subIndex(hits.scoreDocs[0].doc, leafContexts2);
+    final LeafReaderContext context2 = leafContexts2.get(n2);
+    ModelScorer scorer2 = modelWeight.scorer(context2);
     for (int i = 0; i < mixPositions.length; i++) {
       assertEquals(mixPositions[i],
-          modelWeight.modelFeatureValuesNormalized[i], 0.0001);
+          scorer2.modelFeatureValuesNormalized[i], 0.0001);
     }
 
     final int[] noPositions = new int[] {};
@@ -265,7 +275,7 @@ public class TestModelQuery extends LuceneTestCase {
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(meta));
-    assertEquals(0, modelWeight.modelFeatureValuesNormalized.length);
+    assertEquals(0, modelWeight.modelFeatureWeights.length);
 
     // test normalizers
     features = makeNormalizedFeatures(mixPositions);
@@ -275,10 +285,14 @@ public class TestModelQuery extends LuceneTestCase {
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(normMeta));
+    final List<LeafReaderContext> leafContexts3 = searcher.getTopReaderContext().leaves();
+    final int n3 = ReaderUtil.subIndex(hits.scoreDocs[0].doc, leafContexts3);
+    final LeafReaderContext context3 = leafContexts3.get(n3);
+    ModelScorer scorer3 = modelWeight.scorer(context3);
     assertEquals(mixPositions.length,
-        modelWeight.modelFeatureValuesNormalized.length);
+        modelWeight.modelFeatureWeights.length);
     for (int i = 0; i < mixPositions.length; i++) {
-      assertEquals(42.42f, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
+      assertEquals(42.42f, scorer3.modelFeatureValuesNormalized[i], 0.0001);
     }
     r.close();
     dir.close();
