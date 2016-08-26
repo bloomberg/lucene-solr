@@ -145,15 +145,15 @@ public class TestModelQuery extends LuceneTestCase {
     assertEquals(m1, m2);
     assertEquals(m1.hashCode(), m2.hashCode());
 
-    final HashMap<String,String> externalFeatureInfo = new HashMap<>();
-    externalFeatureInfo.put("queryIntent", "company");
+    final HashMap<String,String[]> externalFeatureInfo = new HashMap<>();
+    externalFeatureInfo.put("queryIntent", new String[] {"company"});
     m2.setExternalFeatureInfo(externalFeatureInfo);
 
     assertFalse(m1.equals(m2));
     assertFalse(m1.hashCode() == m2.hashCode());
 
-    final HashMap<String,String> externalFeatureInfo2 = new HashMap<>();
-    externalFeatureInfo2.put("queryIntent", "company");
+    final HashMap<String,String[]> externalFeatureInfo2 = new HashMap<>();
+    externalFeatureInfo2.put("queryIntent", new String[] {"company"});
     m1.setExternalFeatureInfo(externalFeatureInfo2);
 
     assertEquals(m1, m2);
