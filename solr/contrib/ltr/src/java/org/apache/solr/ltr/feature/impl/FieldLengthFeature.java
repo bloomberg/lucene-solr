@@ -28,8 +28,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.SmallFloat;
 import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.util.CommonLTRParams;
-import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class FieldLengthFeature extends Feature {
@@ -73,8 +71,8 @@ public class FieldLengthFeature extends Feature {
     // positive above 127
   }
 
-  public FieldLengthFeature(String name) {
-    super(name);
+  public FieldLengthFeature(String name, Map<String,Object> params) {
+    super(name, params);
   }
 
   @Override

@@ -29,11 +29,11 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.util.CommonLTRParams;
-import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.ltr.util.MacroExpander;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.SolrPluginUtils;
 
 /**
  * A 'recipe' for computing a feature
@@ -41,23 +41,26 @@ import org.apache.solr.request.SolrQueryRequest;
 public abstract class Feature extends Query {
 
   final protected String name;
-  protected int id;
+  private int id;
 
-  @Deprecated
-  private Map<String,Object> params = LTRUtils.EMPTY_MAP;
+  final private Map<String,Object> params;
 
-
-  /**
-   * @param params
-   *          Custom parameters that the feature may use
-   */
-  final public void init(Map<String,Object> params)
-      throws FeatureException {
-    this.params = params;
+  public static Feature getInstance(SolrResourceLoader solrResourceLoader,
+      String type, String name, int id, Map<String,Object> params) {
+    final Feature f = solrResourceLoader.newInstance(
+        type,
+        Feature.class,
+        new String[0], // no sub packages
+        new Class[] { String.class, Map.class },
+        new Object[] { name, params });
+    f.setId(id);
+    SolrPluginUtils.invokeSetters(f, params.entrySet());
+    return f;
   }
 
-  public Feature(String name) {
+  public Feature(String name, Map<String,Object> params) {
     this.name = name;
+    this.params = params;
   }
 
   @Override

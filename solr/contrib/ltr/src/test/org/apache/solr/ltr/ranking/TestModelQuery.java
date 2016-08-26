@@ -42,16 +42,18 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
-import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 import org.junit.Test;
 
 @SuppressCodecs("Lucene3x")
 public class TestModelQuery extends LuceneTestCase {
+
+  final private static SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
 
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = newSearcher(r, false, false);
@@ -61,16 +63,11 @@ public class TestModelQuery extends LuceneTestCase {
   private static List<Feature> makeFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      final ValueFeature f = new ValueFeature("f" + i);
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
-      try {
-        f.init(params);
-        f.setValue(i);
-        f.setId(i);
-      } catch (final FeatureException e) {
-        e.printStackTrace();
-      }
+      final Feature f = Feature.getInstance(solrResourceLoader,
+          ValueFeature.class.getCanonicalName(),
+          "f" + i, i, params);
       features.add(f);
     }
     return features;
@@ -79,9 +76,11 @@ public class TestModelQuery extends LuceneTestCase {
   private static List<Feature> makeFilterFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      final ValueFeature f = new ValueFeature("f" + i);
-      f.setValue(i);
-      f.id = i;
+      Map<String,Object> params = new HashMap<String,Object>();
+      params.put("value", i);
+      final Feature f = Feature.getInstance(solrResourceLoader,
+          ValueFeature.class.getCanonicalName(),
+          "f" + i, i, params);
       features.add(f);
     }
     return features;

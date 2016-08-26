@@ -41,7 +41,6 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrIndexSearcher.ProcessedFilter;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.ltr.util.FeatureException;
 
 public class SolrFeature extends Feature {
 
@@ -73,8 +72,8 @@ public class SolrFeature extends Feature {
     this.fq = fq;
   }
 
-  public SolrFeature(String name) {
-    super(name);
+  public SolrFeature(String name, Map<String,Object> params) {
+    super(name, params);
   }
 
   @Override

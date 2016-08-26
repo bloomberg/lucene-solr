@@ -42,6 +42,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.feature.impl.FieldValueFeature;
 import org.apache.solr.ltr.feature.norm.Normalizer;
@@ -58,6 +59,8 @@ public class TestReRankingPipeline extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
+  private static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
+
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = newSearcher(r);
 
@@ -68,8 +71,11 @@ public class TestReRankingPipeline extends LuceneTestCase {
       String field) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      final FieldValueFeature f = new FieldValueFeature("f" + i);
-      f.setField(field);
+      final Map<String,Object> params = new HashMap<String,Object>();
+      params.put("field", field);
+      final Feature f = Feature.getInstance(solrResourceLoader,
+          FieldValueFeature.class.getCanonicalName(),
+          "f" + i, i, params);
       features.add(f);
     }
     return features;
