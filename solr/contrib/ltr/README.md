@@ -355,10 +355,10 @@ If you use `[features]` together with your reranking model, it will return
 the array of features used by your model. Otherwise you can just ask solr to
 produce the features without doing the reranking:
 
-`fl=*,score,[features store=yourFeatureStore]`
+`fl=*,score,[features store=yourFeatureStore format=[dense|sparse] ]`
 
-This will return the values of the features in the given store.
-
+This will return the values of the features in the given store. The format of the 
+extracted features will be based on the format parameter. The default is sparse.
 
 # Assemble training data
 In order to train a learning to rank model you need training data. Training data is

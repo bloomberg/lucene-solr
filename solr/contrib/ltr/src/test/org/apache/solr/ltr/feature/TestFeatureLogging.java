@@ -184,4 +184,82 @@ public class TestFeatureLogging extends TestRerankBase {
         "/grouped/title/groups/[0]/doclist/docs/[0]/fv/=={'c3':3.0,'pop':5.0,'c1':1.0,'c2':2.0}");
   }
 
+  @Test
+  public void testSparseDenseFeatures() throws Exception {
+    loadFeature("match", SolrFeature.class.getCanonicalName(), "test4",
+        "{\"q\":\"{!terms f=title}different\"}");
+    loadFeature("c4", ValueFeature.class.getCanonicalName(), "test4",
+        "{\"value\":1.0}");
+
+    loadModel("sum4", RankSVMModel.class.getCanonicalName(), new String[] {
+        "match"}, "test4",
+        "{\"weights\":{\"match\":1.0}}");
+
+    //json - no feature format check (default to sparse)
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("title:bloomberg");
+    query.add("rows", "10");
+    query.add("fl", "*,score,fv:[fv store=test4]");
+    query.add("rq", "{!ltr reRankDocs=10 model=sum4}");
+    query.add("fvwt", "json");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/fv/=={'match':1.0,'c4':1.0}");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[1]/fv/=={'c4':1.0}");
+
+    //json - sparse feature format check
+    query.remove("fl");
+    query.add("fl", "*,score,fv:[fv store=test4 format=sparse]");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/fv/=={'match':1.0,'c4':1.0}");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[1]/fv/=={'c4':1.0}");
+
+    //json - dense feature format check
+    query.remove("fl");
+    query.add("fl", "*,score,fv:[fv store=test4 format=dense]");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/fv/=={'match':1.0,'c4':1.0}");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[1]/fv/=={'match':0.0,'c4':1.0}");
+
+    //csv - no feature format check (default to sparse)
+    query.remove("fl");
+    query.add("fl", "*,score,fv:[fv store=test4]");
+    query.remove("fvwt");
+    query.add("fvwt", "csv");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/fv/=='match:1.0;c4:1.0'");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[1]/fv/=='c4:1.0'");
+
+    //csv - sparse feature format check
+    query.remove("fl");
+    query.add("fl", "*,score,fv:[fv store=test4 format=sparse]");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/fv/=='match:1.0;c4:1.0'");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[1]/fv/=='c4:1.0'");
+
+    //csv - dense feature format check
+    query.remove("fl");
+    query.add("fl", "*,score,fv:[fv store=test4 format=dense]");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/fv/=='match:1.0;c4:1.0'");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[1]/fv/=='match:0.0;c4:1.0'");
+  }
+  
 }
