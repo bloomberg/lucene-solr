@@ -52,20 +52,13 @@ public class FeatureStore {
     return store.containsKey(name);
   }
 
-  public List<Object> featuresAsManagedResources() {
-    final List<Object> features = new ArrayList<Object>(store.size());
-    for (final Feature f : store.values()) {
-      features.add(f.toMap(name));
-    }
-    return features;
-  }
-
   public void add(Feature feature) {
     final String name = feature.getName();
     if (store.containsKey(name)) {
       throw new FeatureException(name
           + " already contained in the store, please use a different name");
     }
+    feature.setId(store.size());
     store.put(name, feature);
   }
 

@@ -52,10 +52,15 @@ public class TestFeatureStore extends TestRerankBase {
   {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature");
     for (int i = 0; i < 5; i++) {
-      fstore.addFeature("c" + i, OriginalScoreFeature.class.getCanonicalName(),
-          "fstore-testFeature", null);
+      final String name = "c" + i;
+      final Map<String,Object> map = new HashMap<String,Object>();
+      map.put(Feature.NAME_KEY, name);
+      map.put(Feature.CLASS_KEY, OriginalScoreFeature.class.getCanonicalName());
 
-      assertTrue(fs.containsFeature("c" + i));
+      fstore.addFeature(map, "fstore-testFeature");
+
+      final Feature f = fs.get(name);
+      assertNotNull(f);
 
     }
     assertEquals(5, fs.size());
@@ -67,11 +72,15 @@ public class TestFeatureStore extends TestRerankBase {
   {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature2");
     for (int i = 0; i < 5; i++) {
-
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
-      fstore.addFeature("c" + i, ValueFeature.class.getCanonicalName(),
-          "fstore-testFeature2", params);
+      final String name = "c" + i;
+      final Map<String,Object> map = new HashMap<String,Object>();
+      map.put(Feature.NAME_KEY, name);
+      map.put(Feature.CLASS_KEY, ValueFeature.class.getCanonicalName());
+      map.put(Feature.PARAMS_KEY, params);
+
+      fstore.addFeature(map, "fstore-testFeature2");
 
     }
 
@@ -90,9 +99,12 @@ public class TestFeatureStore extends TestRerankBase {
     for (int i = 0; i < 5; i++) {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
-      fstore.addFeature("testc" + (float) i,
-          ValueFeature.class.getCanonicalName(), "fstore-testFeature3",
-          params);
+      final String name = "testc" + (float) i;
+      final Map<String,Object> map = new HashMap<String,Object>();
+      map.put(Feature.NAME_KEY, name);
+      map.put(Feature.CLASS_KEY, ValueFeature.class.getCanonicalName());
+      map.put(Feature.PARAMS_KEY, params);
+      fstore.addFeature(map, "fstore-testFeature3");
 
     }
     assertNull(fs.get("missing_feature_name"));
