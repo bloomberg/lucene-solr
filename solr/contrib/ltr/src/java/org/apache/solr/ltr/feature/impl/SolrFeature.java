@@ -250,7 +250,14 @@ public class SolrFeature extends Feature {
 
       @Override
       public float score() throws IOException {
-        return solrScorer.score();
+        try {
+          return solrScorer.score();
+        } catch (UnsupportedOperationException e) {
+          throw new FeatureException(
+              e.toString() + ": " +
+              "Unable to extract feature for "
+              + name, e);
+        }
       }
 
       @Override

@@ -42,6 +42,8 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
+import org.apache.solr.ltr.feature.norm.Normalizer;
+import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 import org.junit.AfterClass;
@@ -159,10 +161,14 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5,
         6, 7, 8, 9});
-    
+    final List<Normalizer> norms = new ArrayList<>();
+    for (int k=0; k < features.size(); ++k){
+        norms.add(IdentityNormalizer.INSTANCE);
+    }
+
     // when features are NOT requested in the response, only the modelFeature weights should be created
     RankSVMModel meta1 = new RankSVMModel("test",
-        features, "test", allFeatures,
+        features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta1, false)); // features not requested in response
@@ -178,7 +184,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     
     // when features are requested in the response, weights should be created for all features
     RankSVMModel meta2 = new RankSVMModel("test",
-        features, "test", allFeatures,
+        features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta2, true)); // features requested in response

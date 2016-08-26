@@ -18,14 +18,13 @@ package org.apache.solr.ltr.feature;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.CommonLTRParams;
+import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 
 /**
@@ -65,17 +64,18 @@ public class ModelStore {
       modelMap.put((String)CommonLTRParams.MODEL_CLASS, modelmeta.getClass().getCanonicalName());
       modelMap.put((String)CommonLTRParams.MODEL_FEATURE_STORE, modelmeta.getFeatureStoreName());
       final List<Map<String,Object>> features = new ArrayList<>(modelmeta.numFeatures());
-      for (final Feature meta : modelmeta.getFeatures()) {
+      final List<Feature> featureList = modelmeta.getFeatures();
+      final List<Normalizer> normList = modelmeta.getNorms();
+      if (normList.size() != featureList.size()) {
+        throw new FeatureException("Every feature must have a normalizer");
+      }
+      for (int idx = 0; idx <  featureList.size(); ++idx) {
+        final Feature feature = featureList.get(idx);
+        final Normalizer norm = normList.get(idx);
         final Map<String,Object> map = new HashMap<String,Object>(2, 1.0f);
-        map.put("name", meta.getName());
-
-        final Normalizer n = meta.getNorm();
-
-        if (n != null) {
-          map.put("norm", n.toMap());
-        }
+        map.put("name", feature.getName());
+        map.put("norm", norm.toMap());
         features.add(map);
-
       }
       modelMap.put("features", features);
       modelMap.put("params", modelmeta.getParams());
@@ -102,24 +102,9 @@ public class ModelStore {
       throws ModelException {
     final String name = modeldata.getName();
 
-    if (modeldata.getFeatures().isEmpty()) {
-      throw new ModelException("no features declared for model "
-          + modeldata.getName());
-    }
-
     if (containsModel(name)) {
       throw new ModelException("model '" + name
           + "' already exists. Please use a different name");
-    }
-
-    // checks for duplicates in the feature
-    final Set<String> names = new HashSet<>();
-    for (final Feature feature : modeldata.getFeatures()) {
-      final String fname = feature.getName();
-      if (!names.add(fname)) {
-        throw new ModelException("duplicated feature " + fname + " in model "
-            + name);
-      }
     }
 
     availableModels.put(modeldata.getName(), modeldata);
