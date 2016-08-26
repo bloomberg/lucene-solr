@@ -54,7 +54,7 @@ public class TestFeatureStore extends TestRerankBase {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature");
     for (int i = 0; i < 5; i++) {
       fstore.addFeature("c" + i, OriginalScoreFeature.class.getCanonicalName(),
-          "fstore-testFeature", LTRUtils.EMPTY_MAP);
+          "fstore-testFeature", null);
 
       assertTrue(fs.containsFeature("c" + i));
 

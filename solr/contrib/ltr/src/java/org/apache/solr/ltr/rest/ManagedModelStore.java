@@ -189,10 +189,6 @@ public class ManagedModelStore extends ManagedResource implements
             (Map<String,Object>) modelFeature;
         final Feature feature = parseFeature(modelFeatureMap,
             fstore);
-        if (!fstore.containsFeature(feature.getName())) {
-          throw new ModelException("missing feature " + feature.getName()
-              + " in model " + name);
-        }
         final Normalizer norm = parseNormalizer(modelFeatureMap);
         norms.add(norm);
         features.add(feature);
@@ -203,7 +199,8 @@ public class ManagedModelStore extends ManagedResource implements
       }
     }
     
-    final Map<String,Object> params = LTRUtils.createParams(map);
+    @SuppressWarnings("unchecked")
+    final Map<String,Object> params = (Map<String,Object>) map.get(CommonLTRParams.MODEL_PARAMS);
 
     final String type = (String) map.get(CommonLTRParams.MODEL_CLASS);
     LTRScoringAlgorithm meta = null;
