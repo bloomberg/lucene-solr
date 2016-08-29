@@ -136,7 +136,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           reRankModel = new ModelQuery(lm);
 
           // Local transformer efi if provided
-          final Map<String,String> externalFeatureInfo = LTRUtils.extractEFIParams(params);
+          final Map<String,String[]> externalFeatureInfo = LTRUtils.extractEFIParams(params);
           reRankModel.setExternalFeatureInfo(externalFeatureInfo);
 
           reRankModel.setOriginalQuery(context.getQuery());

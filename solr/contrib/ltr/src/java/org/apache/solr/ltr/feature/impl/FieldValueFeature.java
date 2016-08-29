@@ -60,7 +60,8 @@ public class FieldValueFeature extends Feature {
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi)
+  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, 
+      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
       throws IOException {
     return new FieldValueFeatureWeight(searcher, request, originalQuery, efi);
   }
@@ -69,7 +70,7 @@ public class FieldValueFeature extends Feature {
   public class FieldValueFeatureWeight extends FeatureWeight {
 
     public FieldValueFeatureWeight(IndexSearcher searcher, 
-        SolrQueryRequest request, Query originalQuery, Map<String,String> efi) {
+        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(FieldValueFeature.this, searcher, request, originalQuery, efi);
     }
 
