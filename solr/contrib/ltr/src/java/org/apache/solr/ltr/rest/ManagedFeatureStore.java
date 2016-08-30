@@ -30,7 +30,6 @@ import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
@@ -84,7 +83,8 @@ public class ManagedFeatureStore extends ManagedResource implements
     final String type = (String) map.get(CommonLTRParams.MODEL_CLASS);
     final String store = (String) map.get(CommonLTRParams.MODEL_FEATURE_STORE);
 
-    final Map<String,Object> paramsMap = LTRUtils.createParams(map);
+    @SuppressWarnings("unchecked")
+    final Map<String,Object> paramsMap = (Map<String,Object>) map.get(CommonLTRParams.MODEL_PARAMS);
 
     try {
 
@@ -104,15 +104,6 @@ public class ManagedFeatureStore extends ManagedResource implements
         name, type);
 
     final FeatureStore fstore = getFeatureStore(featureStore);
-
-    if (fstore.containsFeature(name)) {
-      throw new FeatureException(name
-          + " already contained in the store, please use a different name");
-    }
-
-    if (params == null) {
-      params = LTRUtils.EMPTY_MAP;
-    }
 
     final Feature feature = createFeature(name, type, params, fstore.size());
 

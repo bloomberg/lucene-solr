@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.solr.ltr.ranking.Feature;
+import org.apache.solr.ltr.util.FeatureException;
 
 public class FeatureStore {
 
@@ -46,6 +47,7 @@ public class FeatureStore {
     return store.size();
   }
 
+  @SuppressWarnings("unused")
   public boolean containsFeature(String name) {
     return store.containsKey(name);
   }
@@ -59,7 +61,12 @@ public class FeatureStore {
   }
 
   public void add(Feature feature) {
-    store.put(feature.getName(), feature);
+    final String name = feature.getName();
+    if (store.containsKey(name)) {
+      throw new FeatureException(name
+          + " already contained in the store, please use a different name");
+    }
+    store.put(name, feature);
   }
 
   public List<Feature> getFeatures() {

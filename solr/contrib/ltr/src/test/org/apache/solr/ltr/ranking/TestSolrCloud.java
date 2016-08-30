@@ -19,7 +19,6 @@ package org.apache.solr.ltr.ranking;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.SortedMap;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;

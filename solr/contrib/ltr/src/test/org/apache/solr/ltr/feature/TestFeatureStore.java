@@ -25,7 +25,6 @@ import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.LTRUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -54,7 +53,7 @@ public class TestFeatureStore extends TestRerankBase {
     final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature");
     for (int i = 0; i < 5; i++) {
       fstore.addFeature("c" + i, OriginalScoreFeature.class.getCanonicalName(),
-          "fstore-testFeature", LTRUtils.EMPTY_MAP);
+          "fstore-testFeature", null);
 
       assertTrue(fs.containsFeature("c" + i));
 

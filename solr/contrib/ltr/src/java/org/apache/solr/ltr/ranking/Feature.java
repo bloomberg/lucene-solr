@@ -54,7 +54,9 @@ public abstract class Feature extends Query {
         new Class[] { String.class, Map.class },
         new Object[] { name, params });
     f.setId(id);
-    SolrPluginUtils.invokeSetters(f, params.entrySet());
+    if (params != null) {
+      SolrPluginUtils.invokeSetters(f, params.entrySet());
+    }
     return f;
   }
 

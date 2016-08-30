@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.feature.norm.impl;
 
 import java.util.LinkedHashMap;
-
 import org.apache.solr.ltr.feature.norm.Normalizer;
 
 public class MinMaxNormalizer extends Normalizer {
