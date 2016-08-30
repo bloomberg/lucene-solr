@@ -169,10 +169,9 @@ public class ManagedModelStore extends ManagedResource implements
   public LTRScoringAlgorithm makeLTRScoringAlgorithm(Map<String,Object> map)
       throws ModelException {
     final String name = (String) map.get(CommonLTRParams.MODEL_NAME);
-    final Object modelStoreObj = map.get(CommonLTRParams.MODEL_FEATURE_STORE);
-    final String featureStoreName = (modelStoreObj == null) ? CommonLTRParams.DEFAULT_FEATURE_STORE_NAME
-        : (String) modelStoreObj;
+    String featureStoreName = (String) map.get(CommonLTRParams.MODEL_FEATURE_STORE);
     final FeatureStore fstore = featureStores.getFeatureStore(featureStoreName);
+    featureStoreName = fstore.getName();  // if featureStoreName was null before this gets actual name
     if (!map.containsKey(CommonLTRParams.MODEL_FEATURE_LIST)) {
       // check if the model has a list of features to be used for computing the
       // ranking score

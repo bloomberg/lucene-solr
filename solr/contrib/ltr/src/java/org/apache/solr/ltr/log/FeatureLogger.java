@@ -136,12 +136,12 @@ public abstract class FeatureLogger<FV_TYPE> {
       boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
       Map<String,Float> hashmap = Collections.emptyMap();
       if (featuresInfo.length > 0) {
-         hashmap = new HashMap<String,Float>(featuresInfo.length);
-         for (FeatureInfo featInfo:featuresInfo){ 
-               if (featInfo.isUsed() || isDense){
-                  hashmap.put(featInfo.getName(), featInfo.getValue());
-               }
-         }
+        hashmap = new HashMap<String,Float>(featuresInfo.length);
+        for (FeatureInfo featInfo:featuresInfo){ 
+          if (featInfo.isUsed() || isDense){
+            hashmap.put(featInfo.getName(), featInfo.getValue());
+          }
+        }
       }
       return hashmap;
     }

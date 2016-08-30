@@ -35,7 +35,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
-import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +56,7 @@ public class ManagedFeatureStore extends ManagedResource implements
 
   public synchronized FeatureStore getFeatureStore(String name) {
     if (name == null) {
-      name = CommonLTRParams.DEFAULT_FEATURE_STORE_NAME;
+      name = FeatureStore.DEFAULT_FEATURE_STORE_NAME;
     }
     if (!stores.containsKey(name)) {
       stores.put(name, new FeatureStore(name));
@@ -98,11 +97,10 @@ public class ManagedFeatureStore extends ManagedResource implements
   public synchronized void addFeature(String name, String type,
       String featureStore, Map<String,Object> params)
       throws FeatureException {
-    if (featureStore == null) {
-      featureStore = CommonLTRParams.DEFAULT_FEATURE_STORE_NAME;
-    }
-
-    log.info("register feature {} -> {} in store [" + featureStore + "]",
+    log.info("register feature {} -> {} in "
+        + (featureStore == null ? "default" : "")
+        + " store"
+        + (featureStore == null ? "" : (" [" + featureStore + "]")),
         name, type);
 
     final FeatureStore fstore = getFeatureStore(featureStore);
@@ -127,17 +125,8 @@ public class ManagedFeatureStore extends ManagedResource implements
   private Feature createFeature(String name, String type, Map<String,Object> params,
       int id) throws FeatureException {
     try {
-      final Feature f = solrResourceLoader.newInstance(
-          type,
-          Feature.class,
-          new String[0], // no sub packages
-          new Class[] { String.class },
-          new Object[] { name });
-      f.init(params);
-      f.setId(id);
-      SolrPluginUtils.invokeSetters(f, params.entrySet());
-      return f;
-
+      return Feature.getInstance(solrResourceLoader,
+          type, name, id, params);
     } catch (final Exception e) {
       throw new FeatureException(e.getMessage(), e);
     }

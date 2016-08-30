@@ -40,11 +40,11 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
-import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -52,6 +52,7 @@ import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x", "Lucene41", "Lucene40", "Appending"})
 public class TestSelectiveWeightCreation extends TestRerankBase {
+  final private static SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = newSearcher(r, false, false);
     return searcher;
@@ -60,15 +61,11 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   private static List<Feature> makeFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      final ValueFeature f = new ValueFeature("f" + i);
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
-      try {
-        f.init(params);
-        f.setId(i);
-      } catch (final FeatureException e) {
-        e.printStackTrace();
-      }
+      final Feature f = Feature.getInstance(solrResourceLoader,
+          ValueFeature.class.getCanonicalName(),
+          "f" + i, i, params);
       features.add(f);
     }
     return features;

@@ -166,13 +166,12 @@ public class ModelQuery extends Query {
     final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
     createWeightsSelectively(allFeatures,modelFeatures,searcher, needsScores, extractedFeatureWeights,modelFeaturesWeights); 
 
-    int modelFeatIndex = 0;
     return new ModelWeight(searcher, modelFeaturesWeights, extractedFeatureWeights, allFeatures.size());
   }
   
   private void createWeightsSelectively(Collection<Feature> allFeatures, 
       Collection<Feature> modelFeatures,
-      IndexSearcher searcher, boolean needsScores, FeatureWeight[] allFeatureWeights,
+      IndexSearcher searcher, boolean needsScores, FeatureWeight[] extractedFeatureWeights,
       FeatureWeight[] modelFeaturesWeights) throws IOException {
     int i = 0, j = 0;
     final SolrQueryRequest req = getRequest();
@@ -185,10 +184,8 @@ public class ModelQuery extends Query {
       for (final Feature f : allFeatures) {
         try{
         FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
-        allFeatureWeights[i++] = fw;
+        extractedFeatureWeights[i++] = fw;
         if (modelFeatMap[f.getId()]){  
-          // Note: by assigning fw created using allFeatures, we lose the normalizer associated with the modelFeature, for this reason, 
-          // we store it in the modelFeatureNorms, ahead of time, to use in normalize() and explain()
           modelFeaturesWeights[j++] = fw; 
        }
        }catch (final Exception e) {
@@ -201,7 +198,7 @@ public class ModelQuery extends Query {
       for (final Feature f : modelFeatures){
         try {
         FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
-        allFeatureWeights[i++] = fw;
+        extractedFeatureWeights[i++] = fw;
         modelFeaturesWeights[j++] = fw; 
         }catch (final Exception e) {
           throw new FeatureException("Exception from createWeight for " + f.toString() + " "
@@ -225,11 +222,6 @@ public class ModelQuery extends Query {
         name = n; value = v; used = u; 
       }
       
-      public void setAll(String n, float v, boolean u){
-        name = n; value = v; used = u; 
-      }
-      
-      
       public void setScore(float score){
         this.value = score;
       }
@@ -244,6 +236,10 @@ public class ModelQuery extends Query {
       
       public boolean isUsed(){
         return used;
+      }
+      
+      public void setUsed(boolean used){
+        this.used = used;
       }
   }
   
@@ -276,9 +272,8 @@ public class ModelQuery extends Query {
      *     - if features are requested from the same store as model feature store,
      *       this will be the size of total number of features in the model feature store
      *       else, this will be the size of the modelFeatureWeights  
-     * @param modelFeatNorms
-     *     - this should be the same size as modelFeatureWeights,
-     *      each Normalizer maps to the corresponding featureWeight
+     * @param allFeaturesSize
+     *     - total number of feature in the feature store used by this model
      */
     public ModelWeight(IndexSearcher searcher, FeatureWeight[] modelFeatureWeights,
         FeatureWeight[] extractedFeatureWeights, int allFeaturesSize) {
@@ -288,7 +283,16 @@ public class ModelQuery extends Query {
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
       this.featuresInfo = new FeatureInfo[allFeaturesSize];
-      reset();
+      setFeaturesInfo();
+    }
+    
+    private void setFeaturesInfo(){
+      for (int i = 0; i < extractedFeatureWeights.length;++i){
+        String featName = extractedFeatureWeights[i].getName();
+        int featId = extractedFeatureWeights[i].getId();
+        float value = extractedFeatureWeights[i].getDefaultValue();
+        featuresInfo[featId] = new FeatureInfo(featName,value,false);
+      }
     }
 
     /**
@@ -342,17 +346,12 @@ public class ModelQuery extends Query {
     }
 
     protected void reset() {
-       for (int i = 0; i < extractedFeatureWeights.length;++i){
-          String featName = extractedFeatureWeights[i].getName();
-          int featId = extractedFeatureWeights[i].getId();
-          float value = extractedFeatureWeights[i].getDefaultValue();
-          if (featuresInfo[featId] == null){
-            featuresInfo[featId] = new FeatureInfo(featName,value,false);
-          }
-          else{
-            featuresInfo[featId].setAll(featName, value, false);
-          }
-       }
+      for (int i = 0; i < extractedFeatureWeights.length;++i){
+        int featId = extractedFeatureWeights[i].getId();
+        float value = extractedFeatureWeights[i].getDefaultValue();
+        featuresInfo[featId].setScore(value); // need to set default value everytime as the default value is used in 'dense' mode even if used=false
+        featuresInfo[featId].setUsed(false);
+      }
     }
 
     @Override
@@ -463,7 +462,8 @@ public class ModelQuery extends Query {
               final Scorer subScorer = w.scorer;
               FeatureWeight scFW = (FeatureWeight) subScorer.getWeight();
               final int featureId = scFW.getId();
-              featuresInfo[featureId].setAll(scFW.getName(), subScorer.score(), true);
+              featuresInfo[featureId].setScore(subScorer.score());
+              featuresInfo[featureId].setUsed(true);
             }
           }
           makeNormalizedFeatures();
@@ -555,7 +555,8 @@ public class ModelQuery extends Query {
                 freq++;
                 FeatureWeight scFW = (FeatureWeight) scorer.getWeight();
                 final int featureId = scFW.getId();
-                featuresInfo[featureId].setAll(scFW.getName(), scorer.score(), true);
+                featuresInfo[featureId].setScore(scorer.score());
+                featuresInfo[featureId].setUsed(true);
               }
             }
           }

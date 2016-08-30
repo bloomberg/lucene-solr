@@ -71,8 +71,8 @@ public class FieldLengthFeature extends Feature {
     // positive above 127
   }
 
-  public FieldLengthFeature(String name) {
-    super(name);
+  public FieldLengthFeature(String name, Map<String,Object> params) {
+    super(name, params);
   }
 
   @Override

@@ -37,6 +37,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.feature.impl.ValueFeature.ValueFeatureWeight;
@@ -60,6 +61,8 @@ import org.slf4j.LoggerFactory;
 public class TestRerankBase extends RestTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
   
   protected static File tmpSolrHome;
   protected static File tmpConfDir;
@@ -328,12 +331,11 @@ public class TestRerankBase extends RestTestBase {
     final List<Feature> features = new ArrayList<>();
     int pos = 0;
     for (final String name : names) {
-      final ValueFeature f = new ValueFeature(name);
       final Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", 10);
-      f.init(params);
-      f.setValue(10);
-      f.setId(pos);
+      final Feature f = Feature.getInstance(solrResourceLoader,
+          ValueFeature.class.getCanonicalName(),
+          name, pos, params);
       features.add(f);
       ++pos;
     }

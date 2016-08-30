@@ -66,9 +66,6 @@ public class CommonLTRParams {
    **/
   public static final String MODEL_STORE_JSON_FIELD = "modelStores";
 
-  /** the feature store name to use in case a feature store name is not provided **/
-  public static final String DEFAULT_FEATURE_STORE_NAME = "_DEFAULT_";
-
   /** the name of the cache using for storing the feature value **/
   public static final String QUERY_FV_CACHE_NAME = "QUERY_DOC_FV";
 

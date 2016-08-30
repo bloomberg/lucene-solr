@@ -72,8 +72,8 @@ public class SolrFeature extends Feature {
     this.fq = fq;
   }
 
-  public SolrFeature(String name) {
-    super(name);
+  public SolrFeature(String name, Map<String,Object> params) {
+    super(name, params);
   }
 
   @Override

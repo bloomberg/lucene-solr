@@ -53,8 +53,8 @@ public class FieldValueFeature extends Feature {
     return params;
   }
 
-  public FieldValueFeature(String name) {
-    super(name);
+  public FieldValueFeature(String name, Map<String,Object> params) {
+    super(name, params);
   }
 
   @Override
