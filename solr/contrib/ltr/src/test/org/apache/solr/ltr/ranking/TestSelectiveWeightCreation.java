@@ -169,11 +169,11 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
         makeFeatureWeights(features));
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta1, false)); // features not requested in response
+    
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
-    assertEquals(features.size(), modelWeight.extractedFeatureWeights.length);
     int validFeatures = 0;
     for (int i=0; i < modelWeight.featuresInfo.length; ++i){
-      if (modelWeight.featuresInfo[i] != null){
+      if (modelWeight.featuresInfo[i] != null && modelWeight.featuresInfo[i].isUsed()){
         validFeatures += 1;
       }
     }
@@ -185,12 +185,12 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
         makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta2, true)); // features requested in response
-    assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
-    assertEquals(allFeatures.size(), modelWeight.extractedFeatureWeights.length);
     
+
+    assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
     validFeatures = 0;
     for (int i=0; i < modelWeight.featuresInfo.length; ++i){
-      if (modelWeight.featuresInfo[i] != null){
+      if (modelWeight.featuresInfo[i] != null && modelWeight.featuresInfo[i].isUsed()){
         validFeatures += 1;
       }
     }

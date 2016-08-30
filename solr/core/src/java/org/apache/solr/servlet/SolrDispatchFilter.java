@@ -77,6 +77,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   // Effectively immutable
   private Boolean testMode = null;
+  static int queryCount = 0;
 
   /**
    * Enum to define action that needs to be processed.
@@ -272,6 +273,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
     } finally {
       consumeInputFully((HttpServletRequest) request);
+      /*if (queryCount % 5 == 0 ){
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+          @Override 
+          public void run() {
+            System.gc();
+          }
+        });
+        
+      }
+      queryCount += 1;*/
     }
   }
   

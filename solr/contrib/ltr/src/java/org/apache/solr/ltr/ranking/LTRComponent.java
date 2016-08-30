@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.ranking;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -29,6 +30,9 @@ import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.ltr.ranking.LTRThreadInterface;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The FeatureVectorComponent is intended to be used for offline training of
@@ -37,10 +41,19 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  */
 public class LTRComponent extends SearchComponent implements SolrCoreAware,
     ManagedResourceObserver {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+ 
   @SuppressWarnings("rawtypes")
   @Override
-  public void init(NamedList args) {}
+  public void init(NamedList args) {
+    log.info("args: {}", args.toString());
+    Object numThreadsObj = args.get("LTRThreads");
+    int numThreads = LTRThreadInterface.DEFAULT_MAXTHREADS;
+    if (numThreadsObj != null){
+      numThreads = (int)numThreadsObj;
+    }
+    LTRThreadInterface.setMaxthreads(numThreads);
+  }
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {}
