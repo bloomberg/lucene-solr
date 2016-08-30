@@ -28,8 +28,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.SmallFloat;
 import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.util.CommonLTRParams;
-import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class FieldLengthFeature extends Feature {
@@ -75,16 +73,6 @@ public class FieldLengthFeature extends Feature {
 
   public FieldLengthFeature(String name) {
     super(name);
-  }
-
-  @Override
-  public void init(Map<String,Object> params)
-      throws FeatureException {
-    super.init(params);
-    if (!params.containsKey(CommonLTRParams.FEATURE_FIELD_PARAM)) {
-      throw new FeatureException("missing param field");
-    }
-    field = (String) params.get(CommonLTRParams.FEATURE_FIELD_PARAM);
   }
 
   @Override

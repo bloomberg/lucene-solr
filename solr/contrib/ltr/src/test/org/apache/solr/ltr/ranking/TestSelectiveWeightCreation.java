@@ -42,6 +42,9 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
+import org.apache.solr.ltr.feature.norm.Normalizer;
+import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
+import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 import org.junit.AfterClass;
@@ -121,7 +124,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   public static void after() throws Exception {
     aftertest();
   }
- /*
+ 
   @Test
   public void testModelQueryWeightCreation() throws IOException, ModelException {
     final Directory dir = newDirectory();
@@ -159,18 +162,27 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5,
         6, 7, 8, 9});
-    
+    final List<Normalizer> norms = new ArrayList<>();
+    for (int k=0; k < features.size(); ++k){
+        norms.add(IdentityNormalizer.INSTANCE);
+    }
+
     // when features are NOT requested in the response, only the modelFeature weights should be created
     RankSVMModel meta1 = new RankSVMModel("test",
-        features, "test", allFeatures,
+        features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta1, false)); // features not requested in response
-    assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
-    assertEquals(features.size(), modelWeight.extractedFeatureWeights.length);
+    
+    final List<LeafReaderContext> leafContexts = searcher.getTopReaderContext()
+        .leaves();
+    final int n = ReaderUtil.subIndex(hits.scoreDocs[0].doc, leafContexts);
+    final LeafReaderContext context = leafContexts.get(n);
+    final ModelScorer scorer = modelWeight.scorer(context);
+    assertEquals(features.size(), scorer.modelFeatureValuesNormalized.length);
     int validFeatures = 0;
-    for (int i=0; i < modelWeight.featuresInfo.length; ++i){
-      if (modelWeight.featuresInfo[i] != null){
+    for (int i=0; i < scorer.featuresInfo.length; ++i){
+      if (scorer.featuresInfo[i].isUsed()){
         validFeatures += 1;
       }
     }
@@ -178,26 +190,30 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     
     // when features are requested in the response, weights should be created for all features
     RankSVMModel meta2 = new RankSVMModel("test",
-        features, "test", allFeatures,
+        features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta2, true)); // features requested in response
-    assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
-    assertEquals(allFeatures.size(), modelWeight.extractedFeatureWeights.length);
     
+    final List<LeafReaderContext> leafContexts2 = searcher.getTopReaderContext()
+        .leaves();
+    final int n2 = ReaderUtil.subIndex(hits.scoreDocs[0].doc, leafContexts2);
+    final LeafReaderContext context2 = leafContexts2.get(n2);
+    final ModelScorer scorer2 = modelWeight.scorer(context2);
+    assertEquals(features.size(), scorer2.modelFeatureValuesNormalized.length);
     validFeatures = 0;
-    for (int i=0; i < modelWeight.featuresInfo.length; ++i){
-      if (modelWeight.featuresInfo[i] != null){
+    for (int i=0; i < scorer2.featuresInfo.length; ++i){
+      if (scorer2.featuresInfo[i].isUsed()){
         validFeatures += 1;
       }
     }
-    assertEquals(validFeatures, allFeatures.size());
+    assertEquals(validFeatures, features.size());
     
     assertU(delI("0"));assertU(delI("1"));
     r.close();
     dir.close();
   }
-  */
+  
  
   @Test
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {

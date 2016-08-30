@@ -84,22 +84,6 @@ public class ValueFeature extends Feature {
   }
 
   @Override
-  public void init(Map<String,Object> params)
-      throws FeatureException {
-    super.init(params);
-    final Object paramRequired = params.get(REQUIRED_PARAM);
-    if (paramRequired != null)
-      this.required = (boolean) paramRequired;
-    final Object paramValue = params.get(VALUE_FIELD);
-    if (paramValue == null) {
-      throw new FeatureException("Missing the field 'value' in params for "
-          + this);
-    }
-
-    setValue(paramValue);
-  }
-
-  @Override
   public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi)
       throws IOException {
     return new ValueFeatureWeight(searcher, request, originalQuery, efi);

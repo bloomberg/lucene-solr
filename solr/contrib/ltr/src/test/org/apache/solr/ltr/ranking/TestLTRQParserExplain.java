@@ -50,7 +50,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
     query.add("rows", "2");
     query.add("rq", "{!ltr reRankDocs=2 model=svm2}");
     query.add("fl", "*,score");
-
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
     assertJQ(
         "/query" + query.toQueryString(),
         "/debug/explain/9=='\n13.5 = RankSVMModel(name=svm2) model applied to features, sum of:\n  1.5 = prod of:\n    1.5 = weight on feature\n    1.0 = ValueFeature [name=constant1, params={value=1}]\n  7.0 = prod of:\n    3.5 = weight on feature\n    2.0 = ValueFeature [name=constant2, params={value=2}]\n  5.0 = prod of:\n    1.0 = weight on feature\n    5.0 = FieldValueFeature [name=pop, params={field=popularity}]\n'");

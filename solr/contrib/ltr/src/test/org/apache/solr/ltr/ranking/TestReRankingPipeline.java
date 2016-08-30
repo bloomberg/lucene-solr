@@ -19,6 +19,7 @@ package org.apache.solr.ltr.ranking;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.feature.impl.FieldValueFeature;
+import org.apache.solr.ltr.feature.norm.Normalizer;
+import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.junit.Ignore;
@@ -75,9 +78,10 @@ public class TestReRankingPipeline extends LuceneTestCase {
   private class MockModel extends LTRScoringAlgorithm {
 
     public MockModel(String name, List<Feature> features,
+        List<Normalizer> norms,
         String featureStoreName, List<Feature> allFeatures,
         Map<String,Object> params) {
-      super(name, features, featureStoreName, allFeatures, params);
+      super(name, features, norms, featureStoreName, allFeatures, params);
     }
 
     @Override
@@ -130,10 +134,13 @@ public class TestReRankingPipeline extends LuceneTestCase {
 
     final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2},
         "final-score");
+    final List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
         2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
     final RankSVMModel meta = new RankSVMModel("test",
-        features, "test", allFeatures, null);
+        features, norms, "test", allFeatures, null);
 
     final LTRRescorer rescorer = new LTRRescorer(new ModelQuery(meta));
     hits = rescorer.rescore(searcher, hits, 2);
@@ -207,10 +214,13 @@ public class TestReRankingPipeline extends LuceneTestCase {
 
     final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2},
         "final-score");
+    final List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
         2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
     final RankSVMModel meta = new RankSVMModel("test",
-        features, "test", allFeatures, null);
+        features, norms, "test", allFeatures, null);
 
     final LTRRescorer rescorer = new LTRRescorer(new ModelQuery(meta));
 
@@ -255,10 +265,13 @@ public class TestReRankingPipeline extends LuceneTestCase {
     test.put("fake", 2);
     List<Feature> features = makeFieldValueFeatures(new int[] {0},
         "final-score");
+    List<Normalizer> norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0},
         "final-score");
     MockModel meta = new MockModel("test",
-        features, "test", allFeatures, null);
+        features, norms, "test", allFeatures, null);
     ModelQuery query = new ModelQuery(meta);
     ModelWeight wgt = query.createWeight(null, true, 1f);
     ModelScorer modelScr = wgt.scorer(null);
@@ -268,9 +281,12 @@ public class TestReRankingPipeline extends LuceneTestCase {
     }
 
     features = makeFieldValueFeatures(new int[] {0, 1, 2}, "final-score");
+    norms = 
+        new ArrayList<Normalizer>(
+            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     allFeatures = makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8,
         9}, "final-score");
-    meta = new MockModel("test", features,
+    meta = new MockModel("test", features, norms,
         "test", allFeatures, null);
     query = new ModelQuery(meta);
     wgt = query.createWeight(null, true, 1f);

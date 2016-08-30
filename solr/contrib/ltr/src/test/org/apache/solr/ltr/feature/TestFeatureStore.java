@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.feature.impl.FieldValueFeature;
 import org.apache.solr.ltr.feature.impl.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.ranking.Feature;
@@ -89,23 +88,6 @@ public class TestFeatureStore extends TestRerankBase {
 
     }
     assertNull(fs.get("missing_feature_name"));
-  }
-
-  @Test(expected = FeatureException.class)
-  public void testAddingFeatureWithInvalidParams() throws FeatureException
-  {
-    final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature4");
-    for (int i = 0; i < 5; i++) {
-      Map<String,Object> params = new HashMap<String,Object>();
-      params.put("value", i);
-      fstore.addFeature("testc" + (float) i,
-          ValueFeature.class.getCanonicalName(), "fstore-testFeature4",
-          params);
-
-    }
-    fstore.addFeature("invalidparam",
-        FieldValueFeature.class.getCanonicalName(), "fstore-testFeature4",
-        LTRUtils.EMPTY_MAP);
   }
 
 }
