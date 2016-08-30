@@ -43,6 +43,9 @@ public class TestFeatureStore extends TestRerankBase {
   public void testDefaultFeatureStoreName()
   {
     assertEquals("_DEFAULT_", FeatureStore.DEFAULT_FEATURE_STORE_NAME);
+    final FeatureStore expectedFeatureStore = fstore.getFeatureStore(FeatureStore.DEFAULT_FEATURE_STORE_NAME);
+    final FeatureStore actualFeatureStore = fstore.getFeatureStore(null);
+    assertEquals("getFeatureStore(null) should return the default feature store", expectedFeatureStore, actualFeatureStore);
   }
 
   @Test
