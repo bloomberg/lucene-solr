@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.ltr.ranking.ModelQuery;
-import org.apache.solr.ltr.ranking.Feature.FeatureWeight;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
