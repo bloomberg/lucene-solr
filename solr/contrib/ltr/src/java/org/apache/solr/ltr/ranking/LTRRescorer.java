@@ -215,6 +215,7 @@ public class LTRRescorer extends Rescorer {
       scorer.setDocInfoParam(CommonLTRParams.ORIGINAL_DOC_SCORE, new Float(hit.score));
       long stime3 = System.currentTimeMillis();
       hit.score = scorer.score();
+
       if (hitUpto < topN) {
         reranked[hitUpto] = hit;
         // if the heap is not full, maybe I want to log the features for this

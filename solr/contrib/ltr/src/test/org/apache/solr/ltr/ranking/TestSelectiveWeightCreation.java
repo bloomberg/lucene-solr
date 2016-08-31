@@ -185,9 +185,10 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
         makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta2, true)); // features requested in response
-    
 
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
+    assertEquals(allFeatures.size(), modelWeight.extractedFeatureWeights.length);
+    
     validFeatures = 0;
     for (int i=0; i < modelWeight.featuresInfo.length; ++i){
       if (modelWeight.featuresInfo[i] != null && modelWeight.featuresInfo[i].isUsed()){
@@ -255,5 +256,5 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.7992");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='popularity:3.0;originalScore:1.0'"); // extract all features from fstore4
   }
-  
 }
+

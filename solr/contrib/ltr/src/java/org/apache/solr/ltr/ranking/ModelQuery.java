@@ -181,7 +181,6 @@ public class ModelQuery extends Query {
     long  start = System.currentTimeMillis();
     final Collection<Feature> modelFeatures = meta.getFeatures();
     final Collection<Feature> allFeatures = meta.getAllFeatures();
-
     int modelFeatSize = modelFeatures.size();
     int allFeatSize = this.extractAllFeatures ? allFeatures.size() : modelFeatSize;
 
@@ -358,14 +357,21 @@ public class ModelQuery extends Query {
     // List of the model's features used for scoring. This is a subset of the
     // features used for logging.
     FeatureWeight[] modelFeatureWeights;
-
+    float[] modelFeatureValuesNormalized;
     FeatureWeight[] extractedFeatureWeights;
 
-    int allFeaturesSize;
+    // List of all the feature names, values - used for both scoring and logging
+    /*
+     *  What is the advantage of using a hashmap here instead of an array of objects?        
+     *     A set of arrays was used earlier and the elements were accessed using the featureId. 
+     *     With the updated logic to create weights selectively, 
+     *     the number of elements in the array can be fewer than the total number of features. 
+     *     When [features] are not requested, only the model features are extracted. 
+     *     In this case, the indexing by featureId, fails. For this reason, 
+     *     we need a map which holds just the features that were triggered by the documents in the result set. 
+     *  
+     */
     FeatureInfo[] featuresInfo;
-    float[] modelFeatureValuesNormalized;
-
-
     /* 
      * @param modelFeatureWeights 
      *     - should be the same size as the number of features used by the model
@@ -384,7 +390,6 @@ public class ModelQuery extends Query {
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
       this.featuresInfo = new FeatureInfo[allFeaturesSize];
-      this.allFeaturesSize = allFeaturesSize;
       setFeaturesInfo();;
     }
 
@@ -397,11 +402,30 @@ public class ModelQuery extends Query {
       } 
     }
 
+    /**
+     * Goes through all the stored feature values, and calculates the normalized
+     * values for all the features that will be used for scoring.
+     */
+    private void makeNormalizedFeatures() {
+      int pos = 0;
+      for (final FeatureWeight feature : modelFeatureWeights) {
+        final int featureId = feature.getId();
+        FeatureInfo fInfo = featuresInfo[featureId];
+        if (fInfo.isUsed()) { // not checking for finfo == null as that would be a bug we should catch 
+          modelFeatureValuesNormalized[pos] = fInfo.getValue();
+        } else {
+          modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
+        }
+        pos++;
+      }
+      meta.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
+    }
+
     @Override
     public Explanation explain(LeafReaderContext context, int doc)
         throws IOException {
 
-      final Explanation[] explanations = new Explanation[this.allFeaturesSize];
+      final Explanation[] explanations = new Explanation[this.featuresInfo.length];
       for (final FeatureWeight feature : extractedFeatureWeights) {
         explanations[feature.getId()] = feature.explain(context, doc);
       }
@@ -489,25 +513,6 @@ public class ModelQuery extends Query {
       @Override
       public Collection<ChildScorer> getChildren() {
         return featureTraversalScorer.getChildren();
-      }
-
-      /**
-       * Goes through all the stored feature values, and calculates the normalized
-       * values for all the features that will be used for scoring.
-       */
-      private void makeNormalizedFeatures() {
-        int pos = 0;
-        for (final FeatureWeight feature : modelFeatureWeights) {
-          final int featureId = feature.getId();
-          FeatureInfo fInfo = featuresInfo[featureId];
-          if (fInfo.isUsed()) { // not checking for finfo == null as that would be a bug we should catch 
-            modelFeatureValuesNormalized[pos] = fInfo.getValue();
-          } else {
-            modelFeatureValuesNormalized[pos] = feature.getDefaultValue();
-          }
-          pos++;
-        }
-        meta.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
       }
 
       public void setDocInfoParam(String key, Object value) {

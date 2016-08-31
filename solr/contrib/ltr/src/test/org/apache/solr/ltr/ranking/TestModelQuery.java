@@ -223,8 +223,7 @@ public class TestModelQuery extends LuceneTestCase {
 
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta));
-    assertEquals(3, modelWeight.modelFeatureWeights.length);
-    
+    assertEquals(3, modelWeight.modelFeatureValuesNormalized.length);
 
     for (int i = 0; i < 3; i++) {
       assertEquals(i, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
