@@ -69,7 +69,7 @@ public class ModelQuery extends Query {
   public ModelQuery(LTRScoringAlgorithm meta) {
     this(meta, false);
   }
-  
+
   public ModelQuery(LTRScoringAlgorithm meta, boolean extractAllFeatures) {
     this.meta = meta;
     this.extractAllFeatures = extractAllFeatures; 
@@ -118,7 +118,7 @@ public class ModelQuery extends Query {
     result = (prime * result) + this.toString().hashCode();
     return result;
   }
-@Override
+  @Override
   public boolean equals(Object o) {
     return sameClassAs(o) &&  equalsTo(getClass().cast(o));
   }
@@ -152,9 +152,8 @@ public class ModelQuery extends Query {
     return request;
   }
 
-  @Override
-  public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
-      throws IOException {
+  @Override  
+  public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
 
     final Collection<Feature> modelFeatures = meta.getFeatures();
     final Collection<Feature> allFeatures = meta.getAllFeatures();
@@ -164,85 +163,73 @@ public class ModelQuery extends Query {
 
     final FeatureWeight[] extractedFeatureWeights = new FeatureWeight[allFeatSize];
     final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
-    createWeightsSelectively(allFeatures,modelFeatures,searcher, needsScores, extractedFeatureWeights,modelFeaturesWeights); 
-
-    return new ModelWeight(searcher, modelFeaturesWeights, extractedFeatureWeights, allFeatures.size());
-  }
-  
-  private void createWeightsSelectively(Collection<Feature> allFeatures, 
-      Collection<Feature> modelFeatures,
-      IndexSearcher searcher, boolean needsScores, FeatureWeight[] extractedFeatureWeights,
-      FeatureWeight[] modelFeaturesWeights) throws IOException {
     int i = 0, j = 0;
     final SolrQueryRequest req = getRequest();
     // since the feature store is a linkedhashmap order is preserved
     if (this.extractAllFeatures) {
-      boolean[] modelFeatMap = new boolean[allFeatures.size()];
-      for (final Feature f: modelFeatures){
-        modelFeatMap[f.getId()] =  true;
-      }
       for (final Feature f : allFeatures) {
         try{
-        FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
-        extractedFeatureWeights[i++] = fw;
-        if (modelFeatMap[f.getId()]){  
-          modelFeaturesWeights[j++] = fw; 
-       }
-       }catch (final Exception e) {
+          FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
+          extractedFeatureWeights[i++] = fw;
+        }catch (final Exception e) {
           throw new FeatureException("Exception from createWeight for " + f.toString() + " "
               + e.getMessage(), e);
         }
+      }
+      for (final Feature f : modelFeatures){
+        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getId()]; // we can lookup by featureid because all features will be extracted when this.extractAllFeatures is set
       }
     }
     else{
       for (final Feature f : modelFeatures){
         try {
-        FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
-        extractedFeatureWeights[i++] = fw;
-        modelFeaturesWeights[j++] = fw; 
+          FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
+          extractedFeatureWeights[i++] = fw;
+          modelFeaturesWeights[j++] = fw; 
         }catch (final Exception e) {
           throw new FeatureException("Exception from createWeight for " + f.toString() + " "
               + e.getMessage(), e);
         }
       }
     }
+    return new ModelWeight(searcher, modelFeaturesWeights, extractedFeatureWeights, allFeatures.size());
   }
-  
+
   @Override
   public String toString(String field) {
     return field;
   }
 
   public class FeatureInfo {
-      String name;
-      float value;
-      boolean used;
-      
-      FeatureInfo(String n, float v, boolean u){
-        name = n; value = v; used = u; 
-      }
-      
-      public void setScore(float score){
-        this.value = score;
-      }
-      
-      public String getName(){
-        return name;
-      }
-      
-      public float getValue(){
-        return value;
-      }
-      
-      public boolean isUsed(){
-        return used;
-      }
-      
-      public void setUsed(boolean used){
-        this.used = used;
-      }
+    String name;
+    float value;
+    boolean used;
+
+    FeatureInfo(String n, float v, boolean u){
+      name = n; value = v; used = u; 
+    }
+
+    public void setScore(float score){
+      this.value = score;
+    }
+
+    public String getName(){
+      return name;
+    }
+
+    public float getValue(){
+      return value;
+    }
+
+    public boolean isUsed(){
+      return used;
+    }
+
+    public void setUsed(boolean used){
+      this.used = used;
+    }
   }
-  
+
   public class ModelWeight extends Weight {
 
     IndexSearcher searcher;
@@ -263,8 +250,8 @@ public class ModelQuery extends Query {
      *     In this case, the indexing by featureId, fails. For this reason, 
      *     we need a map which holds just the features that were triggered by the documents in the result set. 
      *  
-    */
-     FeatureInfo[] featuresInfo;
+     */
+    FeatureInfo[] featuresInfo;
     /* 
      * @param modelFeatureWeights 
      *     - should be the same size as the number of features used by the model
@@ -285,7 +272,7 @@ public class ModelQuery extends Query {
       this.featuresInfo = new FeatureInfo[allFeaturesSize];
       setFeaturesInfo();
     }
-    
+
     private void setFeaturesInfo(){
       for (int i = 0; i < extractedFeatureWeights.length;++i){
         String featName = extractedFeatureWeights[i].getName();
@@ -495,7 +482,7 @@ public class ModelQuery extends Query {
         }
 
         protected class ModelQuerySparseIterator extends
-            DisjunctionDISIApproximation {
+        DisjunctionDISIApproximation {
 
           public ModelQuerySparseIterator(DisiPriorityQueue subIterators) {
             super(subIterators);
