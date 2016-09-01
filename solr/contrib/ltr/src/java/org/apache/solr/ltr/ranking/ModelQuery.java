@@ -307,7 +307,7 @@ public class ModelQuery extends Query {
     else{
       for (final FeatureWeight fw: featureWeights){
         extractedFeatureWeights[i++] = fw;
-        modelFeaturesWeights[j++] = extractedFeatureWeights[fw.getId()]; 
+        modelFeaturesWeights[j++] = fw; 
       }
     }
     log.info("maxthreads:{} numWeights: {} time for creating weights: {} ", LTRThreadInterface.maxThreads, features.size(),(time2-time1));
@@ -390,7 +390,7 @@ public class ModelQuery extends Query {
       this.modelFeatureWeights = modelFeatureWeights;
       this.modelFeatureValuesNormalized = new float[modelFeatureWeights.length];
       this.featuresInfo = new FeatureInfo[allFeaturesSize];
-      setFeaturesInfo();;
+      setFeaturesInfo();
     }
 
     private void setFeaturesInfo(){

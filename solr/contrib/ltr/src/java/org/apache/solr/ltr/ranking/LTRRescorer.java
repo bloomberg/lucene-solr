@@ -185,20 +185,17 @@ public class LTRRescorer extends Rescorer {
     while (hitUpto < hits.length) {
       final ScoreDoc hit = hits[hitUpto];
       final int docID = hit.doc;
-      
       LeafReaderContext readerContext = null;
       while (docID >= endDoc) {
         readerUpto++;
         readerContext = leaves.get(readerUpto);
         endDoc = readerContext.docBase + readerContext.reader().maxDoc();
       }
-      long stime1 = System.currentTimeMillis();
       // We advanced to another segment
       if (readerContext != null) {
         docBase = readerContext.docBase;
         scorer = modelWeight.scorer(readerContext);
       }
-      long stime2 = System.currentTimeMillis();
       // Scorer for a ModelWeight should never be null since we always have to
       // call score
       // even if no feature scorers match, since a model might use that info to
@@ -213,9 +210,7 @@ public class LTRRescorer extends Rescorer {
       scorer.iterator().advance(targetDoc);
 
       scorer.setDocInfoParam(CommonLTRParams.ORIGINAL_DOC_SCORE, new Float(hit.score));
-      long stime3 = System.currentTimeMillis();
       hit.score = scorer.score();
-
       if (hitUpto < topN) {
         reranked[hitUpto] = hit;
         // if the heap is not full, maybe I want to log the features for this
@@ -243,7 +238,6 @@ public class LTRRescorer extends Rescorer {
           }
         }
       }
-      log.info("In scorer loop: create scorer: {} score time: {}", (stime2-stime1), (stime3-stime2));
       hitUpto++;
     }
     long time2 = System.currentTimeMillis();
