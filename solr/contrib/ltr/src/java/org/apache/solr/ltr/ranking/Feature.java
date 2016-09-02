@@ -52,9 +52,9 @@ public abstract class Feature extends Query {
   final private Map<String,Object> params;
 
   public static Feature getInstance(SolrResourceLoader solrResourceLoader,
-      String type, String name, Map<String,Object> params) {
+      String className, String name, Map<String,Object> params) {
     final Feature f = solrResourceLoader.newInstance(
-        type,
+        className,
         Feature.class,
         new String[0], // no sub packages
         new Class[] { String.class, Map.class },
@@ -148,18 +148,14 @@ public abstract class Feature extends Query {
 
   public static Feature fromMap(SolrResourceLoader solrResourceLoader,
       Map<String,Object> featureMap) {
-    final String type =
-        (String) featureMap.get(CLASS_KEY);
+    final String className = (String) featureMap.get(CLASS_KEY);
 
-    final String name =
-        (String) featureMap.get(NAME_KEY);
+    final String name = (String) featureMap.get(NAME_KEY);
 
     @SuppressWarnings("unchecked")
-    final Map<String,Object> params =
-    (Map<String,Object>) featureMap.get(PARAMS_KEY);
+    final Map<String,Object> params = (Map<String,Object>) featureMap.get(PARAMS_KEY);
 
-    return Feature.getInstance(solrResourceLoader,
-        type, name, params);
+    return Feature.getInstance(solrResourceLoader, className, name, params);
   }
 
   protected abstract LinkedHashMap<String,Object> paramsToMap();

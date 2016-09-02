@@ -84,16 +84,11 @@ public class ManagedFeatureStore extends ManagedResource implements
 
   public void update(Map<String,Object> map) {
     try {
-      addFeature(map);
+      final String featureStore = (String) map.get(FEATURE_STORE_NAME_KEY);
+      addFeature(map, featureStore);
     } catch (final FeatureException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
-  }
-
-  public void addFeature(Map<String,Object> map)
-      throws FeatureException {
-    final String featureStore = (String) map.get(FEATURE_STORE_NAME_KEY);
-    addFeature(map, featureStore);
   }
 
   public synchronized void addFeature(Map<String,Object> map, String featureStore)
