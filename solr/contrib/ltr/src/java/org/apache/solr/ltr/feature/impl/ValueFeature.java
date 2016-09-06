@@ -79,8 +79,8 @@ public class ValueFeature extends Feature {
     return params;
   }
 
-  public ValueFeature(String name) {
-    super(name);
+  public ValueFeature(String name, Map<String,Object> params) {
+    super(name, params);
   }
 
   @Override

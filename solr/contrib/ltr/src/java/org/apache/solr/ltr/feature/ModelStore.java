@@ -18,11 +18,8 @@ package org.apache.solr.ltr.feature;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.CommonLTRParams;

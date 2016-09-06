@@ -32,8 +32,8 @@ import org.apache.solr.request.SolrQueryRequest;
 
 public class OriginalScoreFeature extends Feature {
 
-  public OriginalScoreFeature(String name) {
-    super(name);
+  public OriginalScoreFeature(String name, Map<String,Object> params) {
+    super(name, params);
   }
 
   @Override

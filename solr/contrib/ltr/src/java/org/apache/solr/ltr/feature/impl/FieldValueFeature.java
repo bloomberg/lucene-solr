@@ -28,8 +28,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.util.CommonLTRParams;
-import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.request.SolrQueryRequest;
 
 import com.google.common.collect.Sets;
@@ -55,8 +53,8 @@ public class FieldValueFeature extends Feature {
     return params;
   }
 
-  public FieldValueFeature(String name) {
-    super(name);
+  public FieldValueFeature(String name, Map<String,Object> params) {
+    super(name, params);
   }
 
   @Override

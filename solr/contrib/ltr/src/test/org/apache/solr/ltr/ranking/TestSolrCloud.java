@@ -18,10 +18,7 @@ package org.apache.solr.ltr.ranking;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
 import java.util.SortedMap;
-import java.util.TreeMap;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -39,7 +36,6 @@ import org.apache.solr.ltr.util.CommonLTRParams;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.Test;
-import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -20,7 +20,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -61,7 +60,7 @@ public class TestExternalValueFeatures extends TestRerankBase {
     query.add("fl", "[fv]");
     query
         .add("rq", "{!ltr reRankDocs=3 model=external_model_binary_feature efi.user_device_tablet=1}");
-
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/features=='user_device_tablet:1.0'");
@@ -90,4 +89,5 @@ public class TestExternalValueFeatures extends TestRerankBase {
 
     System.out.println(restTestHarness.query("/query" + query.toQueryString()));
   }
+  
 }

@@ -47,8 +47,8 @@ public abstract class Normalizer {
   }
 
   public static Normalizer getInstance(SolrResourceLoader solrResourceLoader,
-      String type, Map<String,Object> params) {
-    final Normalizer f = solrResourceLoader.newInstance(type, Normalizer.class);
+      String className, Map<String,Object> params) {
+    final Normalizer f = solrResourceLoader.newInstance(className, Normalizer.class);
     if (params != null) {
       SolrPluginUtils.invokeSetters(f, params.entrySet());
     }
@@ -57,15 +57,12 @@ public abstract class Normalizer {
 
   public static Normalizer fromMap(SolrResourceLoader solrResourceLoader,
       Map<String,Object> normMap) {
-    final String type =
-        (String) normMap.get(CLASS_KEY);
+    final String className = (String) normMap.get(CLASS_KEY);
 
     @SuppressWarnings("unchecked")
-    final Map<String,Object> params =
-    (Map<String,Object>) normMap.get(PARAMS_KEY);
+    final Map<String,Object> params = (Map<String,Object>) normMap.get(PARAMS_KEY);
 
-    return Normalizer.getInstance(solrResourceLoader,
-        type, params);
+    return Normalizer.getInstance(solrResourceLoader, className, params);
   }
 
   public LinkedHashMap<String,Object> toMap() {

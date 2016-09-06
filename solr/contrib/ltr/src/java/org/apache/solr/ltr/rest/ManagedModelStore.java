@@ -36,7 +36,6 @@ import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.ltr.util.ModelException;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
@@ -169,10 +168,9 @@ public class ManagedModelStore extends ManagedResource implements
   public LTRScoringAlgorithm makeLTRScoringAlgorithm(Map<String,Object> map)
       throws ModelException {
     final String name = (String) map.get(CommonLTRParams.MODEL_NAME);
-    final Object modelStoreObj = map.get(CommonLTRParams.MODEL_FEATURE_STORE);
-    final String featureStoreName = (modelStoreObj == null) ? CommonLTRParams.DEFAULT_FEATURE_STORE_NAME
-        : (String) modelStoreObj;
+    String featureStoreName = (String) map.get(CommonLTRParams.MODEL_FEATURE_STORE);
     final FeatureStore fstore = featureStores.getFeatureStore(featureStoreName);
+    featureStoreName = fstore.getName();  // if featureStoreName was null before this gets actual name
     if (!map.containsKey(CommonLTRParams.MODEL_FEATURE_LIST)) {
       // check if the model has a list of features to be used for computing the
       // ranking score
@@ -190,10 +188,6 @@ public class ManagedModelStore extends ManagedResource implements
             (Map<String,Object>) modelFeature;
         final Feature feature = parseFeature(modelFeatureMap,
             fstore);
-        if (!fstore.containsFeature(feature.getName())) {
-          throw new ModelException("missing feature " + feature.getName()
-              + " in model " + name);
-        }
         final Normalizer norm = parseNormalizer(modelFeatureMap);
         norms.add(norm);
         features.add(feature);
@@ -204,7 +198,8 @@ public class ManagedModelStore extends ManagedResource implements
       }
     }
     
-    final Map<String,Object> params = LTRUtils.createParams(map);
+    @SuppressWarnings("unchecked")
+    final Map<String,Object> params = (Map<String,Object>) map.get(CommonLTRParams.MODEL_PARAMS);
 
     final String type = (String) map.get(CommonLTRParams.MODEL_CLASS);
     LTRScoringAlgorithm meta = null;

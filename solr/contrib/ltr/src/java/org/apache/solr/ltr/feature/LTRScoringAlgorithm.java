@@ -16,7 +16,6 @@
  */
 package org.apache.solr.ltr.feature;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -27,9 +26,7 @@ import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.ranking.Feature.FeatureWeight;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.LTRException;
 
 /**
  * Contains all the data needed for loading a model.

@@ -78,11 +78,4 @@ public class LTRUtils {
         + " cannot be converted to float");
   }
   
-  public static Map<String,Object> createParams(Map<String,Object> map) {
-    if (map.containsKey(CommonLTRParams.MODEL_PARAMS)) {
-      return (Map<String,Object>) map.get(CommonLTRParams.MODEL_PARAMS);
-    }
-    return null;
-  }
-  
 }
