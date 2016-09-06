@@ -76,7 +76,7 @@ public class TestReRankingPipeline extends LuceneTestCase {
       final Feature f = Feature.getInstance(solrResourceLoader,
           FieldValueFeature.class.getCanonicalName(),
           "f" + i, params);
-      f.setId(i);
+      f.setIndex(i);
       features.add(f);
     }
     return features;

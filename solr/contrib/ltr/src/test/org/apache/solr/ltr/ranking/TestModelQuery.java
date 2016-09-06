@@ -69,7 +69,7 @@ public class TestModelQuery extends LuceneTestCase {
       final Feature f = Feature.getInstance(solrResourceLoader,
           ValueFeature.class.getCanonicalName(),
           "f" + i, params);
-      f.setId(i);
+      f.setIndex(i);
       features.add(f);
     }
     return features;
@@ -83,7 +83,7 @@ public class TestModelQuery extends LuceneTestCase {
       final Feature f = Feature.getInstance(solrResourceLoader,
           ValueFeature.class.getCanonicalName(),
           "f" + i, params);
-      f.setId(i);
+      f.setIndex(i);
       features.add(f);
     }
     return features;

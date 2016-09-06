@@ -177,7 +177,7 @@ public class ModelQuery extends Query {
         }
       }
       for (final Feature f : modelFeatures){
-        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getId()]; // we can lookup by featureid because all features will be extracted when this.extractAllFeatures is set
+        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getIndex()]; // we can lookup by featureid because all features will be extracted when this.extractAllFeatures is set
       }
     }
     else{

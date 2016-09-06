@@ -132,7 +132,7 @@ public abstract class Feature extends Query {
   /**
    * @return the id
    */
-  public int getId() {
+  public int getIndex() {
     return index;
   }
 
@@ -142,7 +142,7 @@ public abstract class Feature extends Query {
    *          be used to directly access the feature in the global list of
    *          features.
    */
-  public void setId(int index) {
+  public void setIndex(int index) {
     this.index = index;
   }
 
