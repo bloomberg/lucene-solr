@@ -19,6 +19,7 @@ package org.apache.solr.ltr.rest;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -254,7 +255,7 @@ public class ManagedModelStore extends ManagedResource implements
       }
     }
 
-    return store.modelAsManagedResources();
+    return modelAsManagedResources(store);
   }
 
   @Override
@@ -279,8 +280,7 @@ public class ManagedModelStore extends ManagedResource implements
 
     final SolrQueryResponse response = endpoint.getSolrResponse();
     response.add(CommonLTRParams.MODELS_JSON_FIELD,
-        store.modelAsManagedResources());
-
+        modelAsManagedResources(store));
   }
 
   public synchronized void addMetadataModel(LTRScoringAlgorithm modeldata)
@@ -304,6 +304,45 @@ public class ManagedModelStore extends ManagedResource implements
   public String toString() {
     return "ManagedModelStore [store=" + store + ", featureStores="
         + featureStores + "]";
+  }
+  
+  /**
+   * Returns the available models as a list of Maps objects. After an update the
+   * managed resources needs to return the resources in this format in order to
+   * store in json somewhere (zookeeper, disk...)
+   *
+   * TODO investigate if it is possible to replace the managed resources' json
+   * serializer/deserialiazer.
+   *
+   * @return the available models as a list of Maps objects
+   */
+  private List<Object> modelAsManagedResources(ModelStore store) {
+    final List<Object> list = new ArrayList<>(store.size());
+    for (final LTRScoringAlgorithm modelmeta : store.getModels()) {
+      final Map<String,Object> modelMap = new HashMap<>(5, 1.0f);
+      modelMap.put((String)CommonLTRParams.MODEL_NAME, modelmeta.getName());
+      modelMap.put((String)CommonLTRParams.MODEL_CLASS, modelmeta.getClass().getCanonicalName());
+      modelMap.put((String)CommonLTRParams.MODEL_FEATURE_STORE, modelmeta.getFeatureStoreName());
+      final List<Map<String,Object>> features = new ArrayList<>(modelmeta.numFeatures());
+      final List<Feature> featureList = modelmeta.getFeatures();
+      final List<Normalizer> normList = modelmeta.getNorms();
+      if (normList.size() != featureList.size()) {
+        throw new FeatureException("Every feature must have a normalizer");
+      }
+      for (int idx = 0; idx <  featureList.size(); ++idx) {
+        final Feature feature = featureList.get(idx);
+        final Normalizer norm = normList.get(idx);
+        final Map<String,Object> map = new HashMap<String,Object>(2, 1.0f);
+        map.put("name", feature.getName());
+        map.put("norm", norm.toMap());
+        features.add(map);
+      }
+      modelMap.put("features", features);
+      modelMap.put("params", modelmeta.getParams());
+
+      list.add(modelMap);
+    }
+    return list;
   }
 
 }
