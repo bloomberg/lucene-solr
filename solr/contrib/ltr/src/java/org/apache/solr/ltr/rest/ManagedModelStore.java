@@ -316,7 +316,7 @@ public class ManagedModelStore extends ManagedResource implements
    *
    * @return the available models as a list of Maps objects
    */
-  private List<Object> modelAsManagedResources(ModelStore store) {
+  private static List<Object> modelAsManagedResources(ModelStore store) {
     final List<Object> list = new ArrayList<>(store.size());
     for (final LTRScoringAlgorithm modelmeta : store.getModels()) {
       final Map<String,Object> modelMap = new HashMap<>(5, 1.0f);
