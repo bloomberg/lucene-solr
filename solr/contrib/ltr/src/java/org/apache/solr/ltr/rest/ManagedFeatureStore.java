@@ -83,33 +83,28 @@ public class ManagedFeatureStore extends ManagedResource implements
       @SuppressWarnings("unchecked")
       final List<Map<String,Object>> up = (List<Map<String,Object>>) managedData;
       for (final Map<String,Object> u : up) {
-        update(u);
+        addFeature(u);
       }
     }
   }
 
-  public void update(Map<String,Object> map) {
-    try {
+  public void addFeature(Map<String,Object> map) {
       final String featureStore = (String) map.get(FEATURE_STORE_NAME_KEY);
-      addFeature(map, featureStore);
-    } catch (final FeatureException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, e);
-    }
+      addFeature(map,featureStore);
   }
 
   public synchronized void addFeature(Map<String,Object> map, String featureStore)
       throws FeatureException {
     log.info("register feature based on {}", map);
-
-    final FeatureStore fstore = getFeatureStore(featureStore);
-
-    Feature feature;
+    
     try {
-      feature = fromFeatureMap(solrResourceLoader, map);
+      final FeatureStore fstore = getFeatureStore(featureStore);
+      final Feature feature = fromFeatureMap(solrResourceLoader, map);
+
+      fstore.add(feature);
     } catch (final Exception e) {
       throw new FeatureException(e.getMessage(), e);
     }
-    fstore.add(feature);
   }
 
   @SuppressWarnings("unchecked")
@@ -118,13 +113,13 @@ public class ManagedFeatureStore extends ManagedResource implements
     if (updates instanceof List) {
       final List<Map<String,Object>> up = (List<Map<String,Object>>) updates;
       for (final Map<String,Object> u : up) {
-        update(u);
+        addFeature(u);
       }
     }
 
     if (updates instanceof Map) {
       // a unique feature
-      update((Map<String,Object>) updates);
+      addFeature((Map<String,Object>) updates);
     }
 
     // logger.info("fstore updated, features: ");
