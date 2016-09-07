@@ -19,6 +19,7 @@ package org.apache.solr.ltr.rest;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +43,9 @@ import org.slf4j.LoggerFactory;
  */
 public class ManagedFeatureStore extends ManagedResource implements
     ManagedResource.ChildResourceSupport {
+
+  /** name of the attribute containing the feature store used **/
+  private static final String FEATURE_STORE_NAME_KEY = "store";
 
   private final Map<String,FeatureStore> stores = new HashMap<>();
 
@@ -79,48 +83,27 @@ public class ManagedFeatureStore extends ManagedResource implements
   }
 
   public void update(Map<String,Object> map) {
-    final String name = (String) map.get(CommonLTRParams.MODEL_NAME);
-    final String type = (String) map.get(CommonLTRParams.MODEL_CLASS);
-    final String store = (String) map.get(CommonLTRParams.MODEL_FEATURE_STORE);
-
-    @SuppressWarnings("unchecked")
-    final Map<String,Object> paramsMap = (Map<String,Object>) map.get(CommonLTRParams.MODEL_PARAMS);
-
     try {
-
-      addFeature(name, type, store, paramsMap);
+      final String featureStore = (String) map.get(FEATURE_STORE_NAME_KEY);
+      addFeature(map, featureStore);
     } catch (final FeatureException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
   }
 
-  public synchronized void addFeature(String name, String type,
-      String featureStore, Map<String,Object> params)
+  public synchronized void addFeature(Map<String,Object> map, String featureStore)
       throws FeatureException {
-    log.info("register feature {} -> {} in "
-        + (featureStore == null ? "default" : "")
-        + " store"
-        + (featureStore == null ? "" : (" [" + featureStore + "]")),
-        name, type);
+    log.info("register feature based on {}", map);
 
     final FeatureStore fstore = getFeatureStore(featureStore);
 
-    final Feature feature = createFeature(name, type, params, fstore.size());
-
-    fstore.add(feature);
-  }
-
-  /**
-   * generates an instance this feature.
-   */
-  private Feature createFeature(String name, String type, Map<String,Object> params,
-      int id) throws FeatureException {
+    Feature feature;
     try {
-      return Feature.getInstance(solrResourceLoader,
-          type, name, id, params);
+      feature = Feature.fromMap(solrResourceLoader, map);
     } catch (final Exception e) {
       throw new FeatureException(e.getMessage(), e);
     }
+    fstore.add(feature);
   }
 
   @SuppressWarnings("unchecked")
@@ -145,7 +128,7 @@ public class ManagedFeatureStore extends ManagedResource implements
     // }
     final List<Object> features = new ArrayList<>();
     for (final FeatureStore fs : stores.values()) {
-      features.addAll(fs.featuresAsManagedResources());
+      features.addAll(featuresAsManagedResources(fs));
     }
     return features;
   }
@@ -180,8 +163,18 @@ public class ManagedFeatureStore extends ManagedResource implements
             "missing feature store [" + childId + "]");
       }
       response.add(CommonLTRParams.FEATURES_JSON_FIELD,
-          store.featuresAsManagedResources());
+          featuresAsManagedResources(store));
     }
+  }
+
+  private static List<Object> featuresAsManagedResources(FeatureStore store) {
+    final List<Object> features = new ArrayList<Object>(store.size());
+    for (final Feature f : store.getFeatures()) {
+      final LinkedHashMap<String,Object> m = f.toMap();
+      m.put(FEATURE_STORE_NAME_KEY, store.getName());
+      features.add(m);
+    }
+    return features;
   }
 
 }

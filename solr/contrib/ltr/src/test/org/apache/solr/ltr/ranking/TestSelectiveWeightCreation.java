@@ -65,7 +65,8 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
       params.put("value", i);
       final Feature f = Feature.getInstance(solrResourceLoader,
           ValueFeature.class.getCanonicalName(),
-          "f" + i, i, params);
+          "f" + i, params);
+      f.setId(i);
       features.add(f);
     }
     return features;

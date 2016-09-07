@@ -17,21 +17,11 @@
 package org.apache.solr.ltr.util;
 
 public class CommonLTRParams {
-  public static final String FIELD = "field";
-  public static final String VALUE = "value";
 
   /** name of the attribute containing the feature name **/
   public static final String FEATURE_NAME = "name";
-  /** name of the attribute containing the feature type **/
-  public static final Object FEATURE_CLASS = "class";
-  /** name of the attribute containing the feature store used **/
-  public static final Object FEATURE_STORE = "store";
-  /** name of the attribute containing the feature params **/
-  public static final Object FEATURE_PARAMS = "params";
   /** name of the attribute containing the normalizer **/
   public static final String FEATURE_NORM = "norm";
-  /** name of the attribute containing the a field in a document **/
-  public static final Object FEATURE_FIELD_PARAM = "field";
   /** name of the attribute containing the model name **/
   public static final Object MODEL_NAME = "name";
   /** name of the attribute containing the model type **/

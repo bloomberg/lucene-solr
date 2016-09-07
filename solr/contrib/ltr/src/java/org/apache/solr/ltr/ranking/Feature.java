@@ -30,7 +30,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.MacroExpander;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
@@ -40,20 +39,26 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public abstract class Feature extends Query {
 
+  /** name of the attribute containing the feature class **/
+  public static final String CLASS_KEY = "class";
+  /** name of the attribute containing the feature name **/
+  public static final String NAME_KEY = "name";
+  /** name of the attribute containing the feature params **/
+  public static final String PARAMS_KEY = "params";
+
   final protected String name;
-  private int id;
+  private int id = -1;
 
   final private Map<String,Object> params;
 
   public static Feature getInstance(SolrResourceLoader solrResourceLoader,
-      String type, String name, int id, Map<String,Object> params) {
+      String className, String name, Map<String,Object> params) {
     final Feature f = solrResourceLoader.newInstance(
-        type,
+        className,
         Feature.class,
         new String[0], // no sub packages
         new Class[] { String.class, Map.class },
         new Object[] { name, params });
-    f.setId(id);
     if (params != null) {
       SolrPluginUtils.invokeSetters(f, params.entrySet());
     }
@@ -141,14 +146,25 @@ public abstract class Feature extends Query {
     this.id = id;
   }
 
+  public static Feature fromMap(SolrResourceLoader solrResourceLoader,
+      Map<String,Object> featureMap) {
+    final String className = (String) featureMap.get(CLASS_KEY);
+
+    final String name = (String) featureMap.get(NAME_KEY);
+
+    @SuppressWarnings("unchecked")
+    final Map<String,Object> params = (Map<String,Object>) featureMap.get(PARAMS_KEY);
+
+    return Feature.getInstance(solrResourceLoader, className, name, params);
+  }
+
   protected abstract LinkedHashMap<String,Object> paramsToMap();
 
-  public LinkedHashMap<String,Object> toMap(String storeName) {
-    final LinkedHashMap<String,Object> o = new LinkedHashMap<>(4, 1.0f);
-    o.put((String)CommonLTRParams.FEATURE_NAME, name);
-    o.put((String)CommonLTRParams.FEATURE_CLASS, getClass().getCanonicalName());
-    o.put((String)CommonLTRParams.FEATURE_STORE, storeName);
-    o.put((String)CommonLTRParams.FEATURE_PARAMS, paramsToMap());
+  public LinkedHashMap<String,Object> toMap() {
+    final LinkedHashMap<String,Object> o = new LinkedHashMap<>(4, 1.0f); // 1 extra for caller to add store
+    o.put(NAME_KEY, name);
+    o.put(CLASS_KEY, getClass().getCanonicalName());
+    o.put(PARAMS_KEY, paramsToMap());
     return o;
   }
   

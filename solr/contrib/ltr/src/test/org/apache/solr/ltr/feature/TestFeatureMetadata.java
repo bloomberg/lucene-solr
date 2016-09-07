@@ -16,12 +16,14 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.impl.OriginalScoreFeature;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.util.FeatureException;
-import org.apache.solr.ltr.util.LTRUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,9 +47,12 @@ public class TestFeatureMetadata extends TestRerankBase {
   public void getInstanceTest() throws FeatureException
   {
 
-    store.addFeature("test", OriginalScoreFeature.class.getCanonicalName(),
-        "testFstore", LTRUtils.EMPTY_MAP);
+    final Map<String,Object> map = new HashMap<String,Object>();
+    map.put(Feature.NAME_KEY, "test");
+    map.put(Feature.CLASS_KEY, OriginalScoreFeature.class.getCanonicalName());
+    store.addFeature(map, "testFstore");
     final Feature feature = store.getFeatureStore("testFstore").get("test");
+    assertNotNull(feature);
     assertEquals("test", feature.getName());
     assertEquals(OriginalScoreFeature.class.getCanonicalName(), feature
         .getClass().getCanonicalName());
@@ -56,8 +61,10 @@ public class TestFeatureMetadata extends TestRerankBase {
   @Test(expected = FeatureException.class)
   public void getInvalidInstanceTest() throws FeatureException
   {
-    store.addFeature("test", "org.apache.solr.ltr.feature.LOLFeature",
-        "testFstore2", LTRUtils.EMPTY_MAP);
+    final Map<String,Object> map = new HashMap<String,Object>();
+    map.put(Feature.NAME_KEY, "test");
+    map.put(Feature.CLASS_KEY, "org.apache.solr.ltr.feature.LOLFeature");
+    store.addFeature(map, "testFstore2");
 
   }
   
