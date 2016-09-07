@@ -141,11 +141,10 @@ public class TestSolrCloud extends TestRerankBase {
 
   private void createCollection(String name, String config) throws Exception {
     CollectionAdminResponse response;
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-    create.setConfigName(config);
-    create.setCollectionName(name);
-    create.setNumShards(1);
-    create.setReplicationFactor(1);
+    final int numShards = 1;
+    final int numReplicas = 1;
+    CollectionAdminRequest.Create create = 
+        CollectionAdminRequest.createCollection(name, config, numShards, numReplicas);
     create.setMaxShardsPerNode(1);
     response = create.process(solrCluster.getSolrClient());
 
