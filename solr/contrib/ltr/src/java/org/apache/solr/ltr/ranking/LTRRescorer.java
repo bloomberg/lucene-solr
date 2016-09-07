@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.ranking;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -35,8 +34,7 @@ import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 /**
  * Implements the rescoring logic. The top documents returned by solr with their
@@ -47,7 +45,6 @@ import org.slf4j.LoggerFactory;
 public class LTRRescorer extends Rescorer {
 
   ModelQuery reRankModel;
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public LTRRescorer(ModelQuery reRankModel) {
     this.reRankModel = reRankModel;
   }
@@ -109,10 +106,7 @@ public class LTRRescorer extends Rescorer {
     if ((topN == 0) || (firstPassTopDocs.totalHits == 0)) {
       return firstPassTopDocs;
     }
-    
     final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
-   
-
     Arrays.sort(hits, new Comparator<ScoreDoc>() {
       @Override
       public int compare(ScoreDoc a, ScoreDoc b) {
@@ -148,12 +142,6 @@ public class LTRRescorer extends Rescorer {
       }
     });
 
-    // if (topN < hits.length) {
-    // ScoreDoc[] subset = new ScoreDoc[topN];
-    // System.arraycopy(hits, 0, subset, 0, topN);
-    // hits = subset;
-    // }
-
     return new TopDocs(firstPassTopDocs.totalHits, reranked, reranked[0].score);
   }
   
@@ -181,7 +169,6 @@ public class LTRRescorer extends Rescorer {
     // The heap is just anticipating the sorting of the array, so I don't think
     // it would
     // save time.
-    long time1 = System.currentTimeMillis();
     while (hitUpto < hits.length) {
       final ScoreDoc hit = hits[hitUpto];
       final int docID = hit.doc;
@@ -240,8 +227,6 @@ public class LTRRescorer extends Rescorer {
       }
       hitUpto++;
     }
-    long time2 = System.currentTimeMillis();
-    log.info("Total rescore time: {}", (time2-time1)); 
   }
 
   @Override

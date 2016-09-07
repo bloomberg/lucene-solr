@@ -15,12 +15,9 @@
  * limitations under the License.
  */
 package org.apache.solr.ltr.ranking;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.concurrent.Executor;
@@ -33,7 +30,9 @@ public class LTRThreadInterface {
   ThreadMXBean tmxb = ManagementFactory.getThreadMXBean();
   public static Semaphore ltrSemaphore = null; 
   public static int maxThreads = 1;
-  public static final int DEFAULT_MAXTHREADS = 0; // do not do threading if 'LTRThreads' is not sp-ecified in the config file
+  public static int maxQueryThreads = 1;
+  public static final int DEFAULT_MAX_THREADS = 0; // do not do threading if 'LTRMaxThreads' is not specified in the config file
+  public static final int DEFAULT_MAX_QUERYTHREADS = 0; // do not do threading if 'LTRMaxQueryThreads' is not specified in the config file
 
    public static final Executor createWeightScoreExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
           0,
@@ -42,11 +41,5 @@ public class LTRThreadInterface {
           new SynchronousQueue<Runnable>()  // directly hand off tasks
           , new DefaultSolrThreadFactory("ltrExecutor")
     );
-   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-   
-   public static void setMaxthreads(int numThreads){
-      maxThreads = numThreads;
-      log.info("setting threads in LTRThreadInterface to: {}", maxThreads);
-   }
    
 }

@@ -72,6 +72,7 @@ public class ModelQuery extends Query {
   protected SolrQueryRequest request;
   protected boolean extractAllFeatures;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private Semaphore querySemaphore; // limits the number of threads per query, so that multiple requests can be serviced simultaneously
 
   public ModelQuery(LTRScoringAlgorithm meta) {
     this(meta, false);
@@ -80,6 +81,7 @@ public class ModelQuery extends Query {
   public ModelQuery(LTRScoringAlgorithm meta, boolean extractAllFeatures) {
     this.meta = meta;
     this.extractAllFeatures = extractAllFeatures; 
+    querySemaphore = new Semaphore((LTRThreadInterface.maxQueryThreads <=0) ? 1 : LTRThreadInterface.maxQueryThreads);
   }
 
   public LTRScoringAlgorithm getMetadata() {
@@ -159,11 +161,8 @@ public class ModelQuery extends Query {
     return request;
   }
 
-  @Override
-  public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
+ /* public ModelWeight createWeight0(IndexSearcher searcher, boolean needsScores, float boost)
       throws IOException {   
-    long  start = System.currentTimeMillis();
-    
     ModelWeight mw = null;
     if(LTRThreadInterface.maxThreads <= 1){
       mw = createWeightsSelectively(searcher, needsScores, boost);
@@ -171,14 +170,68 @@ public class ModelQuery extends Query {
     else{
       mw = createWeightsSelectivelyParallel(searcher, needsScores, boost);
     }
-
-    long  end = System.currentTimeMillis();
-    log.info("In ModelQuery.java::createWeight() NEW!  createWeight time:{} ms", (end-start));
     return mw;
+  }*/
+  
+  @Override
+  public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
+      throws IOException {   
+    final Collection<Feature> modelFeatures = meta.getFeatures();
+    final Collection<Feature> allFeatures = meta.getAllFeatures();
+    int modelFeatSize = modelFeatures.size();
+    int allFeatSize = this.extractAllFeatures ? allFeatures.size() : modelFeatSize;
+    
+    final FeatureWeight[] extractedFeatureWeights = new FeatureWeight[allFeatSize];
+    final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
+    Collection<Feature> features = null;
+    if (this.extractAllFeatures) {
+      features = allFeatures;
+    }
+    else{
+      features =  modelFeatures;
+    }
+    List<FeatureWeight > featureWeights = new ArrayList<>(features.size());
+    
+    if(LTRThreadInterface.maxThreads <= 1){
+       createWeightsSelectively(searcher, needsScores, boost, featureWeights, features);
+    }
+    else{
+       createWeightsSelectivelyParallel(searcher, needsScores, boost, featureWeights, features);
+    }
+    int i=0, j = 0;
+    if (this.extractAllFeatures) {
+      for (final FeatureWeight fw : featureWeights) {
+        extractedFeatureWeights[i++] = fw;
+      }
+      for (final Feature f: modelFeatures){
+        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getId()]; // we can lookup by featureid because all features will be extracted when this.extractAllFeatures is set
+      }
+    }
+    else{
+      for (final FeatureWeight fw: featureWeights){
+        extractedFeatureWeights[i++] = fw;
+        modelFeaturesWeights[j++] = fw; 
+      }
+    }
+    return new ModelWeight(searcher, modelFeaturesWeights, extractedFeatureWeights, allFeatures.size());
   }
 
-  private ModelWeight createWeightsSelectively(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    long  start = System.currentTimeMillis();
+  private void createWeightsSelectively(IndexSearcher searcher, boolean needsScores, float boost, 
+      List<FeatureWeight > featureWeights, Collection<Feature> features) throws IOException {
+    final SolrQueryRequest req = getRequest();
+    // since the feature store is a linkedhashmap order is preserved
+    for (final Feature f : features) {
+        try{
+          FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
+          featureWeights.add(fw);
+        }catch (final Exception e) {
+          throw new FeatureException("Exception from createWeight for " + f.toString() + " "
+              + e.getMessage(), e);
+        }
+      }
+  }
+  
+  private ModelWeight createWeightsSelectively0(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
     final Collection<Feature> modelFeatures = meta.getFeatures();
     final Collection<Feature> allFeatures = meta.getAllFeatures();
     int modelFeatSize = modelFeatures.size();
@@ -200,7 +253,7 @@ public class ModelQuery extends Query {
         }
       }
       for (final Feature f: modelFeatures){
-        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getId()];
+        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getId()]; // we can lookup by featureid because all features will be extracted when this.extractAllFeatures is set
       }
     }
     else{
@@ -215,8 +268,6 @@ public class ModelQuery extends Query {
         }
       }
     }
-    long  end = System.currentTimeMillis();
-    log.info("\tIn ModelQuery.java::createWeightsSelectively()  createWeights time:{} ms totalModelFeatsFound = {} total allFeatureWeights: {}", (end-start), j, i);
     return new ModelWeight(searcher, modelFeaturesWeights, extractedFeatureWeights, allFeatures.size());
   }
 
@@ -241,43 +292,29 @@ public class ModelQuery extends Query {
         throw new FeatureException("Exception from createWeight for " + f.toString() + " "
             + se.getMessage(), se);
       } finally {
+        querySemaphore.release();
         LTRThreadInterface.ltrSemaphore.release();
       }
     }
   } // end of call CreateWeightCallable
 
-  private ModelWeight createWeightsSelectivelyParallel(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  private void createWeightsSelectivelyParallel(IndexSearcher searcher, boolean needsScores, float boost,
+      List<FeatureWeight > featureWeights, Collection<Feature> features) throws IOException {
 
-    long  time1 = System.currentTimeMillis();
-    final Collection<Feature> modelFeatures = meta.getFeatures();
-    final Collection<Feature> allFeatures = meta.getAllFeatures();
-
-    int modelFeatSize = modelFeatures.size();
-    int allFeatSize = this.extractAllFeatures ? allFeatures.size() : modelFeatSize;
-
-    final FeatureWeight[] extractedFeatureWeights = new FeatureWeight[allFeatSize];
-    final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
     final SolrQueryRequest req = getRequest();
-    //= req.getParams().getInt("LTRThreads", 1);
+
     Executor executor = LTRThreadInterface.createWeightScoreExecutor;
     if  (LTRThreadInterface.ltrSemaphore == null ){
-      LTRThreadInterface.ltrSemaphore = new Semaphore((LTRThreadInterface.maxThreads <=0) ? 10 : LTRThreadInterface.maxThreads);
-    }
-    Collection<Feature> features = null;
-    // since the feature store is a linkedhashmap order is preserved
-    if (this.extractAllFeatures) {
-      features = allFeatures;
-    }
-    else{
-      features =  modelFeatures;
+      LTRThreadInterface.ltrSemaphore = new Semaphore((LTRThreadInterface.maxThreads <=0) ? 1 : LTRThreadInterface.maxThreads);
     }
     List<Future<FeatureWeight> > futures = new ArrayList<>(features.size());
-    List<FeatureWeight > featureWeights = new ArrayList<>(features.size());
     try{
       for (final Feature f : features) {
         CreateWeightCallable callable = new CreateWeightCallable(f, searcher, needsScores, req);
         RunnableFuture<FeatureWeight> runnableFuture = new FutureTask<>(callable);
+        querySemaphore.acquire(); // always acquire before the ltrSemaphore is acquired, to guarantee a that the current query is within the limit for max. threads 
         LTRThreadInterface.ltrSemaphore.acquire();//may block and/or interrupt
+        
         executor.execute(runnableFuture);//releases semaphore when done
         futures.add(runnableFuture);
       }
@@ -294,14 +331,64 @@ public class ModelQuery extends Query {
       }
       log.info("Error while creating weights in LTR: " + e.toString(), e);
     }
-    long  time2 = System.currentTimeMillis();
+  }
+  
+  private ModelWeight createWeightsSelectivelyParallel0(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+
+    final Collection<Feature> modelFeatures = meta.getFeatures();
+    final Collection<Feature> allFeatures = meta.getAllFeatures();
+
+    int modelFeatSize = modelFeatures.size();
+    int allFeatSize = this.extractAllFeatures ? allFeatures.size() : modelFeatSize;
+
+    final FeatureWeight[] extractedFeatureWeights = new FeatureWeight[allFeatSize];
+    final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
+    final SolrQueryRequest req = getRequest();
+
+    Executor executor = LTRThreadInterface.createWeightScoreExecutor;
+    if  (LTRThreadInterface.ltrSemaphore == null ){
+      LTRThreadInterface.ltrSemaphore = new Semaphore((LTRThreadInterface.maxThreads <=0) ? 1 : LTRThreadInterface.maxThreads);
+    }
+    Collection<Feature> features = null;
+    // since the feature store is a linkedhashmap order is preserved
+    if (this.extractAllFeatures) {
+      features = allFeatures;
+    }
+    else{
+      features =  modelFeatures;
+    }
+    List<Future<FeatureWeight> > futures = new ArrayList<>(features.size());
+    List<FeatureWeight > featureWeights = new ArrayList<>(features.size());
+    try{
+      for (final Feature f : features) {
+        CreateWeightCallable callable = new CreateWeightCallable(f, searcher, needsScores, req);
+        RunnableFuture<FeatureWeight> runnableFuture = new FutureTask<>(callable);
+        querySemaphore.acquire(); // always acquire before the ltrSemaphore is acquired, to guarantee a that the current query is within the limit for max. threads 
+        LTRThreadInterface.ltrSemaphore.acquire();//may block and/or interrupt
+        
+        executor.execute(runnableFuture);//releases semaphore when done
+        futures.add(runnableFuture);
+      }
+      //Loop over futures to get the feature weight objects
+      for (final Future<FeatureWeight> future : futures) {
+        featureWeights.add(future.get());
+      }
+    } catch (InterruptedException e) {
+      log.info("Error while creating weights in LTR: InterruptedException", e);
+    } catch (ExecutionException ee) {
+      Throwable e = ee.getCause();//unwrap
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
+      }
+      log.info("Error while creating weights in LTR: " + e.toString(), e);
+    }
     int i=0, j = 0;
     if (this.extractAllFeatures) {
       for (final FeatureWeight fw : featureWeights) {
         extractedFeatureWeights[i++] = fw;
       }
       for (final Feature f: modelFeatures){
-        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getId()]; 
+        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getId()]; // we can lookup by featureid because all features will be extracted when this.extractAllFeatures is set
       }
     }
     else{
@@ -310,7 +397,6 @@ public class ModelQuery extends Query {
         modelFeaturesWeights[j++] = fw; 
       }
     }
-    log.info("maxthreads:{} numWeights: {} time for creating weights: {} ", LTRThreadInterface.maxThreads, features.size(),(time2-time1));
     return new ModelWeight(searcher, modelFeaturesWeights, extractedFeatureWeights, allFeatures.size());
   }
 
@@ -466,22 +552,18 @@ public class ModelQuery extends Query {
 
       final List<FeatureScorer> featureScorers = new ArrayList<FeatureScorer>(
           extractedFeatureWeights.length);
-      long time1 = System.currentTimeMillis();
       for (final FeatureWeight featureWeight : extractedFeatureWeights) {
         final FeatureScorer scorer = featureWeight.scorer(context);
         if (scorer != null) {
           featureScorers.add(featureWeight.scorer(context));
         }
       }
-      long time2 = System.currentTimeMillis();
       // Always return a ModelScorer, even if no features match, because we
       // always need to call
       // score on the model for every document, since 0 features matching could
       // return a
       // non 0 score for a given model.
       ModelScorer mscorer = new ModelScorer(this, featureScorers);
-      long time3 = System.currentTimeMillis();
-      log.info("\t time for populating featureScorers: {} time for creating ModelScorer: {}", (time2-time1), (time3-time2));
       return mscorer;
 
     }
