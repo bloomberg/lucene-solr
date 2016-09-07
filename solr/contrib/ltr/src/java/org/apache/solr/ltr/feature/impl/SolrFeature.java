@@ -77,7 +77,7 @@ public class SolrFeature extends Feature {
   }
 
   @Override
-  protected LinkedHashMap<String,Object> paramsToMap() {
+  public LinkedHashMap<String,Object> paramsToMap() {
     final LinkedHashMap<String,Object> params = new LinkedHashMap<>(3, 1.0f);
     if (df != null) {
       params.put("df", df);

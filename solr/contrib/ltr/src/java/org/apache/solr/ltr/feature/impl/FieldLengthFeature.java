@@ -43,7 +43,7 @@ public class FieldLengthFeature extends Feature {
   }
 
   @Override
-  protected LinkedHashMap<String,Object> paramsToMap() {
+  public LinkedHashMap<String,Object> paramsToMap() {
     final LinkedHashMap<String,Object> params = new LinkedHashMap<>(1, 1.0f);
     params.put("field", field);
     return params;

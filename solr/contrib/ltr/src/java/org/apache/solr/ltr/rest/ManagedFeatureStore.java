@@ -44,6 +44,12 @@ import org.slf4j.LoggerFactory;
 public class ManagedFeatureStore extends ManagedResource implements
     ManagedResource.ChildResourceSupport {
 
+  /** name of the attribute containing the feature class **/
+  public static final String CLASS_KEY = "class";
+  /** name of the attribute containing the feature name **/
+  public static final String NAME_KEY = "name";
+  /** name of the attribute containing the feature params **/
+  public static final String PARAMS_KEY = "params";
   /** name of the attribute containing the feature store used **/
   private static final String FEATURE_STORE_NAME_KEY = "store";
 
@@ -99,7 +105,7 @@ public class ManagedFeatureStore extends ManagedResource implements
 
     Feature feature;
     try {
-      feature = Feature.fromMap(solrResourceLoader, map);
+      feature = fromFeatureMap(solrResourceLoader, map);
     } catch (final Exception e) {
       throw new FeatureException(e.getMessage(), e);
     }
@@ -170,11 +176,30 @@ public class ManagedFeatureStore extends ManagedResource implements
   private static List<Object> featuresAsManagedResources(FeatureStore store) {
     final List<Object> features = new ArrayList<Object>(store.size());
     for (final Feature f : store.getFeatures()) {
-      final LinkedHashMap<String,Object> m = f.toMap();
+      final LinkedHashMap<String,Object> m = toFeatureMap(f);
       m.put(FEATURE_STORE_NAME_KEY, store.getName());
       features.add(m);
     }
     return features;
   }
 
+  private static LinkedHashMap<String,Object> toFeatureMap(Feature feat) {
+    final LinkedHashMap<String,Object> o = new LinkedHashMap<>(4, 1.0f); // 1 extra for caller to add store
+    o.put(NAME_KEY, feat.getName());
+    o.put(CLASS_KEY, feat.getClass().getCanonicalName());
+    o.put(PARAMS_KEY, feat.paramsToMap());
+    return o;
+  }
+  
+  private static Feature fromFeatureMap(SolrResourceLoader solrResourceLoader,
+      Map<String,Object> featureMap) {
+    final String className = (String) featureMap.get(CLASS_KEY);
+
+    final String name = (String) featureMap.get(NAME_KEY);
+
+    @SuppressWarnings("unchecked")
+    final Map<String,Object> params = (Map<String,Object>) featureMap.get(PARAMS_KEY);
+
+    return Feature.getInstance(solrResourceLoader, className, name, params);
+  }
 }

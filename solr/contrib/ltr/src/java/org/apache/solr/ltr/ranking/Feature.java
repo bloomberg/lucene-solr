@@ -39,13 +39,6 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public abstract class Feature extends Query {
 
-  /** name of the attribute containing the feature class **/
-  public static final String CLASS_KEY = "class";
-  /** name of the attribute containing the feature name **/
-  public static final String NAME_KEY = "name";
-  /** name of the attribute containing the feature params **/
-  public static final String PARAMS_KEY = "params";
-
   final protected String name;
   private int id = -1;
 
@@ -146,30 +139,8 @@ public abstract class Feature extends Query {
     this.id = id;
   }
 
-  public static Feature fromMap(SolrResourceLoader solrResourceLoader,
-      Map<String,Object> featureMap) {
-    final String className = (String) featureMap.get(CLASS_KEY);
+  public abstract LinkedHashMap<String,Object> paramsToMap();
 
-    final String name = (String) featureMap.get(NAME_KEY);
-
-    @SuppressWarnings("unchecked")
-    final Map<String,Object> params = (Map<String,Object>) featureMap.get(PARAMS_KEY);
-
-    return Feature.getInstance(solrResourceLoader, className, name, params);
-  }
-
-  protected abstract LinkedHashMap<String,Object> paramsToMap();
-
-  public LinkedHashMap<String,Object> toMap() {
-    final LinkedHashMap<String,Object> o = new LinkedHashMap<>(4, 1.0f); // 1 extra for caller to add store
-    o.put(NAME_KEY, name);
-    o.put(CLASS_KEY, getClass().getCanonicalName());
-    o.put(PARAMS_KEY, paramsToMap());
-    return o;
-  }
-  
-  
-  
   public abstract class FeatureWeight extends Weight {
 
     final protected IndexSearcher searcher;

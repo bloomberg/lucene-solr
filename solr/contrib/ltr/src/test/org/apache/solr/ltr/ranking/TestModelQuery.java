@@ -281,7 +281,7 @@ public class TestModelQuery extends LuceneTestCase {
       }
 
       @Override
-      protected LinkedHashMap<String,Object> paramsToMap() {
+      public LinkedHashMap<String,Object> paramsToMap() {
         return null;
       }
     };

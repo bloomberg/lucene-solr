@@ -30,14 +30,10 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public abstract class Normalizer {
 
-  /** name of the attribute containing the normalizer type **/
-  private static final String CLASS_KEY = "class";
-  /** name of the attribute containing the normalizer params **/
-  private static final String PARAMS_KEY = "params";
 
   public abstract float normalize(float value);
 
-  protected abstract LinkedHashMap<String,Object> paramsToMap();
+  public abstract LinkedHashMap<String,Object> paramsToMap();
 
   public Explanation explain(Explanation explain) {
     final float normalized = normalize(explain.getValue());
@@ -54,28 +50,4 @@ public abstract class Normalizer {
     }
     return f;
   }
-
-  public static Normalizer fromMap(SolrResourceLoader solrResourceLoader,
-      Map<String,Object> normMap) {
-    final String className = (String) normMap.get(CLASS_KEY);
-
-    @SuppressWarnings("unchecked")
-    final Map<String,Object> params = (Map<String,Object>) normMap.get(PARAMS_KEY);
-
-    return Normalizer.getInstance(solrResourceLoader, className, params);
-  }
-
-  public LinkedHashMap<String,Object> toMap() {
-    final LinkedHashMap<String,Object> normalizer = new LinkedHashMap<>(2, 1.0f);
-
-    normalizer.put(CLASS_KEY, getClass().getCanonicalName());
-
-    final LinkedHashMap<String,Object> params = paramsToMap();
-    if (params != null) {
-      normalizer.put(PARAMS_KEY, params);
-    }
-
-    return normalizer;
-  }
-
 }

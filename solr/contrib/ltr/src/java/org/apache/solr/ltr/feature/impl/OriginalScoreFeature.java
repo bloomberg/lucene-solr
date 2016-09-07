@@ -37,7 +37,7 @@ public class OriginalScoreFeature extends Feature {
   }
 
   @Override
-  protected LinkedHashMap<String,Object> paramsToMap() {
+  public LinkedHashMap<String,Object> paramsToMap() {
     return null;
   }
 

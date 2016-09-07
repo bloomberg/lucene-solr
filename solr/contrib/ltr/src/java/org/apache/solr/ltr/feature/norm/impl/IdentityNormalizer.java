@@ -34,7 +34,7 @@ public class IdentityNormalizer extends Normalizer {
   }
 
   @Override
-  protected LinkedHashMap<String,Object> paramsToMap() {
+  public LinkedHashMap<String,Object> paramsToMap() {
     return null;
   }
 

@@ -48,8 +48,8 @@ public class TestFeatureMetadata extends TestRerankBase {
   {
 
     final Map<String,Object> map = new HashMap<String,Object>();
-    map.put(Feature.NAME_KEY, "test");
-    map.put(Feature.CLASS_KEY, OriginalScoreFeature.class.getCanonicalName());
+    map.put(ManagedFeatureStore.NAME_KEY, "test");
+    map.put(ManagedFeatureStore.CLASS_KEY, OriginalScoreFeature.class.getCanonicalName());
     store.addFeature(map, "testFstore");
     final Feature feature = store.getFeatureStore("testFstore").get("test");
     assertNotNull(feature);
@@ -62,8 +62,8 @@ public class TestFeatureMetadata extends TestRerankBase {
   public void getInvalidInstanceTest() throws FeatureException
   {
     final Map<String,Object> map = new HashMap<String,Object>();
-    map.put(Feature.NAME_KEY, "test");
-    map.put(Feature.CLASS_KEY, "org.apache.solr.ltr.feature.LOLFeature");
+    map.put(ManagedFeatureStore.NAME_KEY, "test");
+    map.put(ManagedFeatureStore.CLASS_KEY, "org.apache.solr.ltr.feature.LOLFeature");
     store.addFeature(map, "testFstore2");
 
   }

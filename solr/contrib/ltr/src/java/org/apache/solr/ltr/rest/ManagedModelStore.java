@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +53,11 @@ import org.slf4j.LoggerFactory;
 public class ManagedModelStore extends ManagedResource implements
     ManagedResource.ChildResourceSupport {
 
+  /** name of the attribute containing the normalizer type **/
+  public static final String CLASS_KEY = "class";
+  /** name of the attribute containing the normalizer params **/
+  public static final String PARAMS_KEY = "params";
+ 
   ModelStore store;
   private ManagedFeatureStore featureStores;
 
@@ -106,7 +112,7 @@ public class ManagedModelStore extends ManagedResource implements
     final Object normObj = featureMap.get(CommonLTRParams.FEATURE_NORM);
     final Normalizer norm;
     if (normObj != null) {
-      norm = Normalizer.fromMap(solrResourceLoader,
+      norm = fromNormalizerMap(solrResourceLoader,
           (Map<String,Object>) normObj);
     }
     else {
@@ -334,7 +340,7 @@ public class ManagedModelStore extends ManagedResource implements
         final Normalizer norm = normList.get(idx);
         final Map<String,Object> map = new HashMap<String,Object>(2, 1.0f);
         map.put("name", feature.getName());
-        map.put("norm", norm.toMap());
+        map.put("norm", toNormalizerMap(norm));
         features.add(map);
       }
       modelMap.put("features", features);
@@ -343,6 +349,29 @@ public class ManagedModelStore extends ManagedResource implements
       list.add(modelMap);
     }
     return list;
+  }
+  
+  private static Normalizer fromNormalizerMap(SolrResourceLoader solrResourceLoader,
+      Map<String,Object> normMap) {
+    final String className = (String) normMap.get(CLASS_KEY);
+
+    @SuppressWarnings("unchecked")
+    final Map<String,Object> params = (Map<String,Object>) normMap.get(PARAMS_KEY);
+
+    return Normalizer.getInstance(solrResourceLoader, className, params);
+  }
+
+  private static LinkedHashMap<String,Object> toNormalizerMap(Normalizer norm) {
+    final LinkedHashMap<String,Object> normalizer = new LinkedHashMap<>(2, 1.0f);
+
+    normalizer.put(CLASS_KEY, norm.getClass().getCanonicalName());
+
+    final LinkedHashMap<String,Object> params = norm.paramsToMap();
+    if (params != null) {
+      normalizer.put(PARAMS_KEY, params);
+    }
+
+    return normalizer;
   }
 
 }
