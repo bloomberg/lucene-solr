@@ -36,7 +36,7 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.solr.ltr.ranking.LTRThreadInterface;
+import org.apache.solr.ltr.ranking.LTRThreadModule;
 
 /**
  * Plug into solr a rerank model.
@@ -52,15 +52,16 @@ public class LTRQParserPlugin extends QParserPlugin {
 
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
-    LTRThreadInterface.maxThreads  = getInt(args.get("LTRMaxThreads"), LTRThreadInterface.DEFAULT_MAX_THREADS, "LTRMaxThreads");
-    LTRThreadInterface.maxQueryThreads = getInt(args.get("LTRMaxQueryThreads"), LTRThreadInterface.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
+    LTRThreadModule.maxThreads  = getInt(args.get("LTRMaxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "LTRMaxThreads");
+    LTRThreadModule.maxQueryThreads = getInt(args.get("LTRMaxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
   }
-  private int getInt(Object thObj, int defValue, String paramName){
+  private int getInt(Object thObj, int defValue, String paramName) throws NumberFormatException{
      if (thObj != null) {
        try{
           return Integer.parseInt(thObj.toString());
        }catch(NumberFormatException nfe){
-          log.error("{}: {} not an integer using defaultValue: {}", nfe.toString(), paramName, defValue);
+          String errorStr = nfe.toString() + ":" + paramName + " not an integer";
+          throw new NumberFormatException(errorStr);
        }
      }
      return defValue; 

@@ -49,7 +49,7 @@ import org.apache.solr.ltr.ranking.Feature.FeatureWeight;
 import org.apache.solr.ltr.ranking.Feature.FeatureWeight.FeatureScorer;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.ltr.ranking.LTRThreadInterface;
+import org.apache.solr.ltr.ranking.LTRThreadModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +81,7 @@ public class ModelQuery extends Query {
   public ModelQuery(LTRScoringAlgorithm meta, boolean extractAllFeatures) {
     this.meta = meta;
     this.extractAllFeatures = extractAllFeatures; 
-    querySemaphore = new Semaphore((LTRThreadInterface.maxQueryThreads <=0) ? 1 : LTRThreadInterface.maxQueryThreads);
+    querySemaphore = new Semaphore((LTRThreadModule.maxQueryThreads <=0) ? 1 : LTRThreadModule.maxQueryThreads);
   }
 
   public LTRScoringAlgorithm getMetadata() {
@@ -167,10 +167,7 @@ public class ModelQuery extends Query {
     final Collection<Feature> modelFeatures = meta.getFeatures();
     final Collection<Feature> allFeatures = meta.getAllFeatures();
     int modelFeatSize = modelFeatures.size();
-    int allFeatSize = this.extractAllFeatures ? allFeatures.size() : modelFeatSize;
-    
-    final FeatureWeight[] extractedFeatureWeights = new FeatureWeight[allFeatSize];
-    final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
+   
     Collection<Feature> features = null;
     if (this.extractAllFeatures) {
       features = allFeatures;
@@ -178,9 +175,11 @@ public class ModelQuery extends Query {
     else{
       features =  modelFeatures;
     }
+    final FeatureWeight[] extractedFeatureWeights = new FeatureWeight[features.size()];
+    final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
     List<FeatureWeight > featureWeights = new ArrayList<>(features.size());
     
-    if(LTRThreadInterface.maxThreads <= 1){
+    if(LTRThreadModule.maxThreads <= 1){
        createWeights(searcher, needsScores, boost, featureWeights, features);
     }
     else{
@@ -241,7 +240,7 @@ public class ModelQuery extends Query {
             + se.getMessage(), se);
       } finally {
         querySemaphore.release();
-        LTRThreadInterface.ltrSemaphore.release();
+        LTRThreadModule.ltrSemaphore.release();
       }
     }
   } // end of call CreateWeightCallable
@@ -251,9 +250,9 @@ public class ModelQuery extends Query {
 
     final SolrQueryRequest req = getRequest();
 
-    Executor executor = LTRThreadInterface.createWeightScoreExecutor;
-    if  (LTRThreadInterface.ltrSemaphore == null ){
-      LTRThreadInterface.ltrSemaphore = new Semaphore((LTRThreadInterface.maxThreads <=0) ? 1 : LTRThreadInterface.maxThreads);
+    Executor executor = LTRThreadModule.createWeightScoreExecutor;
+    if  (LTRThreadModule.ltrSemaphore == null ){
+      LTRThreadModule.ltrSemaphore = new Semaphore((LTRThreadModule.maxThreads <=0) ? 1 : LTRThreadModule.maxThreads);
     }
     List<Future<FeatureWeight> > futures = new ArrayList<>(features.size());
     try{
@@ -261,7 +260,7 @@ public class ModelQuery extends Query {
         CreateWeightCallable callable = new CreateWeightCallable(f, searcher, needsScores, req);
         RunnableFuture<FeatureWeight> runnableFuture = new FutureTask<>(callable);
         querySemaphore.acquire(); // always acquire before the ltrSemaphore is acquired, to guarantee a that the current query is within the limit for max. threads 
-        LTRThreadInterface.ltrSemaphore.acquire();//may block and/or interrupt
+        LTRThreadModule.ltrSemaphore.acquire();//may block and/or interrupt
         
         executor.execute(runnableFuture);//releases semaphore when done
         futures.add(runnableFuture);

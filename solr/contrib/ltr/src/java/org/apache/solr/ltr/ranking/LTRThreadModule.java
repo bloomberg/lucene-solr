@@ -26,7 +26,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 
-public class LTRThreadInterface {
+public class LTRThreadModule {
   ThreadMXBean tmxb = ManagementFactory.getThreadMXBean();
   public static Semaphore ltrSemaphore = null; 
   public static int maxThreads = 1;
