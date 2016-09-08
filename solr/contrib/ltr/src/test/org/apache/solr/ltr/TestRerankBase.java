@@ -312,7 +312,7 @@ public class TestRerankBase extends RestTestBase {
     ms.init(fs);
 
     final LTRScoringAlgorithm meta = ms.makeLTRScoringAlgorithm(modelJson);
-    ms.addMetadataModel(meta);
+    ms.addModel(meta);
   }
 
   public static void loadFeatures(String fileName) throws Exception {

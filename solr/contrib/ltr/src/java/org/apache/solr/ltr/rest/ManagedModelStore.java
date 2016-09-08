@@ -99,7 +99,8 @@ public class ManagedModelStore extends ManagedResource implements
       final List<Map<String,Object>> up = (List<Map<String,Object>>) managedData;
       for (final Map<String,Object> u : up) {
         try {
-          update(u);
+          final LTRScoringAlgorithm algo = makeLTRScoringAlgorithm(u);
+          addModel(algo);
         } catch (final ModelException e) {
           throw new SolrException(ErrorCode.BAD_REQUEST, e);
         }
@@ -227,12 +228,13 @@ public class ManagedModelStore extends ManagedResource implements
     return meta;
   }
 
-  @SuppressWarnings("unchecked")
-  private void update(Map<String,Object> map) throws ModelException {
 
-    final LTRScoringAlgorithm meta = makeLTRScoringAlgorithm(map);
+
+  public synchronized void addModel(LTRScoringAlgorithm meta) throws ModelException {
     try {
-      addMetadataModel(meta);
+      log.info("adding model {}", meta.getName());
+      checkFeatureValidity(meta);
+      store.addModel(meta);
     } catch (final ModelException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
@@ -245,7 +247,8 @@ public class ManagedModelStore extends ManagedResource implements
       final List<Map<String,Object>> up = (List<Map<String,Object>>) updates;
       for (final Map<String,Object> u : up) {
         try {
-          update(u);
+          final LTRScoringAlgorithm algo = makeLTRScoringAlgorithm(u);
+          addModel(algo);
         } catch (final ModelException e) {
           throw new SolrException(ErrorCode.BAD_REQUEST, e);
         }
@@ -255,7 +258,8 @@ public class ManagedModelStore extends ManagedResource implements
     if (updates instanceof Map) {
       final Map<String,Object> map = (Map<String,Object>) updates;
       try {
-        update(map);
+        final LTRScoringAlgorithm algo = makeLTRScoringAlgorithm(map);
+        addModel(algo);
       } catch (final ModelException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);
       }
@@ -287,13 +291,6 @@ public class ManagedModelStore extends ManagedResource implements
     final SolrQueryResponse response = endpoint.getSolrResponse();
     response.add(CommonLTRParams.MODELS_JSON_FIELD,
         modelAsManagedResources(store));
-  }
-
-  public synchronized void addMetadataModel(LTRScoringAlgorithm modeldata)
-      throws ModelException {
-    log.info("adding model {}", modeldata.getName());
-    checkFeatureValidity(modeldata);
-    store.addModel(modeldata);
   }
 
   public LTRScoringAlgorithm getModel(String modelName) {
