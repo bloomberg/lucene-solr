@@ -200,11 +200,11 @@ public abstract class Feature extends Query {
     }
 
     public String getName() {
-      return Feature.this.name;
+      return Feature.this.getName();
     }
 
     public int getId() {
-      return Feature.this.index;
+      return Feature.this.getIndex();
     }
 
     public float getDefaultValue() {
