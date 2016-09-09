@@ -40,7 +40,7 @@ import org.apache.solr.util.SolrPluginUtils;
 public abstract class Feature extends Query {
 
   final protected String name;
-  private int id = -1;
+  private int index = -1;
 
   final private Map<String,Object> params;
 
@@ -83,7 +83,7 @@ public abstract class Feature extends Query {
   public int hashCode() {
     final int prime = 31;
     int result = classHash();
-    result = (prime * result) + id;
+    result = (prime * result) + index;
     result = (prime * result) + ((name == null) ? 0 : name.hashCode());
     result = (prime * result) + ((params == null) ? 0 : params.hashCode());
     return result;
@@ -95,7 +95,7 @@ public abstract class Feature extends Query {
   }
 
   private boolean equalsTo(Feature other) {
-    if (id != other.id) {
+    if (index != other.index) {
         return false;
     }
     if (name == null) {
@@ -125,18 +125,18 @@ public abstract class Feature extends Query {
   /**
    * @return the id
    */
-  public int getId() {
-    return id;
+  public int getIndex() {
+    return index;
   }
 
   /**
-   * @param id
+   * @param index
    *          Unique ID for this feature. Similar to feature name, except it can
    *          be used to directly access the feature in the global list of
    *          features.
    */
-  public void setId(int id) {
-    this.id = id;
+  public void setIndex(int index) {
+    this.index = index;
   }
 
   public abstract LinkedHashMap<String,Object> paramsToMap();
@@ -171,11 +171,11 @@ public abstract class Feature extends Query {
     }
 
     public String getName() {
-      return Feature.this.name;
+      return Feature.this.getName();
     }
 
-    public int getId() {
-      return Feature.this.id;
+    public int getIndex() {
+      return Feature.this.getIndex();
     }
 
     public float getDefaultValue() {

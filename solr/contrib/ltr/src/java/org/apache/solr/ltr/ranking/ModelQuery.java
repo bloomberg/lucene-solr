@@ -211,8 +211,8 @@ public class ModelQuery extends Query {
       for (final FeatureWeight fw : featureWeights) {
         extractedFeatureWeights[i++] = fw;
       }
-      for (final Feature f: modelFeatures){
-        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getId()]; // we can lookup by featureid because all features will be extracted when this.extractAllFeatures is set
+      for (final Feature f : modelFeatures){
+        modelFeaturesWeights[j++] = extractedFeatureWeights[f.getIndex()]; // we can lookup by featureid because all features will be extracted when this.extractAllFeatures is set
       }
     }
     else{
@@ -379,7 +379,7 @@ public class ModelQuery extends Query {
     private void setFeaturesInfo(){
       for (int i = 0; i < extractedFeatureWeights.length;++i){
         String featName = extractedFeatureWeights[i].getName();
-        int featId = extractedFeatureWeights[i].getId();
+        int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
         featuresInfo[featId] = new FeatureInfo(featName,value,false);
       } 
@@ -392,7 +392,7 @@ public class ModelQuery extends Query {
     private void makeNormalizedFeatures() {
       int pos = 0;
       for (final FeatureWeight feature : modelFeatureWeights) {
-        final int featureId = feature.getId();
+        final int featureId = feature.getIndex();
         FeatureInfo fInfo = featuresInfo[featureId];
         if (fInfo.isUsed()) { // not checking for finfo == null as that would be a bug we should catch 
           modelFeatureValuesNormalized[pos] = fInfo.getValue();
@@ -410,12 +410,12 @@ public class ModelQuery extends Query {
 
       final Explanation[] explanations = new Explanation[this.featuresInfo.length];
       for (final FeatureWeight feature : extractedFeatureWeights) {
-        explanations[feature.getId()] = feature.explain(context, doc);
+        explanations[feature.getIndex()] = feature.explain(context, doc);
       }
       final List<Explanation> featureExplanations = new ArrayList<>();
       for (int idx = 0 ;idx < modelFeatureWeights.length; ++idx) {
         final FeatureWeight f = modelFeatureWeights[idx]; 
-        Explanation e = meta.getNormalizerExplanation(explanations[f.getId()], idx);
+        Explanation e = meta.getNormalizerExplanation(explanations[f.getIndex()], idx);
         featureExplanations.add(e);
       }
       // TODO this calls twice the scorers, could be optimized.
@@ -437,7 +437,7 @@ public class ModelQuery extends Query {
 
     protected void reset() {
       for (int i = 0; i < extractedFeatureWeights.length;++i){
-        int featId = extractedFeatureWeights[i].getId();
+        int featId = extractedFeatureWeights[i].getIndex();
         float value = extractedFeatureWeights[i].getDefaultValue();
         featuresInfo[featId].setScore(value); // need to set default value everytime as the default value is used in 'dense' mode even if used=false
         featuresInfo[featId].setUsed(false);
@@ -553,7 +553,7 @@ public class ModelQuery extends Query {
             for (DisiWrapper w = topList; w != null; w = w.next) {
               final Scorer subScorer = w.scorer;
               FeatureWeight scFW = (FeatureWeight) subScorer.getWeight();
-              final int featureId = scFW.getId();
+              final int featureId = scFW.getIndex();
               featuresInfo[featureId].setScore(subScorer.score());
               featuresInfo[featureId].setUsed(true);
             }
@@ -646,7 +646,7 @@ public class ModelQuery extends Query {
               if (scorer.docID() == activeDoc) {
                 freq++;
                 FeatureWeight scFW = (FeatureWeight) scorer.getWeight();
-                final int featureId = scFW.getId();
+                final int featureId = scFW.getIndex();
                 featuresInfo[featureId].setScore(scorer.score());
                 featuresInfo[featureId].setUsed(true);
               }

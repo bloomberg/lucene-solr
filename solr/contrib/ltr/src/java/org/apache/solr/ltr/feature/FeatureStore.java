@@ -58,7 +58,7 @@ public class FeatureStore {
       throw new FeatureException(name
           + " already contained in the store, please use a different name");
     }
-    feature.setId(store.size());
+    feature.setIndex(store.size());
     store.put(name, feature);
   }
 
