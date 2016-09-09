@@ -46,6 +46,7 @@ import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.util.ModelException;
+import org.apache.solr.ltr.ranking.LTRThreadModule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -257,5 +258,90 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.7992");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='popularity:3.0;originalScore:1.0'"); // extract all features from fstore4
   }
+  
+  @Test
+  public void testModelQueryParallelWeightCreation() throws IOException, ModelException {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    doc.add(newStringField("id", "0", Field.Store.YES));
+    doc.add(newTextField("field", "wizard the the the the the oz",
+        Field.Store.NO));
+    doc.add(new FloatDocValuesField("final-score", 1.0f));
+
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(newStringField("id", "1", Field.Store.YES));
+    // 1 extra token, but wizard and oz are close;
+    doc.add(newTextField("field", "wizard oz the the the the the the",
+        Field.Store.NO));
+    doc.add(new FloatDocValuesField("final-score", 2.0f));
+    w.addDocument(doc);
+
+    final IndexReader r = w.getReader();
+    w.close();
+
+    // Do ordinary BooleanQuery:
+    final Builder bqBuilder = new Builder();
+    bqBuilder.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
+    bqBuilder.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
+    final IndexSearcher searcher = getSearcher(r);
+    // first run the standard query
+    final TopDocs hits = searcher.search(bqBuilder.build(), 10);
+    assertEquals(2, hits.totalHits);
+    assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+
+    List<Feature> features = makeFeatures(new int[] {0, 1, 2});
+    final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5,
+        6, 7, 8, 9});
+    final List<Normalizer> norms = new ArrayList<>();
+    for (int k=0; k < features.size(); ++k){
+        norms.add(IdentityNormalizer.INSTANCE);
+    }
+    
+    // setting the value of number of threads to -ve should throw an exception 
+    String msg1 = null;
+    try{
+      LTRThreadModule.setThreads(1, -1);
+    }catch(NumberFormatException nfe){
+        msg1 = nfe.getMessage();
+    }
+    assertTrue(msg1.equals("LTRMaxQueryThreads cannot be less than 0"));
+    
+   // set LTRMaxThreads to 1 and LTRMaxQueryThreads to 2 and verify that an exception is thrown
+    String msg2 = null;
+    try{
+       LTRThreadModule.setThreads(1, 2);
+    }catch(NumberFormatException nfe){
+        msg2 = nfe.getMessage();
+    }
+    assertTrue(msg2.equals("LTRMaxQueryThreads cannot be greater than LTRMaxThreads"));
+
+    // When maxThreads is set to 1, no threading should be used but the weight creation should run serially
+    LTRThreadModule.setThreads(1, 1);
+    RankSVMModel meta1 = new RankSVMModel("test",
+        features, norms, "test", allFeatures,
+        makeFeatureWeights(features));
+    ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
+        hits.scoreDocs[0].doc, new ModelQuery(meta1, false)); // features not requested in response  
+    assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
+   
+    
+    
+    // run with multiple threads and verify correctness    
+    LTRThreadModule.setThreads(10, 10);
+    RankSVMModel meta3 = new RankSVMModel("test",
+        features, norms, "test", allFeatures,
+        makeFeatureWeights(features));
+    modelWeight = performQuery(hits, searcher,
+        hits.scoreDocs[0].doc, new ModelQuery(meta3, false)); // features requested in response
+    assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
+    
+    r.close();
+    dir.close();
+  }
+  
 }
 

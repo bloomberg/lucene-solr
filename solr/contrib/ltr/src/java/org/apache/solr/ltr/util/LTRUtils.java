@@ -78,4 +78,16 @@ public class LTRUtils {
         + " cannot be converted to float");
   }
   
+  public static int getInt(Object thObj, int defValue, String paramName) throws NumberFormatException{
+    if (thObj != null) {
+      try{
+         return Integer.parseInt(thObj.toString());
+      }catch(NumberFormatException nfe){
+         String errorStr = nfe.toString() + ":" + paramName + " not an integer";
+         throw new NumberFormatException(errorStr);
+      }
+    }
+    return defValue; 
+ }
+  
 }

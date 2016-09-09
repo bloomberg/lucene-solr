@@ -399,3 +399,19 @@ rescore and rerank the top documents.  The ModelQuery will take care of computin
 [features](solr/contrib/ltr/src/java/org/apache/solr/ltr/ranking/Feature.java) and then will delegate the final score
 generation to the LTRScoringAlgorithm.
 
+# Speeding up the weight creation with threads
+About half the time for ranking is spent in the creation of weights for each feature used in ranking. If the number of features is significantly high (say, 500 or more), this increases the ranking overhead proportionally. To alleviate this problem, parallel weight creation is provided as a configurable option. In order to use this feature, the following lines need to be added to the solrconfig.xml
+```xml
+
+<config>
+  <!-- Query parser used to rerank top docs with a provided model -->
+  <queryParser name="ltr" class="org.apache.solr.ltr.ranking.LTRQParserPlugin">
+     <int name="LTRMaxThreads">10</int> <!-- Maximum threads to use for all queries -->
+     <int name="LTRMaxQueryThreads">5</int> <!-- Maximum threads to use for a single query-->
+  </queryParser>
+</config>
+
+```
+  
+The LTRMaxThreads option limits the total number of threads to be used across all query instances at any given time. LTRMaxQueryThreads limits the number of threads used to process a single query. In the above example, 10 threads will be used to services all queries and a maximum of 5 threads to service a single query. If the solr instances is expected to receive no more than one query at a time, it is best to set both these numbers to the same value. If multiple queries need to serviced simultaneously, the numbers can be adjusted based on the expected response times. If the value of  LTRMaxQueryThreads is higher, the reponse time for a single query will be improved upto a point. If multiple queries are services simultaneously, the LTRMaxThreads imposes a contention between the queries if (LTRMaxQueryThreads*total parallel queries > LTRMaxThreads). 
+

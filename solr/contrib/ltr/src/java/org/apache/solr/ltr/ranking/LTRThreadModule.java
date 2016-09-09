@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 public class LTRThreadModule {
   ThreadMXBean tmxb = ManagementFactory.getThreadMXBean();
   public static Semaphore ltrSemaphore = null; 
-  public static int maxThreads = 1;
-  public static int maxQueryThreads = 1;
+  private static int maxThreads = 1;
+  private static int maxQueryThreads = 1;
   public static final int DEFAULT_MAX_THREADS = 0; // do not do threading if 'LTRMaxThreads' is not specified in the config file
   public static final int DEFAULT_MAX_QUERYTHREADS = 0; // do not do threading if 'LTRMaxQueryThreads' is not specified in the config file
 
@@ -42,4 +42,25 @@ public class LTRThreadModule {
           , new DefaultSolrThreadFactory("ltrExecutor")
     );
    
+   public static void setThreads(int maxThreads, int maxQueryThreads){
+     if (maxThreads < 0){
+       throw new NumberFormatException("LTRMaxThreads cannot be less than 0");
+     }
+     if (maxQueryThreads < 0){
+       throw new NumberFormatException("LTRMaxQueryThreads cannot be less than 0");
+     }
+     if (maxThreads < maxQueryThreads){
+       throw new NumberFormatException("LTRMaxQueryThreads cannot be greater than LTRMaxThreads");
+     }
+     LTRThreadModule.maxThreads = maxThreads;
+     LTRThreadModule.maxQueryThreads = maxQueryThreads;
+   }
+   
+   public static int getMaxThreads(){
+      return maxThreads;
+   }
+   
+   public static int getMaxQueryThreads(){
+     return maxQueryThreads;
+   }
 }

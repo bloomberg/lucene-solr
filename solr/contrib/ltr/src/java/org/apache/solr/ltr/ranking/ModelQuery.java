@@ -81,7 +81,7 @@ public class ModelQuery extends Query {
   public ModelQuery(LTRScoringAlgorithm meta, boolean extractAllFeatures) {
     this.meta = meta;
     this.extractAllFeatures = extractAllFeatures; 
-    querySemaphore = new Semaphore((LTRThreadModule.maxQueryThreads <=0) ? 1 : LTRThreadModule.maxQueryThreads);
+    querySemaphore = new Semaphore((LTRThreadModule.getMaxQueryThreads() <=0) ? 1 : LTRThreadModule.getMaxQueryThreads());
   }
 
   public LTRScoringAlgorithm getMetadata() {
@@ -179,7 +179,7 @@ public class ModelQuery extends Query {
     final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
     List<FeatureWeight > featureWeights = new ArrayList<>(features.size());
     
-    if(LTRThreadModule.maxThreads <= 1){
+    if(LTRThreadModule.getMaxThreads() <= 1 || LTRThreadModule.getMaxQueryThreads() <= 1){
        createWeights(searcher, needsScores, boost, featureWeights, features);
     }
     else{
@@ -252,7 +252,7 @@ public class ModelQuery extends Query {
 
     Executor executor = LTRThreadModule.createWeightScoreExecutor;
     if  (LTRThreadModule.ltrSemaphore == null ){
-      LTRThreadModule.ltrSemaphore = new Semaphore((LTRThreadModule.maxThreads <=0) ? 1 : LTRThreadModule.maxThreads);
+      LTRThreadModule.ltrSemaphore = new Semaphore(LTRThreadModule.getMaxThreads());
     }
     List<Future<FeatureWeight> > futures = new ArrayList<>(features.size());
     try{

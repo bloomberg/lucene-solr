@@ -52,19 +52,9 @@ public class LTRQParserPlugin extends QParserPlugin {
 
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
-    LTRThreadModule.maxThreads  = getInt(args.get("LTRMaxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "LTRMaxThreads");
-    LTRThreadModule.maxQueryThreads = getInt(args.get("LTRMaxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
-  }
-  private int getInt(Object thObj, int defValue, String paramName) throws NumberFormatException{
-     if (thObj != null) {
-       try{
-          return Integer.parseInt(thObj.toString());
-       }catch(NumberFormatException nfe){
-          String errorStr = nfe.toString() + ":" + paramName + " not an integer";
-          throw new NumberFormatException(errorStr);
-       }
-     }
-     return defValue; 
+    int maxThreads  = LTRUtils.getInt(args.get("LTRMaxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "LTRMaxThreads");
+    int maxQueryThreads = LTRUtils.getInt(args.get("LTRMaxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
+    LTRThreadModule.setThreads(maxThreads, maxQueryThreads);
   }
 
   @Override
