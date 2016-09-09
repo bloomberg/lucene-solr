@@ -55,7 +55,7 @@ public class StandardNormalizer extends Normalizer {
   }
 
   @Override
-  protected LinkedHashMap<String,Object> paramsToMap() {
+  public LinkedHashMap<String,Object> paramsToMap() {
     final LinkedHashMap<String,Object> params = new LinkedHashMap<>(2, 1.0f);
     params.put("avg", avg);
     params.put("std", std);

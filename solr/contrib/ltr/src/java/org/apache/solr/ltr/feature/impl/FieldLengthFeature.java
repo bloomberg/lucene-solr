@@ -43,7 +43,7 @@ public class FieldLengthFeature extends Feature {
   }
 
   @Override
-  protected LinkedHashMap<String,Object> paramsToMap() {
+  public LinkedHashMap<String,Object> paramsToMap() {
     final LinkedHashMap<String,Object> params = new LinkedHashMap<>(1, 1.0f);
     params.put("field", field);
     return params;
@@ -76,7 +76,8 @@ public class FieldLengthFeature extends Feature {
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi)
+  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, 
+      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
       throws IOException {
     return new FieldLengthFeatureWeight(searcher, request, originalQuery, efi);
   }
@@ -85,7 +86,7 @@ public class FieldLengthFeature extends Feature {
   public class FieldLengthFeatureWeight extends FeatureWeight {
 
     public FieldLengthFeatureWeight(IndexSearcher searcher, 
-        SolrQueryRequest request, Query originalQuery, Map<String,String> efi) {
+        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(FieldLengthFeature.this, searcher, request, originalQuery, efi);
     }
 

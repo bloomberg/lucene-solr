@@ -29,22 +29,15 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.util.MacroExpander;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
  * A 'recipe' for computing a feature
  */
 public abstract class Feature extends Query {
-
-  /** name of the attribute containing the feature class **/
-  public static final String CLASS_KEY = "class";
-  /** name of the attribute containing the feature name **/
-  public static final String NAME_KEY = "name";
-  /** name of the attribute containing the feature params **/
-  public static final String PARAMS_KEY = "params";
 
   final protected String name;
   private int id = -1;
@@ -84,7 +77,7 @@ public abstract class Feature extends Query {
   }
 
   public abstract FeatureWeight createWeight(IndexSearcher searcher,
-      boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi) throws IOException;
+      boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException;
 
   @Override
   public int hashCode() {
@@ -146,35 +139,13 @@ public abstract class Feature extends Query {
     this.id = id;
   }
 
-  public static Feature fromMap(SolrResourceLoader solrResourceLoader,
-      Map<String,Object> featureMap) {
-    final String className = (String) featureMap.get(CLASS_KEY);
+  public abstract LinkedHashMap<String,Object> paramsToMap();
 
-    final String name = (String) featureMap.get(NAME_KEY);
-
-    @SuppressWarnings("unchecked")
-    final Map<String,Object> params = (Map<String,Object>) featureMap.get(PARAMS_KEY);
-
-    return Feature.getInstance(solrResourceLoader, className, name, params);
-  }
-
-  protected abstract LinkedHashMap<String,Object> paramsToMap();
-
-  public LinkedHashMap<String,Object> toMap() {
-    final LinkedHashMap<String,Object> o = new LinkedHashMap<>(4, 1.0f); // 1 extra for caller to add store
-    o.put(NAME_KEY, name);
-    o.put(CLASS_KEY, getClass().getCanonicalName());
-    o.put(PARAMS_KEY, paramsToMap());
-    return o;
-  }
-  
-  
-  
   public abstract class FeatureWeight extends Weight {
 
     final protected IndexSearcher searcher;
     final protected SolrQueryRequest request;
-    final protected Map<String,String> efi;
+    final protected Map<String,String[]> efi;
     final protected MacroExpander macroExpander;
     final protected Query originalQuery;
 
@@ -190,13 +161,13 @@ public abstract class Feature extends Query {
      *          Solr searcher available for features if they need them
      */
     public FeatureWeight(Query q, IndexSearcher searcher, 
-        SolrQueryRequest request, Query originalQuery, Map<String,String> efi) {
+        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(q);
       this.searcher = searcher;
       this.request = request;
       this.originalQuery = originalQuery;
       this.efi = efi;
-      macroExpander = new MacroExpander(efi);
+      macroExpander = new MacroExpander(efi,true);
     }
 
     public String getName() {

@@ -108,7 +108,7 @@ public class TestModelManager extends TestRerankBase {
     // Add bad feature (wrong params)_
     final String badfeature = "{\"name\": \"fvalue\", \"class\": \"org.apache.solr.ltr.feature.impl.FieldValueFeature\", \"params\": {\"value\": 1} }";
     assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, badfeature,
-        "/responseHeader/status==400");
+        "/error/msg/=='No setter corrresponding to \\'value\\' in org.apache.solr.ltr.feature.impl.FieldValueFeature'");
 
     // Add models
     String model = "{ \"name\":\"testmodel1\", \"class\":\"org.apache.solr.ltr.ranking.RankSVMModel\", \"features\":[] }";

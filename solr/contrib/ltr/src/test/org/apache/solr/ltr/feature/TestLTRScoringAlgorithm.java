@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
@@ -63,7 +65,7 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
         features, norms, "test", fstore.getFeatures(),
         params);
 
-    store.addMetadataModel(meta);
+    store.addModel(meta);
     final LTRScoringAlgorithm m = store.getModel("test1");
     assertEquals(meta, m);
   }
@@ -88,8 +90,9 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
 
   @Test
   public void existingNameTest() {
-    final ModelException expectedException = 
-        new ModelException("model 'test3' already exists. Please use a different name");
+    final SolrException expectedException = 
+        new SolrException(ErrorCode.BAD_REQUEST,
+            "org.apache.solr.ltr.util.ModelException: model 'test3' already exists. Please use a different name");
     try {
       final List<Feature> features = getFeatures(new String[] 
           {"constant1", "constant5"});
@@ -105,20 +108,21 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
       final LTRScoringAlgorithm meta = new RankSVMModel("test3",
           features, norms, "test", fstore.getFeatures(),
               params);
-      store.addMetadataModel(meta);
+      store.addModel(meta);
       final LTRScoringAlgorithm m = store.getModel("test3");
       assertEquals(meta, m);
-      store.addMetadataModel(meta);
+      store.addModel(meta);
       fail("unexpectedly got here instead of catching "+expectedException);
-    } catch (ModelException actualException) {
+    } catch (SolrException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
     }
   }
 
   @Test
   public void duplicateFeatureTest() {
-    final ModelException expectedException = 
-        new ModelException("duplicated feature constant1 in model test4");
+    final SolrException expectedException = 
+        new SolrException(ErrorCode.BAD_REQUEST,
+            "org.apache.solr.ltr.util.ModelException: duplicated feature constant1 in model test4");
     try {
       final List<Feature> features = getFeatures(new String[] 
           {"constant1", "constant1"});
@@ -134,9 +138,9 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
       final LTRScoringAlgorithm meta = new RankSVMModel("test4",
           features, norms, "test", fstore.getFeatures(),
               params);
-      store.addMetadataModel(meta);
+      store.addModel(meta);
       fail("unexpectedly got here instead of catching "+expectedException);
-    } catch (ModelException actualException) {
+    } catch (SolrException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
     }
 
@@ -169,8 +173,9 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
 
   @Test
   public void emptyFeaturesTest() {
-    final ModelException expectedException = 
-        new ModelException("no features declared for model test6");
+    final SolrException expectedException = 
+        new SolrException(ErrorCode.BAD_REQUEST, 
+            "org.apache.solr.ltr.util.ModelException: no features declared for model test6");
     try {
       final List<Feature> features = getFeatures(new String[] {});
       final List<Normalizer> norms = 
@@ -185,9 +190,9 @@ public class TestLTRScoringAlgorithm extends TestRerankBase {
       final LTRScoringAlgorithm meta = new RankSVMModel("test6",
           features, norms, "test", fstore.getFeatures(),
           params);
-      store.addMetadataModel(meta);
+      store.addModel(meta);
       fail("unexpectedly got here instead of catching "+expectedException);
-    } catch (ModelException actualException) {
+    } catch (SolrException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
     }
   }

@@ -37,13 +37,13 @@ public class OriginalScoreFeature extends Feature {
   }
 
   @Override
-  protected LinkedHashMap<String,Object> paramsToMap() {
+  public LinkedHashMap<String,Object> paramsToMap() {
     return null;
   }
 
   @Override
   public OriginalScoreWeight createWeight(IndexSearcher searcher,
-      boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String> efi) throws IOException {
+      boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
     return new OriginalScoreWeight(searcher, request, originalQuery, efi);
 
   }
@@ -53,7 +53,7 @@ public class OriginalScoreFeature extends Feature {
     final Weight w;
 
     public OriginalScoreWeight(IndexSearcher searcher, 
-        SolrQueryRequest request, Query originalQuery, Map<String,String> efi) throws IOException {
+        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
       super(OriginalScoreFeature.this, searcher, request, originalQuery, efi);
       w = searcher.createNormalizedWeight(originalQuery, true);
     };

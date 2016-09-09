@@ -20,10 +20,12 @@ import java.util.concurrent.Future;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -65,7 +67,7 @@ public class ModelQuery extends Query {
   protected FeatureLogger<?> fl;
   // Map of external parameters, such as query intent, that can be used by
   // features
-  protected Map<String,String> efi;
+  protected Map<String,String[]> efi;
   // Original solr query used to fetch matching documents
   protected Query originalQuery;
   // Original solr request
@@ -104,11 +106,11 @@ public class ModelQuery extends Query {
     originalQuery = mainQuery;
   }
 
-  public void setExternalFeatureInfo(Map<String,String> externalFeatureInfo) {
+  public void setExternalFeatureInfo(Map<String,String[]> externalFeatureInfo) {
     efi = externalFeatureInfo;
   }
 
-  public Map<String,String> getExternalFeatureInfo() {
+  public Map<String,String[]> getExternalFeatureInfo() {
     return efi;
   }
 
@@ -123,7 +125,17 @@ public class ModelQuery extends Query {
     result = (prime * result) + ((meta == null) ? 0 : meta.hashCode());
     result = (prime * result)
         + ((originalQuery == null) ? 0 : originalQuery.hashCode());
-    result = (prime * result) + ((efi == null) ? 0 : efi.hashCode());
+    if (efi == null) {
+      result = (prime * result) + 0;
+    }
+    else {
+      for (final Entry<String,String[]> entry : efi.entrySet()) {
+        final String key = entry.getKey();
+        final String[] values = entry.getValue();
+        result = (prime * result) + key.hashCode();
+        result = (prime * result) + Arrays.hashCode(values);
+      }
+    }
     result = (prime * result) + this.toString().hashCode();
     return result;
   }
@@ -151,8 +163,17 @@ public class ModelQuery extends Query {
       if (other.efi != null) {
         return false;
       }
-    } else if (!efi.equals(other.efi)) {
-      return false;
+    } else {
+      if (other.efi == null || efi.size() != other.efi.size()) {
+        return false;
+      }
+      for(final Entry<String,String[]> entry : efi.entrySet()) {
+        final String key = entry.getKey();
+        final String[] otherValues = other.efi.get(key);
+        if (otherValues == null || !Arrays.equals(otherValues,entry.getValue())) {
+          return false;
+        }
+      }
     }
     return true;
   }

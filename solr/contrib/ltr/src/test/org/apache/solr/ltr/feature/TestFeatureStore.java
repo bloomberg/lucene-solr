@@ -54,8 +54,8 @@ public class TestFeatureStore extends TestRerankBase {
     for (int i = 0; i < 5; i++) {
       final String name = "c" + i;
       final Map<String,Object> map = new HashMap<String,Object>();
-      map.put(Feature.NAME_KEY, name);
-      map.put(Feature.CLASS_KEY, OriginalScoreFeature.class.getCanonicalName());
+      map.put(ManagedFeatureStore.NAME_KEY, name);
+      map.put(ManagedFeatureStore.CLASS_KEY, OriginalScoreFeature.class.getCanonicalName());
 
       fstore.addFeature(map, "fstore-testFeature");
 
@@ -76,9 +76,9 @@ public class TestFeatureStore extends TestRerankBase {
       params.put("value", i);
       final String name = "c" + i;
       final Map<String,Object> map = new HashMap<String,Object>();
-      map.put(Feature.NAME_KEY, name);
-      map.put(Feature.CLASS_KEY, ValueFeature.class.getCanonicalName());
-      map.put(Feature.PARAMS_KEY, params);
+      map.put(ManagedFeatureStore.NAME_KEY, name);
+      map.put(ManagedFeatureStore.CLASS_KEY, ValueFeature.class.getCanonicalName());
+      map.put(ManagedFeatureStore.PARAMS_KEY, params);
 
       fstore.addFeature(map, "fstore-testFeature2");
 
@@ -101,9 +101,9 @@ public class TestFeatureStore extends TestRerankBase {
       params.put("value", i);
       final String name = "testc" + (float) i;
       final Map<String,Object> map = new HashMap<String,Object>();
-      map.put(Feature.NAME_KEY, name);
-      map.put(Feature.CLASS_KEY, ValueFeature.class.getCanonicalName());
-      map.put(Feature.PARAMS_KEY, params);
+      map.put(ManagedFeatureStore.NAME_KEY, name);
+      map.put(ManagedFeatureStore.CLASS_KEY, ValueFeature.class.getCanonicalName());
+      map.put(ManagedFeatureStore.PARAMS_KEY, params);
       fstore.addFeature(map, "fstore-testFeature3");
 
     }
