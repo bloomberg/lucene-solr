@@ -22,10 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.ltr.feature.norm.Normalizer;
-import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.util.CommonLTRParams;
-import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 
 /**

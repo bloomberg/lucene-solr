@@ -83,7 +83,7 @@ public class ModelQuery extends Query {
   public ModelQuery(LTRScoringAlgorithm meta, boolean extractAllFeatures) {
     this.meta = meta;
     this.extractAllFeatures = extractAllFeatures; 
-    querySemaphore = new Semaphore((LTRThreadModule.getMaxQueryThreads() <=0) ? 1 : LTRThreadModule.getMaxQueryThreads());
+    querySemaphore = new Semaphore(LTRThreadModule.getMaxQueryThreads());
   }
 
   public LTRScoringAlgorithm getMetadata() {
@@ -267,14 +267,10 @@ public class ModelQuery extends Query {
   } // end of call CreateWeightCallable
 
   private void createWeightsParallel(IndexSearcher searcher, boolean needsScores, float boost,
-      List<FeatureWeight > featureWeights, Collection<Feature> features) throws IOException {
+      List<FeatureWeight > featureWeights, Collection<Feature> features) throws RuntimeException {
 
     final SolrQueryRequest req = getRequest();
-
     Executor executor = LTRThreadModule.createWeightScoreExecutor;
-    if  (LTRThreadModule.ltrSemaphore == null ){
-      LTRThreadModule.ltrSemaphore = new Semaphore(LTRThreadModule.getMaxThreads());
-    }
     List<Future<FeatureWeight> > futures = new ArrayList<>(features.size());
     try{
       for (final Feature f : features) {
@@ -282,22 +278,23 @@ public class ModelQuery extends Query {
         RunnableFuture<FeatureWeight> runnableFuture = new FutureTask<>(callable);
         querySemaphore.acquire(); // always acquire before the ltrSemaphore is acquired, to guarantee a that the current query is within the limit for max. threads 
         LTRThreadModule.ltrSemaphore.acquire();//may block and/or interrupt
-        
         executor.execute(runnableFuture);//releases semaphore when done
         futures.add(runnableFuture);
       }
       //Loop over futures to get the feature weight objects
       for (final Future<FeatureWeight> future : futures) {
-        featureWeights.add(future.get());
+        featureWeights.add(future.get()); // future.get() will block if the job is still running
       }
     } catch (InterruptedException e) {
       log.info("Error while creating weights in LTR: InterruptedException", e);
+      throw new RuntimeException("Error while creating weights in LTR");
     } catch (ExecutionException ee) {
       Throwable e = ee.getCause();//unwrap
       if (e instanceof RuntimeException) {
         throw (RuntimeException) e;
       }
-      log.info("Error while creating weights in LTR: " + e.toString(), e);
+      log.info("Error while creating weights in LTR: " + e.toString());
+      throw new RuntimeException(ee);
     }
   }
 
@@ -471,12 +468,6 @@ public class ModelQuery extends Query {
     public class ModelScorer extends Scorer {
       protected HashMap<String,Object> docInfo;
       protected Scorer featureTraversalScorer;
-      // List of all the feature names, values - used for both scoring and logging
-      /*
-       *     A set of arrays was used earlier and the elements were accessed using the featureId. 
-       *     This array of objects helps in keeping track of this better  
-       */
-
 
       public ModelScorer(Weight weight, List<FeatureScorer> featureScorers) {
         super(weight);

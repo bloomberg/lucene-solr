@@ -101,10 +101,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // rerank using the field final-score
     scorer.iterator().advance(deBasedDoc);
     scorer.score();
-
-    // assertEquals(42.0f, score, 0.0001);
-    // assertTrue(weight instanceof AssertingWeight);
-    // (AssertingIndexSearcher)
     assertTrue(weight instanceof ModelQuery.ModelWeight);
     final ModelQuery.ModelWeight modelWeight = (ModelQuery.ModelWeight) weight;
     return modelWeight;
@@ -266,17 +262,24 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
 
     Document doc = new Document();
     doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard the the the the the oz",
+    doc.add(newTextField("field", "wizard of the the the the the oz",
         Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 1.0f));
-
     w.addDocument(doc);
+    
     doc = new Document();
     doc.add(newStringField("id", "1", Field.Store.YES));
-    // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz the the the the the the",
+    doc.add(newTextField("field", "wizard of the the hat the the the oz",
         Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 2.0f));
+    w.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(newStringField("id", "2", Field.Store.YES));
+    // 1 extra token, but wizard and oz are close;
+    doc.add(newTextField("field", "wizard oz hat the the the the the the",
+        Field.Store.NO));
+    doc.add(new FloatDocValuesField("final-score", 3.0f));
     w.addDocument(doc);
 
     final IndexReader r = w.getReader();
@@ -285,13 +288,15 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // Do ordinary BooleanQuery:
     final Builder bqBuilder = new Builder();
     bqBuilder.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
+    bqBuilder.add(new TermQuery(new Term("field", "hat")), Occur.SHOULD);
     bqBuilder.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
     final IndexSearcher searcher = getSearcher(r);
     // first run the standard query
-    final TopDocs hits = searcher.search(bqBuilder.build(), 10);
-    assertEquals(2, hits.totalHits);
-    assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+    TopDocs hits = searcher.search(bqBuilder.build(), 10);
+    assertEquals(3, hits.totalHits);
+    assertEquals("1", searcher.doc(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("2", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+    assertEquals("0", searcher.doc(hits.scoreDocs[2].doc).get("id"));
 
     List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5,
@@ -321,6 +326,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
 
     // When maxThreads is set to 1, no threading should be used but the weight creation should run serially
     LTRThreadModule.setThreads(1, 1);
+    LTRThreadModule.initSemaphore();
     RankSVMModel meta1 = new RankSVMModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
@@ -329,15 +335,31 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
    
     
-    
     // run with multiple threads and verify correctness    
     LTRThreadModule.setThreads(10, 10);
+    LTRThreadModule.initSemaphore();
     RankSVMModel meta3 = new RankSVMModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,
-        hits.scoreDocs[0].doc, new ModelQuery(meta3, false)); // features requested in response
+        hits.scoreDocs[0].doc, new ModelQuery(meta3, false)); 
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
+    System.out.println(searcher.doc(hits.scoreDocs[0].doc).get("id").toString() + searcher.doc(hits.scoreDocs[1].doc).get("id").toString());
+    
+    // run with multiple threads and verify order of results
+    LTRThreadModule.setThreads(10, 5);
+    LTRThreadModule.initSemaphore();
+    RankSVMModel meta4 = new RankSVMModel("test",
+        features, norms, "test", allFeatures,
+        makeFeatureWeights(features));
+    modelWeight = performQuery(hits, searcher,
+        hits.scoreDocs[0].doc, new ModelQuery(meta4, false)); 
+    System.out.println(searcher.doc(hits.scoreDocs[0].doc).get("id").toString() + searcher.doc(hits.scoreDocs[1].doc).get("id").toString());
+
+    // rerank using the field final-score
+    assertEquals("1", searcher.doc(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("2", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+    assertEquals("0", searcher.doc(hits.scoreDocs[2].doc).get("id"));
     
     r.close();
     dir.close();

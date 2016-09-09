@@ -55,6 +55,7 @@ public class LTRQParserPlugin extends QParserPlugin {
     int maxThreads  = LTRUtils.getInt(args.get("LTRMaxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "LTRMaxThreads");
     int maxQueryThreads = LTRUtils.getInt(args.get("LTRMaxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
     LTRThreadModule.setThreads(maxThreads, maxQueryThreads);
+    LTRThreadModule.initSemaphore();
   }
 
   @Override

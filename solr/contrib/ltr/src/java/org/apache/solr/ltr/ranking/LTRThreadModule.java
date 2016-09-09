@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 public class LTRThreadModule {
   ThreadMXBean tmxb = ManagementFactory.getThreadMXBean();
   public static Semaphore ltrSemaphore = null; 
-  private static int maxThreads = 1;
-  private static int maxQueryThreads = 1;
+  private static int maxThreads = 0;
+  private static int maxQueryThreads = 0;
   public static final int DEFAULT_MAX_THREADS = 0; // do not do threading if 'LTRMaxThreads' is not specified in the config file
   public static final int DEFAULT_MAX_QUERYTHREADS = 0; // do not do threading if 'LTRMaxQueryThreads' is not specified in the config file
 
@@ -38,8 +38,8 @@ public class LTRThreadModule {
           0,
           Integer.MAX_VALUE,
           10, TimeUnit.SECONDS, // terminate idle threads after 10 sec
-          new SynchronousQueue<Runnable>()  // directly hand off tasks
-          , new DefaultSolrThreadFactory("ltrExecutor")
+          new SynchronousQueue<Runnable>(),  // directly hand off tasks
+          new DefaultSolrThreadFactory("ltrExecutor")
     );
    
    public static void setThreads(int maxThreads, int maxQueryThreads){
@@ -62,5 +62,10 @@ public class LTRThreadModule {
    
    public static int getMaxQueryThreads(){
      return maxQueryThreads;
+   }
+   public static void initSemaphore(){
+     if  (LTRThreadModule.getMaxThreads() > 1 ){
+       LTRThreadModule.ltrSemaphore = new Semaphore(LTRThreadModule.getMaxThreads());
+     }
    }
 }
