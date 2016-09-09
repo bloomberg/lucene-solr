@@ -57,7 +57,8 @@ public class LTRCollector extends TopDocsCollector {
   private final Map<BytesRef,Integer> boostedPriority;
 
   @SuppressWarnings("unchecked")
-  public LTRCollector(int reRankDocs, Rescorer reRankRescorer, QueryCommand cmd,
+  public LTRCollector(int reRankDocs, int length,
+      Rescorer reRankRescorer, QueryCommand cmd,
       IndexSearcher searcher, Map<BytesRef,Integer> boostedPriority)
       throws IOException {
     super(null);
@@ -66,11 +67,11 @@ public class LTRCollector extends TopDocsCollector {
     this.boostedPriority = boostedPriority;
     Sort sort = cmd.getSort();
     if (sort == null) {
-      mainCollector = TopScoreDocCollector.create(this.reRankDocs);
+      mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length));
     } else {
       sort = sort.rewrite(searcher);
-      mainCollector = TopFieldCollector.create(sort, this.reRankDocs, false,
-          true, true);
+      mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length),
+          false, true, true);
     }
     this.searcher = searcher;
   }

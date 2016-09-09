@@ -102,7 +102,7 @@ public class LTRQuery extends RankQuery {
       }
     }
 
-    return new LTRCollector(reRankDocs, reRankRescorer, cmd, searcher,
+    return new LTRCollector(reRankDocs, len, reRankRescorer, cmd, searcher,
         boostedPriority);
   }
 
