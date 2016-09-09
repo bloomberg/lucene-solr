@@ -203,7 +203,7 @@ public abstract class Feature extends Query {
       return Feature.this.getName();
     }
 
-    public int getId() {
+    public int getIndex() {
       return Feature.this.getIndex();
     }
 
