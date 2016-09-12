@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
@@ -256,7 +255,7 @@ public class ModelQuery extends Query {
       try {
         FeatureWeight fw  = f.createWeight(searcher, needsScores, req, originalQuery, efi);
         return fw;
-      } catch (final Exception se) {
+      } catch (final IOException se) {
         throw new FeatureException("Exception from createWeight for " + f.toString() + " "
             + se.getMessage(), se);
       } finally {
@@ -285,16 +284,9 @@ public class ModelQuery extends Query {
       for (final Future<FeatureWeight> future : futures) {
         featureWeights.add(future.get()); // future.get() will block if the job is still running
       }
-    } catch (InterruptedException e) {
+    } catch (Exception e) { // To catch InterruptedException and ExecutionException
       log.info("Error while creating weights in LTR: InterruptedException", e);
-      throw new RuntimeException("Error while creating weights in LTR");
-    } catch (ExecutionException ee) {
-      Throwable e = ee.getCause();//unwrap
-      if (e instanceof RuntimeException) {
-        throw (RuntimeException) e;
-      }
-      log.info("Error while creating weights in LTR: " + e.toString());
-      throw new RuntimeException(ee);
+      throw new RuntimeException("Error while creating weights in LTR: " + e.getMessage());
     }
   }
 
