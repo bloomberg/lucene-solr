@@ -286,7 +286,7 @@ public class ModelQuery extends Query {
       }
     } catch (Exception e) { // To catch InterruptedException and ExecutionException
       log.info("Error while creating weights in LTR: InterruptedException", e);
-      throw new RuntimeException("Error while creating weights in LTR: " + e.getMessage());
+      throw new RuntimeException("Error while creating weights in LTR: " + e.getMessage(), e);
     }
   }
 
