@@ -54,11 +54,11 @@ public class FieldLengthFeature extends Feature {
   private static final float[] NORM_TABLE = new float[256];
 
   static {
-    for (int i = 0; i < 256; i++) {
-      NORM_TABLE[i] = SmallFloat.byte315ToFloat((byte) i);
-
+    NORM_TABLE[0] = 0;
+    for (int i = 1; i < 256; i++) {
+      float norm = SmallFloat.byte315ToFloat((byte) i);
+      NORM_TABLE[i] = 1.0f / (norm * norm);
     }
-
   }
 
   /**
@@ -121,11 +121,12 @@ public class FieldLengthFeature extends Feature {
 
       @Override
       public float score() throws IOException {
+        if (norms == null) {
+          return 0.0f;
+        }
 
         final long l = norms.get(itr.docID());
-        final float norm = decodeNorm(l);
-        final float numTerms = (float) Math.pow(1f / norm, 2);
-
+        final float numTerms = decodeNorm(l);
         return numTerms;
       }
 

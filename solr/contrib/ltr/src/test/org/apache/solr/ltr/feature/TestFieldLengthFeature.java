@@ -51,6 +51,48 @@ public class TestFieldLengthFeature extends TestRerankBase {
   }
 
   @Test
+  public void testIfFieldIsMissingInDocumentLengthIsZero() throws Exception {
+    // add a document without the field 'description'
+    assertU(adoc("id", "42", "title", "w10"));
+    assertU(commit());
+
+    loadFeature("description-length2", FieldLengthFeature.class.getCanonicalName(),
+            "{\"field\":\"description\"}");
+
+    loadModel("description-model2", RankSVMModel.class.getCanonicalName(),
+            new String[] {"description-length2"}, "{\"weights\":{\"description-length2\":1.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("title:w10");
+    query.add("fl", "*, score");
+    query.add("rows", "4");
+    query.add("rq", "{!ltr model=description-model2 reRankDocs=8}");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
+  }
+
+
+  @Test
+  public void testIfFieldIsEmptyLengthIsZero() throws Exception {
+    // add a document without the field 'description'
+    assertU(adoc("id", "43", "title", "w11", "description", ""));
+    assertU(commit());
+
+    loadFeature("description-length3", FieldLengthFeature.class.getCanonicalName(),
+            "{\"field\":\"description\"}");
+
+    loadModel("description-model3", RankSVMModel.class.getCanonicalName(),
+            new String[] {"description-length3"}, "{\"weights\":{\"description-length3\":1.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("title:w11");
+    query.add("fl", "*, score");
+    query.add("rows", "4");
+    query.add("rq", "{!ltr model=description-model3 reRankDocs=8}");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
+  }
+
+
+  @Test
   public void testRanking() throws Exception {
     loadFeature("title-length", FieldLengthFeature.class.getCanonicalName(),
         "{\"field\":\"title\"}");
@@ -115,6 +157,9 @@ public class TestFieldLengthFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
   }
+
+
+
   
 
 }
