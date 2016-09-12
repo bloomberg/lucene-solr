@@ -108,10 +108,25 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   }
   
   
-  
   @BeforeClass
   public static void before() throws Exception {
     setuptest("solrconfig-ltr.xml", "schema-ltr.xml");
+    
+    assertU(adoc("id", "1", "title", "w1 w3", "description", "w1", "popularity",
+        "1"));
+    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity",
+        "2"));
+    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
+        "3"));
+    assertU(adoc("id", "4", "title", "w4 w3", "description", "w4", "popularity",
+        "4"));
+    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
+        "5"));
+    assertU(commit());
+    
+    loadFeatures("external_features.json");
+    loadModels("external_model.json");
+    loadModels("external_model_store.json");
   }
 
   @AfterClass
@@ -204,22 +219,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   @Test
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {
     
-    assertU(adoc("id", "1", "title", "w1 w3", "description", "w1", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity",
-        "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "w4 w3", "description", "w4", "popularity",
-        "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5"));
-    assertU(commit());
-
-    loadFeatures("external_features.json");
-    loadModels("external_model.json");
-    loadModels("external_model_store.json");
-    
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.add("fl", "*,score");
@@ -256,6 +255,31 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   }
   
   @Test
+  public void testModelQueryParallelWeightCreationResultOrder() throws Exception {
+    // check to make sure that the ordewr of results will be the same when using parallel weight creation
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*,score");
+    query.add("rows", "4");
+  
+    query.add("rq", "{!ltr reRankDocs=4 model=externalmodel efi.user_query=w3}");
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='4'");
+    
+    
+    LTRThreadModule.setThreads(10, 10);
+    LTRThreadModule.initSemaphore();
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='4'");
+    LTRThreadModule.setThreads(0, 0);
+    LTRThreadModule.ltrSemaphore = null;
+  }
+  
+  @Test
   public void testModelQueryParallelWeightCreation() throws IOException, ModelException {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -277,7 +301,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     doc = new Document();
     doc.add(newStringField("id", "2", Field.Store.YES));
     // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz hat the the the the the the",
+    doc.add(newTextField("field", "wizard oz hat the the the the the the hat",
         Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 3.0f));
     w.addDocument(doc);
@@ -294,11 +318,11 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // first run the standard query
     TopDocs hits = searcher.search(bqBuilder.build(), 10);
     assertEquals(3, hits.totalHits);
-    assertEquals("1", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("2", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+    assertEquals("2", searcher.doc(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
     assertEquals("0", searcher.doc(hits.scoreDocs[2].doc).get("id"));
 
-    List<Feature> features = makeFeatures(new int[] {0, 1, 2});
+    List<Feature> features = makeFeatures(new int[] {0, 2, 3});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5,
         6, 7, 8, 9});
     final List<Normalizer> norms = new ArrayList<>();
@@ -323,7 +347,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
         msg2 = nfe.getMessage();
     }
     assertTrue(msg2.equals("LTRMaxQueryThreads cannot be greater than LTRMaxThreads"));
-
     // When maxThreads is set to 1, no threading should be used but the weight creation should run serially
     LTRThreadModule.setThreads(1, 1);
     LTRThreadModule.initSemaphore();
@@ -333,33 +356,8 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta1, false)); // features not requested in response  
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
-   
-    
-    // run with multiple threads and verify correctness    
-    LTRThreadModule.setThreads(10, 10);
-    LTRThreadModule.initSemaphore();
-    RankSVMModel meta3 = new RankSVMModel("test",
-        features, norms, "test", allFeatures,
-        makeFeatureWeights(features));
-    modelWeight = performQuery(hits, searcher,
-        hits.scoreDocs[0].doc, new ModelQuery(meta3, false)); 
-    assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
-    System.out.println(searcher.doc(hits.scoreDocs[0].doc).get("id").toString() + searcher.doc(hits.scoreDocs[1].doc).get("id").toString());
-    
-    // run with multiple threads and verify order of results
-    LTRThreadModule.setThreads(10, 5);
-    LTRThreadModule.initSemaphore();
-    RankSVMModel meta4 = new RankSVMModel("test",
-        features, norms, "test", allFeatures,
-        makeFeatureWeights(features));
-    modelWeight = performQuery(hits, searcher,
-        hits.scoreDocs[0].doc, new ModelQuery(meta4, false)); 
-    System.out.println(searcher.doc(hits.scoreDocs[0].doc).get("id").toString() + searcher.doc(hits.scoreDocs[1].doc).get("id").toString());
-
-    // rerank using the field final-score
-    assertEquals("1", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("2", searcher.doc(hits.scoreDocs[1].doc).get("id"));
-    assertEquals("0", searcher.doc(hits.scoreDocs[2].doc).get("id"));
+    LTRThreadModule.setThreads(0, 0);
+    LTRThreadModule.ltrSemaphore = null;
     
     r.close();
     dir.close();
