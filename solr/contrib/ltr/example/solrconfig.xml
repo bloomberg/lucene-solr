@@ -869,8 +869,6 @@
   <transformer name="features" class="org.apache.solr.ltr.ranking.LTRFeatureLoggerTransformerFactory" />
 
 
-  <!-- Component that hooks up managed resources for features and models -->
-  <searchComponent name="ltrComponent" class="org.apache.solr.ltr.ranking.LTRComponent" />
   <!-- A request handler that returns indented JSON by default -->
   <requestHandler name="/query" class="solr.SearchHandler">
      <lst name="defaults">
@@ -879,11 +877,7 @@
        <str name="indent">true</str>
        <str name="df">text</str>
      </lst>
-<arr name="last-components">
-      <!-- Use the component in your requestHandler -->
-      <str>ltrComponent</str>
-    </arr>
-  </requestHandler>
+ </requestHandler>
 
 
   <!-- A Robust Example
