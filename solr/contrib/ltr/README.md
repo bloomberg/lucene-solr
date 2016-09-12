@@ -98,23 +98,8 @@ BONUS: Train an actual machine learning model
   transformer enclosed between brackets (in this case [features]).
   In order to get the feature vector you will have to
   specify that you want the field (e.g., fl="*,[features])  -->
+
   <transformer name="features" class="org.apache.solr.ltr.ranking.LTRFeatureLoggerTransformerFactory" />
-
-
-  <!-- Component that hooks up managed resources for features and models -->
-  <searchComponent name="ltrComponent" class="org.apache.solr.ltr.ranking.LTRComponent"/>
-  <requestHandler name="/query" class="solr.SearchHandler">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-      <str name="wt">json</str>
-      <str name="indent">true</str>
-      <str name="df">id</str>
-    </lst>
-    <arr name="last-components">
-      <!-- Use the component in your requestHandler -->
-      <str>ltrComponent</str>
-    </arr>
-  </requestHandler>
 
   <query>
     ...
