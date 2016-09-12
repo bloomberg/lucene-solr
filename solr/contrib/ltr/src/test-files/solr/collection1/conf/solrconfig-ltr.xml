@@ -30,10 +30,6 @@
    initialSize="2048" autowarmCount="4096" regenerator="solr.search.NoOpRegenerator" />
  </query>
 
-
- <searchComponent name="ltrComponent"
-  class="org.apache.solr.ltr.ranking.LTRComponent" />
-
  <!-- add a transformer that will encode the document features in the response.
   For each document the transformer will add the features as an extra field
   in the response. The name of the field we will be the the name of the transformer
@@ -64,9 +60,6 @@
    <str name="indent">true</str>
    <str name="df">id</str>
   </lst>
-  <arr name="last-components">
-   <str>ltrComponent</str>
-  </arr>
  </requestHandler>
 
 </config>

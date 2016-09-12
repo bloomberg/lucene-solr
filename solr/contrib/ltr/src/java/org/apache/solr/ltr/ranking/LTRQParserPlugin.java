@@ -16,9 +16,12 @@
  */
 package org.apache.solr.ltr.ranking;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -26,10 +29,15 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.model.LTRScoringModel;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
+import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.rest.ManagedModelStore;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.rest.ManagedResource;
+import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
@@ -44,10 +52,13 @@ import org.apache.solr.ltr.ranking.LTRThreadModule;
  * efi.myCompanyQueryIntent=0.98}
  *
  */
-public class LTRQParserPlugin extends QParserPlugin {
+public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String NAME = "ltr";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  private ManagedFeatureStore fr = null;
+  private ManagedModelStore mr = null;
 
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
@@ -61,6 +72,33 @@ public class LTRQParserPlugin extends QParserPlugin {
   public QParser createParser(String qstr, SolrParams localParams,
       SolrParams params, SolrQueryRequest req) {
     return new LTRQParser(qstr, localParams, params, req);
+  }
+
+  @Override
+  public void inform(ResourceLoader loader) throws IOException {
+      SolrResourceLoader solrResourceLoader = (SolrResourceLoader) loader;
+      solrResourceLoader.getManagedResourceRegistry().
+              registerManagedResource(CommonLTRParams.FEATURE_STORE_END_POINT, ManagedFeatureStore.class, this);
+
+      solrResourceLoader.getManagedResourceRegistry().
+              registerManagedResource(CommonLTRParams.MODEL_STORE_END_POINT, ManagedModelStore.class, this);
+
+  }
+
+  @Override
+  public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res) throws SolrException {
+    if (res instanceof ManagedFeatureStore) {
+        fr = (ManagedFeatureStore)res;
+    }
+    if (res instanceof ManagedModelStore){
+        mr = (ManagedModelStore)res;
+    }
+    if (mr != null && fr != null){
+        mr.init(fr);
+        // now we can safely load the models
+        mr.loadStoredModels();
+
+    }
   }
 
   public class LTRQParser extends QParser {

@@ -20,7 +20,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.ranking.LTRComponent;
+import org.apache.solr.ltr.ranking.LTRQParserPlugin;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage;
@@ -56,11 +56,11 @@ public class TestModelManager extends TestRerankBase {
 
     final String resourceId = "/schema/fstore1";
     registry.registerManagedResource(resourceId, ManagedFeatureStore.class,
-        new LTRComponent());
+        new LTRQParserPlugin());
 
     final String resourceId2 = "/schema/mstore1";
     registry.registerManagedResource(resourceId2, ManagedModelStore.class,
-        new LTRComponent());
+        new LTRQParserPlugin());
 
     final NamedList<String> initArgs = new NamedList<>();
 
