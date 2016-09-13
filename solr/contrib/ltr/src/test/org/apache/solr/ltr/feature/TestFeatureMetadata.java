@@ -25,6 +25,7 @@ import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -59,14 +60,22 @@ public class TestFeatureMetadata extends TestRerankBase {
         .getClass().getCanonicalName());
   }
 
-  @Test(expected = SolrException.class)
-  public void getInvalidInstanceTest() throws FeatureException
+  @Test
+  public void getInvalidInstanceTest()
   {
-    final Map<String,Object> map = new HashMap<String,Object>();
-    map.put(ManagedFeatureStore.NAME_KEY, "test");
-    map.put(ManagedFeatureStore.CLASS_KEY, "org.apache.solr.ltr.feature.LOLFeature");
-    store.addFeature(map, "testFstore2");
-
+    final ClassNotFoundException expectedException = 
+        new ClassNotFoundException(
+            "org.apache.solr.ltr.feature.LOLFeature");
+    try {
+      final Map<String,Object> map = new HashMap<String,Object>();
+      map.put(ManagedFeatureStore.NAME_KEY, "test");
+      map.put(ManagedFeatureStore.CLASS_KEY, "org.apache.solr.ltr.feature.LOLFeature");
+      store.addFeature(map, "testFstore2");
+      fail("getInvalidInstanceTest failed to throw exception: "+expectedException);
+    } catch (Exception actualException) {
+      Throwable rootError = getRootCause(actualException);
+      assertEquals(expectedException.toString(), rootError.toString());
+    }
   }
   
 }

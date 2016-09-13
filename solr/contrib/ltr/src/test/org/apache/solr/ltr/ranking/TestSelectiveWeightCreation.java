@@ -46,6 +46,7 @@ import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.util.ModelException;
+import org.apache.solr.ltr.ranking.LTRThreadModule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,7 +67,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
       final Feature f = Feature.getInstance(solrResourceLoader,
           ValueFeature.class.getCanonicalName(),
           "f" + i, params);
-      f.setId(i);
+      f.setIndex(i);
       features.add(f);
     }
     return features;
@@ -100,10 +101,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     // rerank using the field final-score
     scorer.iterator().advance(deBasedDoc);
     scorer.score();
-
-    // assertEquals(42.0f, score, 0.0001);
-    // assertTrue(weight instanceof AssertingWeight);
-    // (AssertingIndexSearcher)
     assertTrue(weight instanceof ModelQuery.ModelWeight);
     final ModelQuery.ModelWeight modelWeight = (ModelQuery.ModelWeight) weight;
     return modelWeight;
@@ -111,10 +108,25 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   }
   
   
-  
   @BeforeClass
   public static void before() throws Exception {
     setuptest("solrconfig-ltr.xml", "schema-ltr.xml");
+    
+    assertU(adoc("id", "1", "title", "w1 w3", "description", "w1", "popularity",
+        "1"));
+    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity",
+        "2"));
+    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
+        "3"));
+    assertU(adoc("id", "4", "title", "w4 w3", "description", "w4", "popularity",
+        "4"));
+    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
+        "5"));
+    assertU(commit());
+    
+    loadFeatures("external_features.json");
+    loadModels("external_model.json");
+    loadModels("external_model_store.json");
   }
 
   @AfterClass
@@ -170,11 +182,11 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
         makeFeatureWeights(features));
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta1, false)); // features not requested in response
+    
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
-    assertEquals(features.size(), modelWeight.extractedFeatureWeights.length);
     int validFeatures = 0;
     for (int i=0; i < modelWeight.featuresInfo.length; ++i){
-      if (modelWeight.featuresInfo[i] != null){
+      if (modelWeight.featuresInfo[i] != null && modelWeight.featuresInfo[i].isUsed()){
         validFeatures += 1;
       }
     }
@@ -186,12 +198,13 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
         makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,
         hits.scoreDocs[0].doc, new ModelQuery(meta2, true)); // features requested in response
+
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
     assertEquals(allFeatures.size(), modelWeight.extractedFeatureWeights.length);
     
     validFeatures = 0;
     for (int i=0; i < modelWeight.featuresInfo.length; ++i){
-      if (modelWeight.featuresInfo[i] != null){
+      if (modelWeight.featuresInfo[i] != null && modelWeight.featuresInfo[i].isUsed()){
         validFeatures += 1;
       }
     }
@@ -205,22 +218,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
  
   @Test
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {
-    
-    assertU(adoc("id", "1", "title", "w1 w3", "description", "w1", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity",
-        "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "w4 w3", "description", "w4", "popularity",
-        "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
-        "5"));
-    assertU(commit());
-
-    loadFeatures("external_features.json");
-    loadModels("external_model.json");
-    loadModels("external_model_store.json");
     
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -257,4 +254,114 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='popularity:3.0;originalScore:1.0'"); // extract all features from fstore4
   }
   
+  @Test
+  public void testModelQueryParallelWeightCreationResultOrder() throws Exception {
+    // check to make sure that the ordewr of results will be the same when using parallel weight creation
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*,score");
+    query.add("rows", "4");
+  
+    query.add("rq", "{!ltr reRankDocs=4 model=externalmodel efi.user_query=w3}");
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='4'");
+    
+    
+    LTRThreadModule.setThreads(10, 10);
+    LTRThreadModule.initSemaphore();
+    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='4'");
+    LTRThreadModule.setThreads(0, 0);
+    LTRThreadModule.ltrSemaphore = null;
+  }
+  
+  @Test
+  public void testModelQueryParallelWeightCreation() throws IOException, ModelException {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    doc.add(newStringField("id", "0", Field.Store.YES));
+    doc.add(newTextField("field", "wizard of the the the the the oz",
+        Field.Store.NO));
+    doc.add(new FloatDocValuesField("final-score", 1.0f));
+    w.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc.add(newTextField("field", "wizard of the the hat the the the oz",
+        Field.Store.NO));
+    doc.add(new FloatDocValuesField("final-score", 2.0f));
+    w.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(newStringField("id", "2", Field.Store.YES));
+    // 1 extra token, but wizard and oz are close;
+    doc.add(newTextField("field", "wizard oz hat the the the the the the hat",
+        Field.Store.NO));
+    doc.add(new FloatDocValuesField("final-score", 3.0f));
+    w.addDocument(doc);
+
+    final IndexReader r = w.getReader();
+    w.close();
+
+    // Do ordinary BooleanQuery:
+    final Builder bqBuilder = new Builder();
+    bqBuilder.add(new TermQuery(new Term("field", "wizard")), Occur.SHOULD);
+    bqBuilder.add(new TermQuery(new Term("field", "hat")), Occur.SHOULD);
+    bqBuilder.add(new TermQuery(new Term("field", "oz")), Occur.SHOULD);
+    final IndexSearcher searcher = getSearcher(r);
+    // first run the standard query
+    TopDocs hits = searcher.search(bqBuilder.build(), 10);
+    assertEquals(3, hits.totalHits);
+    assertEquals("2", searcher.doc(hits.scoreDocs[0].doc).get("id"));
+    assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
+    assertEquals("0", searcher.doc(hits.scoreDocs[2].doc).get("id"));
+
+    List<Feature> features = makeFeatures(new int[] {0, 2, 3});
+    final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5,
+        6, 7, 8, 9});
+    final List<Normalizer> norms = new ArrayList<>();
+    for (int k=0; k < features.size(); ++k){
+        norms.add(IdentityNormalizer.INSTANCE);
+    }
+    
+    // setting the value of number of threads to -ve should throw an exception 
+    String msg1 = null;
+    try{
+      LTRThreadModule.setThreads(1, -1);
+    }catch(NumberFormatException nfe){
+        msg1 = nfe.getMessage();
+    }
+    assertTrue(msg1.equals("LTRMaxQueryThreads cannot be less than 0"));
+    
+   // set LTRMaxThreads to 1 and LTRMaxQueryThreads to 2 and verify that an exception is thrown
+    String msg2 = null;
+    try{
+       LTRThreadModule.setThreads(1, 2);
+    }catch(NumberFormatException nfe){
+        msg2 = nfe.getMessage();
+    }
+    assertTrue(msg2.equals("LTRMaxQueryThreads cannot be greater than LTRMaxThreads"));
+    // When maxThreads is set to 1, no threading should be used but the weight creation should run serially
+    LTRThreadModule.setThreads(1, 1);
+    LTRThreadModule.initSemaphore();
+    RankSVMModel meta1 = new RankSVMModel("test",
+        features, norms, "test", allFeatures,
+        makeFeatureWeights(features));
+    ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
+        hits.scoreDocs[0].doc, new ModelQuery(meta1, false)); // features not requested in response  
+    assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
+    LTRThreadModule.setThreads(0, 0);
+    LTRThreadModule.ltrSemaphore = null;
+    
+    r.close();
+    dir.close();
+  }
+  
 }
+

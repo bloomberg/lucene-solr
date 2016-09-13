@@ -69,7 +69,7 @@ public class TestModelQuery extends LuceneTestCase {
       final Feature f = Feature.getInstance(solrResourceLoader,
           ValueFeature.class.getCanonicalName(),
           "f" + i, params);
-      f.setId(i);
+      f.setIndex(i);
       features.add(f);
     }
     return features;
@@ -83,7 +83,7 @@ public class TestModelQuery extends LuceneTestCase {
       final Feature f = Feature.getInstance(solrResourceLoader,
           ValueFeature.class.getCanonicalName(),
           "f" + i, params);
-      f.setId(i);
+      f.setIndex(i);
       features.add(f);
     }
     return features;
@@ -254,8 +254,8 @@ public class TestModelQuery extends LuceneTestCase {
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(meta));
     assertEquals(mixPositions.length,
-        modelWeight.modelFeatureValuesNormalized.length);
-
+        modelWeight.modelFeatureWeights.length);
+    
     for (int i = 0; i < mixPositions.length; i++) {
       assertEquals(mixPositions[i],
           modelWeight.modelFeatureValuesNormalized[i], 0.0001);
@@ -271,11 +271,11 @@ public class TestModelQuery extends LuceneTestCase {
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
         new ModelQuery(meta));
-    assertEquals(0, modelWeight.modelFeatureValuesNormalized.length);
+    assertEquals(0, modelWeight.modelFeatureWeights.length);
 
     // test normalizers
     features = makeFilterFeatures(mixPositions);
-    final Normalizer n = new Normalizer() {
+    final Normalizer norm = new Normalizer() {
 
       @Override
       public float normalize(float value) {
@@ -289,7 +289,7 @@ public class TestModelQuery extends LuceneTestCase {
     };
     norms = 
         new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),n));
+            Collections.nCopies(features.size(),norm));
     final RankSVMModel normMeta = new RankSVMModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
@@ -298,7 +298,7 @@ public class TestModelQuery extends LuceneTestCase {
         new ModelQuery(normMeta));
     normMeta.normalizeFeaturesInPlace(modelWeight.modelFeatureValuesNormalized);
     assertEquals(mixPositions.length,
-        modelWeight.modelFeatureValuesNormalized.length);
+        modelWeight.modelFeatureWeights.length);
     for (int i = 0; i < mixPositions.length; i++) {
       assertEquals(42.42f, modelWeight.modelFeatureValuesNormalized[i], 0.0001);
     }

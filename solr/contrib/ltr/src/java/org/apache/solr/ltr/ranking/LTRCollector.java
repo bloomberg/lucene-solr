@@ -103,7 +103,6 @@ public class LTRCollector extends TopDocsCollector {
   @Override
   public TopDocs topDocs(int start, int howMany) {
     try {
-
       // Use length instead of howMany for caching purposes
       TopDocs mainDocs = mainCollector.topDocs(0,  Math.max(reRankDocs, length));
 

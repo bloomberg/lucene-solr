@@ -37,7 +37,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  */
 public class LTRComponent extends SearchComponent implements SolrCoreAware,
     ManagedResourceObserver {
-
+ 
   @SuppressWarnings("rawtypes")
   @Override
   public void init(NamedList args) {}

@@ -173,7 +173,7 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) throws ModelException {
     super(name, features, norms, featureStoreName, allFeatures, params);
-
+    
     if (!hasParams()) {
       throw new ModelException("LambdaMARTModel doesn't contain any params");
     }

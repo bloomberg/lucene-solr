@@ -35,6 +35,7 @@ import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.search.SolrIndexSearcher;
 
+
 /**
  * Implements the rescoring logic. The top documents returned by solr with their
  * original scores, will be processed by a {@link ModelQuery} that will assign a
@@ -44,7 +45,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 public class LTRRescorer extends Rescorer {
 
   ModelQuery reRankModel;
-
   public LTRRescorer(ModelQuery reRankModel) {
     this.reRankModel = reRankModel;
   }
@@ -106,9 +106,7 @@ public class LTRRescorer extends Rescorer {
     if ((topN == 0) || (firstPassTopDocs.totalHits == 0)) {
       return firstPassTopDocs;
     }
-
     final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
-
     Arrays.sort(hits, new Comparator<ScoreDoc>() {
       @Override
       public int compare(ScoreDoc a, ScoreDoc b) {
@@ -118,27 +116,46 @@ public class LTRRescorer extends Rescorer {
 
     topN = Math.min(topN, firstPassTopDocs.totalHits);
     final ScoreDoc[] reranked = new ScoreDoc[topN];
-    String[] featureNames;
-    float[] featureValues;
-    boolean[] featuresUsed;
-
     final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
+    final ModelWeight modelWeight = (ModelWeight) searcher
+        .createNormalizedWeight(reRankModel, true);
 
+    // FIXME: I dislike that we have no gaurentee this is actually a
+    // SolrIndexReader.
+    // We should do something about that
+    final SolrIndexSearcher solrIndexSearch = (SolrIndexSearcher) searcher;
+    scoreFeatures(solrIndexSearch, firstPassTopDocs,topN, modelWeight, hits, leaves, reranked);
+    // Must sort all documents that we reranked, and then select the top 
+    Arrays.sort(reranked, new Comparator<ScoreDoc>() {
+      @Override
+      public int compare(ScoreDoc a, ScoreDoc b) {
+        // Sort by score descending, then docID ascending:
+        if (a.score > b.score) {
+          return -1;
+        } else if (a.score < b.score) {
+          return 1;
+        } else {
+          // This subtraction can't overflow int
+          // because docIDs are >= 0:
+          return a.doc - b.doc;
+        }
+      }
+    });
+
+    return new TopDocs(firstPassTopDocs.totalHits, reranked, reranked[0].score);
+  }
+  
+  public void scoreFeatures(SolrIndexSearcher solrIndexSearch, TopDocs firstPassTopDocs,
+      int topN, ModelWeight modelWeight, ScoreDoc[] hits, List<LeafReaderContext> leaves,
+      ScoreDoc[] reranked) throws IOException {
+    
     int readerUpto = -1;
     int endDoc = 0;
     int docBase = 0;
 
     ModelScorer scorer = null;
     int hitUpto = 0;
-
-    final ModelWeight modelWeight = (ModelWeight) searcher
-        .createNormalizedWeight(reRankModel, true);
     final FeatureLogger<?> featureLogger = reRankModel.getFeatureLogger();
-
-    // FIXME: I dislike that we have no gaurentee this is actually a
-    // SolrIndexReader.
-    // We should do something about that
-    final SolrIndexSearcher solrIndexSearch = (SolrIndexSearcher) searcher;
 
     // FIXME
     // All of this heap code is only for logging. Wrap all this code in
@@ -152,24 +169,20 @@ public class LTRRescorer extends Rescorer {
     // The heap is just anticipating the sorting of the array, so I don't think
     // it would
     // save time.
-
     while (hitUpto < hits.length) {
       final ScoreDoc hit = hits[hitUpto];
       final int docID = hit.doc;
-
       LeafReaderContext readerContext = null;
       while (docID >= endDoc) {
         readerUpto++;
         readerContext = leaves.get(readerUpto);
         endDoc = readerContext.docBase + readerContext.reader().maxDoc();
       }
-
       // We advanced to another segment
       if (readerContext != null) {
         docBase = readerContext.docBase;
         scorer = modelWeight.scorer(readerContext);
       }
-
       // Scorer for a ModelWeight should never be null since we always have to
       // call score
       // even if no feature scorers match, since a model might use that info to
@@ -185,7 +198,6 @@ public class LTRRescorer extends Rescorer {
 
       scorer.setDocInfoParam(CommonLTRParams.ORIGINAL_DOC_SCORE, new Float(hit.score));
       hit.score = scorer.score();
-
       if (hitUpto < topN) {
         reranked[hitUpto] = hit;
         // if the heap is not full, maybe I want to log the features for this
@@ -213,36 +225,8 @@ public class LTRRescorer extends Rescorer {
           }
         }
       }
-
       hitUpto++;
     }
-
-    // Must sort all documents that we reranked, and then select the top N
-
-    // ScoreDoc[] reranked = heap.getArray();
-    Arrays.sort(reranked, new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        // Sort by score descending, then docID ascending:
-        if (a.score > b.score) {
-          return -1;
-        } else if (a.score < b.score) {
-          return 1;
-        } else {
-          // This subtraction can't overflow int
-          // because docIDs are >= 0:
-          return a.doc - b.doc;
-        }
-      }
-    });
-
-    // if (topN < hits.length) {
-    // ScoreDoc[] subset = new ScoreDoc[topN];
-    // System.arraycopy(hits, 0, subset, 0, topN);
-    // hits = subset;
-    // }
-
-    return new TopDocs(firstPassTopDocs.totalHits, reranked, reranked[0].score);
   }
 
   @Override

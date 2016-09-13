@@ -857,7 +857,10 @@
     </requestHandler>
 
  <!-- Query parser used to rerank top docs with a provided model -->
-  <queryParser name="ltr" class="org.apache.solr.ltr.ranking.LTRQParserPlugin" />
+  <queryParser name="ltr" class="org.apache.solr.ltr.ranking.LTRQParserPlugin" >
+  <int name="LTRMaxThreads">10</int> <!-- Maximum threads to use for all queries -->
+  <int name="LTRMaxQueryThreads">10</int> <!-- Maximum threads to use for a single query-->
+  </queryParser>
 
   <!--  Transformer that will encode the document features in the response. For each document the transformer
   will add the features as an extra field in the response. The name of the field we will be the the name of the
@@ -867,7 +870,7 @@
 
 
   <!-- Component that hooks up managed resources for features and models -->
-  <searchComponent name="ltrComponent" class="org.apache.solr.ltr.ranking.LTRComponent"/>
+  <searchComponent name="ltrComponent" class="org.apache.solr.ltr.ranking.LTRComponent" />
   <!-- A request handler that returns indented JSON by default -->
   <requestHandler name="/query" class="solr.SearchHandler">
      <lst name="defaults">

@@ -336,7 +336,7 @@ public class TestRerankBase extends RestTestBase {
       final Feature f = Feature.getInstance(solrResourceLoader,
           ValueFeature.class.getCanonicalName(),
           name, params);
-      f.setId(pos);
+      f.setIndex(pos);
       features.add(f);
       ++pos;
     }

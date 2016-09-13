@@ -20,6 +20,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.ranking.RankSVMModel;
+import org.apache.solr.ltr.util.FeatureException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,15 +48,29 @@ public class TestValueFeature extends TestRerankBase {
     aftertest();
   }
 
-  @Test(expected = Exception.class)
+  @Test
   public void testValueFeatureWithEmptyValue() throws Exception {
-    loadFeature("c2", ValueFeature.class.getCanonicalName(), "{\"value\":\"\"}");
+    final RuntimeException expectedException = 
+        new RuntimeException("mismatch: '0'!='500' @ responseHeader/status");
+    try {
+        loadFeature("c2", ValueFeature.class.getCanonicalName(), "{\"value\":\"\"}");
+        fail("testValueFeatureWithEmptyValue failed to throw exception: "+expectedException);
+    } catch (RuntimeException actualException) {
+      assertEquals(expectedException.toString(), actualException.toString());
+    }
   }
 
-  @Test(expected = Exception.class)
+  @Test
   public void testValueFeatureWithWhitespaceValue() throws Exception {
-    loadFeature("c2", ValueFeature.class.getCanonicalName(),
-        "{\"value\":\" \"}");
+    final RuntimeException expectedException = 
+        new RuntimeException("mismatch: '0'!='500' @ responseHeader/status");
+    try {
+        loadFeature("c2", ValueFeature.class.getCanonicalName(),
+              "{\"value\":\" \"}");
+        fail("testValueFeatureWithWhitespaceValue failed to throw exception: "+expectedException);
+    } catch (RuntimeException actualException) {
+      assertEquals(expectedException.toString(), actualException.toString());
+    }
   }
 
   @Test
