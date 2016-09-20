@@ -26,7 +26,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class ValueFeature extends Feature {
@@ -51,13 +50,16 @@ public class ValueFeature extends Feature {
       if (configValueStr.trim().isEmpty()) {
         throw new FeatureException("Empty field 'value' in params for " + this);
       }
+    } else if (value instanceof Double) {
+      configValue = ((Double) value).floatValue();
+    } else if (value instanceof Float) {
+      configValue = ((Float) value).floatValue();
+    } else if (value instanceof Integer) {
+      configValue = ((Integer) value).floatValue();
+    } else if (value instanceof Long) {
+      configValue = ((Long) value).floatValue();
     } else {
-      try {
-        configValue = LTRUtils.convertToFloat(value);
-      } catch (final NumberFormatException e) {
-        throw new FeatureException("Invalid type for 'value' in params for "
-            + this);
-      }
+      throw new FeatureException("Invalid type for 'value' in params for " + this);
     }
   }
 
@@ -106,8 +108,6 @@ public class ValueFeature extends Feature {
         } else {
           featureValue=null;
         }
-
-
       } else {
         featureValue = configValue;
       }

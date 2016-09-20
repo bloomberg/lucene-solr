@@ -46,6 +46,7 @@ public class LTRUtils {
     return externalFeatureInfo;
   }
   
+  @Deprecated
   public static float convertToFloat(Object o) {
     float f = 0;
     if (o instanceof Double) {
