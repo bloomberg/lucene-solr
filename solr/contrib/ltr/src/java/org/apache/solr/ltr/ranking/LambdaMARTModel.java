@@ -30,16 +30,16 @@ import org.apache.solr.ltr.util.ModelException;
 
 public class LambdaMARTModel extends LTRScoringAlgorithm {
 
-  List<RegressionTree> trees = new ArrayList<RegressionTree>();
+  private final List<RegressionTree> trees = new ArrayList<RegressionTree>();
 
   class RegressionTreeNode {
-    public static final float NODE_SPLIT_SLACK = 1E-6f;
-    public float value;
-    public String feature;
-    public int featureIndex;
-    public float threshold;
-    public RegressionTreeNode left = null;
-    public RegressionTreeNode right = null;
+    private static final float NODE_SPLIT_SLACK = 1E-6f;
+    private final float value;
+    private final String feature;
+    private final int featureIndex;
+    private final float threshold;
+    private final RegressionTreeNode left;
+    private final RegressionTreeNode right;
 
     public boolean isLeaf() {
       return feature == null;
@@ -92,6 +92,11 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
         HashMap<String,Integer> fname2index) throws ModelException {
       if (map.containsKey("value")) {
         value = LTRUtils.convertToFloat(map.get("value"));
+        feature = null;
+        featureIndex = -1;
+        threshold = 0f;
+        left = null;
+        right = null;
       } else {
 
         final Object of = map.get("feature");
@@ -100,6 +105,7 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
               "LambdaMARTModel tree node is missing feature");
         }
 
+        value = 0f;
         feature = (String) of;
         final Integer idx = fname2index.get(feature);
         // this happens if the tree specifies a feature that does not exist
@@ -137,8 +143,8 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
   }
 
   class RegressionTree {
-    public float weight;
-    public RegressionTreeNode root;
+    private final float weight;
+    private final RegressionTreeNode root;
 
     public float score(float[] featureVector) {
       return weight * root.score(featureVector);
