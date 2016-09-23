@@ -37,7 +37,6 @@ import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.CommonLTRParams;
-import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.ltr.util.ModelException;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
@@ -109,40 +108,6 @@ public class ManagedModelStore extends ManagedResource implements
   }
 
   @SuppressWarnings("unchecked")
-  private Normalizer parseNormalizer(Map<String,Object> featureMap) {
-    final Object normObj = featureMap.get(CommonLTRParams.FEATURE_NORM);
-    final Normalizer norm;
-    if (normObj != null) {
-      norm = fromNormalizerMap(solrResourceLoader,
-          (Map<String,Object>) normObj);
-    }
-    else {
-      norm = IdentityNormalizer.INSTANCE;
-    }
-
-    return norm;
-  }
-
-  @SuppressWarnings("unchecked")
-  private Feature parseFeature(Map<String,Object> featureMap,
-      FeatureStore featureStore) throws FeatureException,
-      CloneNotSupportedException {
-    // FIXME name shouldn't be be null, exception?
-    final String name = (String) featureMap.get(CommonLTRParams.FEATURE_NAME);
-
-    if (featureStores == null) {
-      throw new FeatureException("missing feature store");
-    }
-
-    Feature meta = featureStore.get(name);
-    if (meta == null) {
-      throw new FeatureException("feature " + name
-          + " not found in store " + featureStore.getName());
-    }
-    return meta;
-  }
-
-  @SuppressWarnings("unchecked")
   public LTRScoringAlgorithm makeLTRScoringAlgorithm(String json)
       throws ModelException {
     Object parsedJson = null;
@@ -190,20 +155,22 @@ public class ManagedModelStore extends ManagedResource implements
     final List<Feature> features = new ArrayList<>();
     final List<Normalizer> norms = new ArrayList<>();
     for (final Object modelFeature : featureList) {
-      try {
-        // check the declared features exist in the feature store
-        final Map<String,Object> modelFeatureMap = 
-            (Map<String,Object>) modelFeature;
-        final Feature feature = parseFeature(modelFeatureMap,
-            fstore);
-        final Normalizer norm = parseNormalizer(modelFeatureMap);
-        norms.add(norm);
-        features.add(feature);
-      } catch (FeatureException e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, e);
-      } catch (final CloneNotSupportedException e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, e);
+      final Map<String,Object> modelFeatureMap =
+          (Map<String,Object>) modelFeature;
+
+      final String featureName = (String) modelFeatureMap.get(CommonLTRParams.FEATURE_NAME);
+      final Feature feature = (featureName == null ? null : fstore.get(featureName));
+      if (feature == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST,
+            "feature " + featureName + " not found in store " + fstore.getName());
       }
+
+      final Object normObj = modelFeatureMap.get(CommonLTRParams.FEATURE_NORM);
+      final Normalizer norm = (normObj == null ? IdentityNormalizer.INSTANCE :
+        fromNormalizerMap(solrResourceLoader, (Map<String,Object>) normObj));
+
+      features.add(feature);
+      norms.add(norm);
     }
     
     @SuppressWarnings("unchecked")
@@ -330,7 +297,7 @@ public class ManagedModelStore extends ManagedResource implements
       final List<Feature> featureList = modelmeta.getFeatures();
       final List<Normalizer> normList = modelmeta.getNorms();
       if (normList.size() != featureList.size()) {
-        throw new FeatureException("Every feature must have a normalizer");
+        throw new ModelException("Every feature must have a normalizer");
       }
       for (int idx = 0; idx <  featureList.size(); ++idx) {
         final Feature feature = featureList.get(idx);

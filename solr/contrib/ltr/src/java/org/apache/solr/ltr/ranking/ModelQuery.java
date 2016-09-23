@@ -48,7 +48,6 @@ import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.ranking.Feature.FeatureWeight;
 import org.apache.solr.ltr.ranking.Feature.FeatureWeight.FeatureScorer;
-import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.ltr.ranking.LTRThreadModule;
 import org.slf4j.Logger;
@@ -231,8 +230,8 @@ public class ModelQuery extends Query {
         try{
           FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
           featureWeights.add(fw);
-        }catch (final Exception e) {
-          throw new FeatureException("Exception from createWeight for " + f.toString() + " "
+        } catch (final Exception e) {
+          throw new RuntimeException("Exception from createWeight for " + f.toString() + " "
               + e.getMessage(), e);
         }
       }
@@ -255,9 +254,9 @@ public class ModelQuery extends Query {
       try {
         FeatureWeight fw  = f.createWeight(searcher, needsScores, req, originalQuery, efi);
         return fw;
-      } catch (final IOException se) {
-        throw new FeatureException("Exception from createWeight for " + f.toString() + " "
-            + se.getMessage(), se);
+      } catch (final Exception e) {
+        throw new RuntimeException("Exception from createWeight for " + f.toString() + " "
+            + e.getMessage(), e);
       } finally {
         querySemaphore.release();
         LTRThreadModule.ltrSemaphore.release();
