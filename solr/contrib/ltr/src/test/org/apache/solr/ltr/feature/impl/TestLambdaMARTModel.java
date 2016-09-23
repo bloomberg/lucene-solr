@@ -79,7 +79,7 @@ public class TestLambdaMARTModel extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=lambdamartmodel efi.user_query=w3}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-20.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
   }

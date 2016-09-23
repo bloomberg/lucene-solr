@@ -196,7 +196,7 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     System.out.println(res);
 
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/score==-10.0");
+        "/response/docs/[0]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv==''");
   }
 

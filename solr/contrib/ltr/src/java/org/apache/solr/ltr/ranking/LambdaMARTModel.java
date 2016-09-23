@@ -50,16 +50,16 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
         return value;
       }
 
-      if ((featureIndex < 0) || // unsupported feature
-          (featureIndex >= featureVector.length) /*
-                                                 * tree is looking for a feature
-                                                 * that does not exist
-                                                 */
-          || (featureVector[featureIndex] <= threshold)) {
-        return left.score(featureVector);
+      // unsupported feature (tree is looking for a feature that does not exist)
+      if  ((featureIndex < 0) || (featureIndex >= featureVector.length)) {
+        return 0f;
       }
 
-      return right.score(featureVector);
+      if (featureVector[featureIndex] <= threshold) {
+        return left.score(featureVector);
+      } else {
+        return right.score(featureVector);
+      }
     }
 
     public String explain(float[] featureVector) {
@@ -67,25 +67,24 @@ public class LambdaMARTModel extends LTRScoringAlgorithm {
         return "val: " + value;
       }
 
-      String rval = "";
+      // unsupported feature (tree is looking for a feature that does not exist)
+      if  ((featureIndex < 0) || (featureIndex >= featureVector.length)) {
+        return  "'" + feature + "' does not exist in FV, Return Zero";
+      }
 
       // could store extra information about how much training data supported
       // each branch and report
       // that here
 
-      if ((featureIndex < 0) || (featureIndex > featureVector.length)) {
-        rval += "'" + feature + "' does not exist in FV, Go Left | ";
-        return rval + left.explain(featureVector);
-      } else if (featureVector[featureIndex] <= threshold) {
-        rval += "'" + feature + "':" + featureVector[featureIndex] + " <= "
+      if (featureVector[featureIndex] <= threshold) {
+        String rval = "'" + feature + "':" + featureVector[featureIndex] + " <= "
             + threshold + ", Go Left | ";
         return rval + left.explain(featureVector);
+      } else {
+        String rval = "'" + feature + "':" + featureVector[featureIndex] + " > "
+            + threshold + ", Go Right | ";
+        return rval + right.explain(featureVector);
       }
-
-      rval += "'" + feature + "':" + featureVector[featureIndex] + " > "
-          + threshold + ", Go Right | ";
-
-      return rval + right.explain(featureVector);
     }
 
     public RegressionTreeNode(Map<String,Object> map,
