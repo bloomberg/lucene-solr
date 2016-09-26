@@ -16,16 +16,16 @@
  */
 package org.apache.solr.ltr.util;
 
-public class FeatureException extends LTRException {
+public class FeatureException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
-  public FeatureException(String msg) {
-    super(msg);
+  public FeatureException(String message) {
+    super(message);
   }
 
-  public FeatureException(String msg, Exception parent) {
-    super(msg, parent);
+  public FeatureException(String message, Exception cause) {
+    super(message, cause);
   }
 
 }

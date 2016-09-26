@@ -16,7 +16,7 @@
  */
 package org.apache.solr.ltr.util;
 
-public class ModelException extends LTRException {
+public class ModelException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
@@ -24,8 +24,8 @@ public class ModelException extends LTRException {
     super(message);
   }
 
-  public ModelException(String message, Exception parent) {
-    super(message, parent);
+  public ModelException(String message, Exception cause) {
+    super(message, cause);
   }
 
 }
