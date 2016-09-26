@@ -23,7 +23,6 @@ import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.impl.OriginalScoreFeature;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
-import org.apache.solr.ltr.util.FeatureException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.junit.AfterClass;

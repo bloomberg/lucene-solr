@@ -85,7 +85,7 @@ public class TestRankingFeature extends TestQueryFeature {
     query.add("rq", "{!ltr model=powdesS-model reRankDocs=4}");
 
     assertJQ("/query" + query.toQueryString(), 
-        "/error/msg/=='org.apache.solr.ltr.util.FeatureException: " +
+        "/error/msg/=='org.apache.solr.ltr.feature.FeatureException: " +
         "java.lang.UnsupportedOperationException: " +
         "Unable to extract feature for powdesS'");
     // aftertest();

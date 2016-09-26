@@ -24,7 +24,6 @@ import org.apache.solr.ltr.feature.impl.OriginalScoreFeature;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
-import org.apache.solr.ltr.util.FeatureException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

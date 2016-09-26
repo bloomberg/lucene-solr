@@ -26,7 +26,6 @@ import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
 import org.apache.solr.ltr.ranking.Feature;
-import org.apache.solr.ltr.util.FeatureException;
 
 /**
  * Contains all the data needed for loading a model.
