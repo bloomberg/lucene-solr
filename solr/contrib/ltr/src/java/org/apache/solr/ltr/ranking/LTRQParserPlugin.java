@@ -103,8 +103,6 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
   public class LTRQParser extends QParser {
 
-    ManagedModelStore mr = null;
-
     public LTRQParser(String qstr, SolrParams localParams, SolrParams params,
         SolrQueryRequest req) {
       super(qstr, localParams, params, req);
