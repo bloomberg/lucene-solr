@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.ltr.util.ModelException;
+import org.apache.solr.ltr.model.ModelException;
 
 /**
  * Contains the model and features declared.

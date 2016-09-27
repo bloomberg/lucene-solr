@@ -22,7 +22,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.util.ModelException;
+import org.apache.solr.ltr.model.ModelException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;

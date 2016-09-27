@@ -45,7 +45,7 @@ import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
-import org.apache.solr.ltr.util.ModelException;
+import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.ranking.LTRThreadModule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

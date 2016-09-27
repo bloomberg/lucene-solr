@@ -27,10 +27,10 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.feature.norm.impl.IdentityNormalizer;
+import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.apache.solr.ltr.rest.ManagedModelStore;
-import org.apache.solr.ltr.util.ModelException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -92,7 +92,7 @@ public class TestLTRScoringModel extends TestRerankBase {
   public void existingNameTest() {
     final SolrException expectedException = 
         new SolrException(ErrorCode.BAD_REQUEST,
-            "org.apache.solr.ltr.util.ModelException: model 'test3' already exists. Please use a different name");
+            ModelException.class.getCanonicalName()+": model 'test3' already exists. Please use a different name");
     try {
       final List<Feature> features = getFeatures(new String[] 
           {"constant1", "constant5"});
@@ -122,7 +122,7 @@ public class TestLTRScoringModel extends TestRerankBase {
   public void duplicateFeatureTest() {
     final SolrException expectedException = 
         new SolrException(ErrorCode.BAD_REQUEST,
-            "org.apache.solr.ltr.util.ModelException: duplicated feature constant1 in model test4");
+            ModelException.class.getCanonicalName()+": duplicated feature constant1 in model test4");
     try {
       final List<Feature> features = getFeatures(new String[] 
           {"constant1", "constant1"});
@@ -174,8 +174,8 @@ public class TestLTRScoringModel extends TestRerankBase {
   @Test
   public void emptyFeaturesTest() {
     final SolrException expectedException = 
-        new SolrException(ErrorCode.BAD_REQUEST, 
-            "org.apache.solr.ltr.util.ModelException: no features declared for model test6");
+        new SolrException(ErrorCode.BAD_REQUEST,
+            ModelException.class.getCanonicalName()+": no features declared for model test6");
     try {
       final List<Feature> features = getFeatures(new String[] {});
       final List<Normalizer> norms = 

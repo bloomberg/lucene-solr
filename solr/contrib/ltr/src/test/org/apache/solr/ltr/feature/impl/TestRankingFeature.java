@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.feature.impl;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.junit.Test;
 
@@ -85,7 +86,7 @@ public class TestRankingFeature extends TestQueryFeature {
     query.add("rq", "{!ltr model=powdesS-model reRankDocs=4}");
 
     assertJQ("/query" + query.toQueryString(), 
-        "/error/msg/=='org.apache.solr.ltr.feature.FeatureException: " +
+        "/error/msg/=='"+FeatureException.class.getCanonicalName()+": " +
         "java.lang.UnsupportedOperationException: " +
         "Unable to extract feature for powdesS'");
     // aftertest();

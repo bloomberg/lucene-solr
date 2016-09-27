@@ -24,7 +24,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.LTRScoringModel;
 import org.apache.solr.ltr.feature.norm.Normalizer;
-import org.apache.solr.ltr.util.ModelException;
+import org.apache.solr.ltr.model.ModelException;
 
 public class RankSVMModel extends LTRScoringModel {
 

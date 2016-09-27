@@ -14,8 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.ltr.model;
 
-/**
- *  Contains Feature related classes
- */
-package org.apache.solr.ltr.feature;
+public class ModelException extends RuntimeException {
+
+  private static final long serialVersionUID = 1L;
+
+  public ModelException(String message) {
+    super(message);
+  }
+
+  public ModelException(String message, Exception cause) {
+    super(message, cause);
+  }
+
+}
