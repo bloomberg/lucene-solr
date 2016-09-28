@@ -30,7 +30,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.feature.LTRScoringAlgorithm;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.rest.ManagedModelStore;
 import org.apache.solr.ltr.util.CommonLTRParams;

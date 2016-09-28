@@ -105,7 +105,7 @@ public class TestSolrCloud  extends TestRerankBase {
   @Test
   public void testSimpleQuery() throws Exception {
     // will randomly pick a configuration with [1..5] shards and [1..3] replicas
-    int numberOfShards = 1; //random().nextInt(4)+1;
+    int numberOfShards = random().nextInt(4)+1;
     int numberOfReplicas = random().nextInt(2)+1;
 
     setupSolrCluster(numberOfShards, numberOfReplicas);
@@ -128,7 +128,7 @@ public class TestSolrCloud  extends TestRerankBase {
     
     // Test re-rank and feature vectors returned
     query.setFields("*,score,features:[fv]");
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4}");
+    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=8}");
     queryResponse = 
         solrCluster.getSolrClient().query(COLLECTION,query);
     assertEquals(8, queryResponse.getResults().getNumFound());
