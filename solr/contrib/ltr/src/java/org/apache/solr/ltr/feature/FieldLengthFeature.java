@@ -79,6 +79,7 @@ public class FieldLengthFeature extends Feature {
   public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, 
       SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
       throws IOException {
+
     return new FieldLengthFeatureWeight(searcher, request, originalQuery, efi);
   }
 
@@ -92,22 +93,21 @@ public class FieldLengthFeature extends Feature {
 
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
-      return new FieldLengthFeatureScorer(this, context);
+      NumericDocValues norms = context.reader().getNormValues(field);
+      return new FieldLengthFeatureScorer(this, norms);
 
     }
 
     public class FieldLengthFeatureScorer extends FeatureScorer {
 
-      LeafReaderContext context = null;
       NumericDocValues norms = null;
       DocIdSetIterator itr;
 
       public FieldLengthFeatureScorer(FeatureWeight weight,
-          LeafReaderContext context) throws IOException {
+          NumericDocValues norms) throws IOException {
         super(weight);
-        this.context = context;
         itr = new MatchAllIterator();
-        norms = context.reader().getNormValues(field);
+        this.norms = norms;
 
         // In the constructor, docId is -1, so using 0 as default lookup
         final IndexableField idxF = searcher.doc(0).getField(field);
@@ -116,7 +116,6 @@ public class FieldLengthFeature extends Feature {
               "FieldLengthFeatures can't be used if omitNorms is enabled (field="
                   + field + ")");
         }
-
       }
 
       @Override
