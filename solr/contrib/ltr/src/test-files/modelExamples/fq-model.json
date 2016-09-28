@@ -5,7 +5,7 @@
         {
             "name":"matchedTitle",
             "norm": {
-                "class":"org.apache.solr.ltr.feature.norm.impl.MinMaxNormalizer",
+                "class":"org.apache.solr.ltr.norm.impl.MinMaxNormalizer",
                 "params":{ "min":"0.0f", "max":"10.0f" }
             }
         },

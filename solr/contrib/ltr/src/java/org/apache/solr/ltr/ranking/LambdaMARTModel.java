@@ -23,9 +23,9 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
-import org.apache.solr.ltr.feature.norm.Normalizer;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
+import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.util.LTRUtils;
 
 public class LambdaMARTModel extends LTRScoringModel {

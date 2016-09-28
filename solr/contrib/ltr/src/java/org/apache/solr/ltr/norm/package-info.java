@@ -20,4 +20,4 @@
  * will be computed, the normalizer will be applied and the resulting values
  * will be received by the model.
  */
-package org.apache.solr.ltr.feature.norm;
+package org.apache.solr.ltr.norm;
