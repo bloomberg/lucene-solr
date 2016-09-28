@@ -105,21 +105,24 @@ public class TestSolrCloud extends TestRerankBase {
     
     reloadCollection(COLLECTION);
 
-    //Test regular query
+    // Test regular query, it will sort the documents by inverse 
+    // popularity (the less popular, docid == 1, will be in the first
+    // position
+    //SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
     SolrQuery query = new SolrQuery("{!func}pow(popularity,-1)");
     query.setRequestHandler("/query");
     query.setFields("*,score");
-    query.setParam("rows", "4");
-    
+    query.setParam("rows", "4");   
+        
     QueryResponse queryResponse = 
-        solrCluster.getSolrClient().query(COLLECTION,query);
+        solrCluster.getSolrClient().query(COLLECTION,query); 
     assertEquals(8, queryResponse.getResults().getNumFound());
     assertEquals("1", queryResponse.getResults().get(0).get("id").toString());
     assertEquals("2", queryResponse.getResults().get(1).get("id").toString());
     assertEquals("3", queryResponse.getResults().get(2).get("id").toString());
     assertEquals("4", queryResponse.getResults().get(3).get("id").toString());
     
-    //Test re-rank and feature vectors returned
+    // Test re-rank and feature vectors returned
     query.setFields("*,score,features:[fv]");
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4}");
     queryResponse = 
