@@ -108,8 +108,8 @@ public class TestSolrCloud extends TestRerankBase {
     // Test regular query, it will sort the documents by inverse 
     // popularity (the less popular, docid == 1, will be in the first
     // position
-    //SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
-    SolrQuery query = new SolrQuery("{!func}pow(popularity,-1)");
+    SolrQuery query = new SolrQuery("{!func}sub(8,field(popularity))");
+
     query.setRequestHandler("/query");
     query.setFields("*,score");
     query.setParam("rows", "4");   
