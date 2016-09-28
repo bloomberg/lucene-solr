@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.feature.impl;
+package org.apache.solr.ltr.feature;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -24,7 +24,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.request.SolrQueryRequest;
 

@@ -42,7 +42,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.feature.impl.ValueFeature;
+import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;

@@ -14,30 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.feature.impl;
+package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.junit.Test;
 
-public class TestUserTermScoreWithQ extends TestQueryFeature {
+public class TestUserTermScorereQDF extends TestQueryFeature {
   @Test
-  public void testUserTermScoreWithQ() throws Exception {
+  public void testUserTermScorerQWithDF() throws Exception {
     // before();
-    loadFeature("SomeTermQ", SolrFeature.class.getCanonicalName(),
-        "{\"q\":\"{!terms f=popularity}88888\"}");
-    loadModel("Term-modelQ", RankSVMModel.class.getCanonicalName(),
-        new String[] {"SomeTermQ"}, "{\"weights\":{\"SomeTermQ\":1.0}}");
+    loadFeature("matchedTitleDF", SolrFeature.class.getCanonicalName(),
+        "{\"q\":\"w5\",\"df\":\"title\"}");
+    loadModel("Term-matchedTitleDF", RankSVMModel.class.getCanonicalName(),
+        new String[] {"matchedTitleDF"},
+        "{\"weights\":{\"matchedTitleDF\":1.0}}");
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
     query.add("fl", "*, score");
-    query.add("rows", "4");
-    query.add("rq", "{!ltr model=Term-modelQ reRankDocs=4}");
+    query.add("rows", "2");
+    query.add("rq", "{!ltr model=Term-matchedTitleDF reRankDocs=4}");
     query.set("debugQuery", "on");
     final String res = restTestHarness.query("/query" + query.toQueryString());
     System.out.println(res);
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='7'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
     // aftertest();
   }

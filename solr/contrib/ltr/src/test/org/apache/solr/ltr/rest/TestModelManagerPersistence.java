@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.feature.impl.ValueFeature;
+import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.junit.Before;

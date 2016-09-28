@@ -1,7 +1,7 @@
 [
     {
         "name": "constant",
-        "class": "org.apache.solr.ltr.feature.impl.ValueFeature",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
         "params": {
             "value": 100,
             "complex":{

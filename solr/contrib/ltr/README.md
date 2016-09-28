@@ -125,29 +125,29 @@ using standard Solr queries. As an example:
 ```json
 [
 { "name": "isBook",
-  "class": "org.apache.solr.ltr.feature.impl.SolrFeature",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
   "params":{ "fq": ["{!terms f=category}book"] }
 },
 {
   "name":  "documentRecency",
-  "class": "org.apache.solr.ltr.feature.impl.SolrFeature",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
   "params": {
       "q": "{!func}recip( ms(NOW,publish_date), 3.16e-11, 1, 1)"
   }
 },
 {
   "name":"originalScore",
-  "class":"org.apache.solr.ltr.feature.impl.OriginalScoreFeature",
+  "class":"org.apache.solr.ltr.feature.OriginalScoreFeature",
   "params":{}
 },
 {
   "name" : "userTextTitleMatch",
-  "class" : "org.apache.solr.ltr.feature.impl.SolrFeature",
+  "class" : "org.apache.solr.ltr.feature.SolrFeature",
   "params" : { "q" : "{!field f=title}${user_text}" }
 },
  {
    "name" : "userFromMobile",
-   "class" : "org.apache.solr.ltr.feature.impl.ValueFeature",
+   "class" : "org.apache.solr.ltr.feature.ValueFeature",
    "params" : { "value" : ${userFromMobile}, "required":true }
  }
 ]

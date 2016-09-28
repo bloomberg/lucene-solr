@@ -1,7 +1,7 @@
 [
     {
         "name": "constant1",
-        "class": "org.apache.solr.ltr.feature.impl.ValueFeature",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
      "store":"test",
         "params": {
             "value": 1
@@ -9,7 +9,7 @@
     },
     {
         "name": "constant2",
-        "class": "org.apache.solr.ltr.feature.impl.ValueFeature",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
      "store":"test",
         "params": {
             "value": 2
@@ -17,7 +17,7 @@
     },
     {
         "name": "constant3",
-        "class": "org.apache.solr.ltr.feature.impl.ValueFeature",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
      "store":"test",
         "params": {
             "value": 3
@@ -25,7 +25,7 @@
     },
     {
         "name": "constant4",
-        "class": "org.apache.solr.ltr.feature.impl.ValueFeature",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
      "store":"test",
         "params": {
             "value": 4
@@ -33,7 +33,7 @@
     },
     {
         "name": "constant5",
-        "class": "org.apache.solr.ltr.feature.impl.ValueFeature",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
      "store":"test",
         "params": {
             "value": 5
@@ -41,7 +41,7 @@
     },
      {
         "name": "pop",
-        "class": "org.apache.solr.ltr.feature.impl.FieldValueFeature",
+        "class": "org.apache.solr.ltr.feature.FieldValueFeature",
      "store":"test",
         "params": {
             "field": "popularity"

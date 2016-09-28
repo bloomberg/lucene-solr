@@ -84,31 +84,31 @@ public class TestModelManager extends TestRerankBase {
     System.out.println("after: \n" + restTestHarness.query("/schema/managed"));
 
     // Add features
-    String feature = "{\"name\": \"test1\", \"class\": \"org.apache.solr.ltr.feature.impl.ValueFeature\", \"params\": {\"value\": 1} }";
+    String feature = "{\"name\": \"test1\", \"class\": \"org.apache.solr.ltr.feature.ValueFeature\", \"params\": {\"value\": 1} }";
     assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
         "/responseHeader/status==0");
 
-    feature = "{\"name\": \"test2\", \"class\": \"org.apache.solr.ltr.feature.impl.ValueFeature\", \"params\": {\"value\": 1} }";
+    feature = "{\"name\": \"test2\", \"class\": \"org.apache.solr.ltr.feature.ValueFeature\", \"params\": {\"value\": 1} }";
     assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
         "/responseHeader/status==0");
 
-    feature = "{\"name\": \"test3\", \"class\": \"org.apache.solr.ltr.feature.impl.ValueFeature\", \"params\": {\"value\": 1} }";
+    feature = "{\"name\": \"test3\", \"class\": \"org.apache.solr.ltr.feature.ValueFeature\", \"params\": {\"value\": 1} }";
     assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
         "/responseHeader/status==0");
 
-    feature = "{\"name\": \"test33\", \"store\": \"TEST\", \"class\": \"org.apache.solr.ltr.feature.impl.ValueFeature\", \"params\": {\"value\": 1} }";
+    feature = "{\"name\": \"test33\", \"store\": \"TEST\", \"class\": \"org.apache.solr.ltr.feature.ValueFeature\", \"params\": {\"value\": 1} }";
     assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
         "/responseHeader/status==0");
 
-    final String multipleFeatures = "[{\"name\": \"test4\", \"class\": \"org.apache.solr.ltr.feature.impl.ValueFeature\", \"params\": {\"value\": 1} }"
-        + ",{\"name\": \"test5\", \"class\": \"org.apache.solr.ltr.feature.impl.ValueFeature\", \"params\": {\"value\": 1} } ]";
+    final String multipleFeatures = "[{\"name\": \"test4\", \"class\": \"org.apache.solr.ltr.feature.ValueFeature\", \"params\": {\"value\": 1} }"
+        + ",{\"name\": \"test5\", \"class\": \"org.apache.solr.ltr.feature.ValueFeature\", \"params\": {\"value\": 1} } ]";
     assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, multipleFeatures,
         "/responseHeader/status==0");
 
     // Add bad feature (wrong params)_
-    final String badfeature = "{\"name\": \"fvalue\", \"class\": \"org.apache.solr.ltr.feature.impl.FieldValueFeature\", \"params\": {\"value\": 1} }";
+    final String badfeature = "{\"name\": \"fvalue\", \"class\": \"org.apache.solr.ltr.feature.FieldValueFeature\", \"params\": {\"value\": 1} }";
     assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, badfeature,
-        "/error/msg/=='No setter corrresponding to \\'value\\' in org.apache.solr.ltr.feature.impl.FieldValueFeature'");
+        "/error/msg/=='No setter corrresponding to \\'value\\' in org.apache.solr.ltr.feature.FieldValueFeature'");
 
     // Add models
     String model = "{ \"name\":\"testmodel1\", \"class\":\"org.apache.solr.ltr.ranking.RankSVMModel\", \"features\":[] }";

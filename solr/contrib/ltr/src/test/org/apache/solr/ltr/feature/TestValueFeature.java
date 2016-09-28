@@ -14,12 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.feature.impl;
+package org.apache.solr.ltr.feature;
 
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

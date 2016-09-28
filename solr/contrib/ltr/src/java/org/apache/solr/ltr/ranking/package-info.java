@@ -53,9 +53,9 @@
  * </p>
  * <p>
  * Finally, a {@link org.apache.solr.ltr.ranking.Feature} will produce a particular value for each document, so
- * it is modeled as a {@link org.apache.lucene.search.Query}. The package <i>org.apache.solr.ltr.feature.impl</i> contains several examples
+ * it is modeled as a {@link org.apache.lucene.search.Query}. The package <i>org.apache.solr.ltr.feature</i> contains several examples
  * of features. One benefit of extending the Query object is that we can reuse
- * Query as a feature, see for example {@link org.apache.solr.ltr.feature.impl.SolrFeature}.
+ * Query as a feature, see for example {@link org.apache.solr.ltr.feature.SolrFeature}.
  *
  *
  *

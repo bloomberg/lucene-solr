@@ -1,14 +1,14 @@
 [
     {
         "name": "matchedTitle",
-        "class": "org.apache.solr.ltr.feature.impl.SolrFeature",
+        "class": "org.apache.solr.ltr.feature.SolrFeature",
         "params": {
             "q": "{!terms f=title}${user_query}"
         }
     },
     {
         "name": "popularity",
-        "class": "org.apache.solr.ltr.feature.impl.ValueFeature",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
         "params": {
             "value": 3
         }
