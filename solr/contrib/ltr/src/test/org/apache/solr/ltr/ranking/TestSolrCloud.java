@@ -1,5 +1,4 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
+/* * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
@@ -44,30 +43,19 @@ public class TestSolrCloud extends TestRerankBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private MiniSolrCloudCluster solrCluster;
-  
+  String solrconfig = "solrconfig-ltr.xml";
+  String schema = "schema-ltr.xml";
+    
+  SortedMap<ServletHolder,String> extraServlets = null; 
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-
-    String solrconfig = "solrconfig-ltr.xml";
-    String schema = "schema-ltr.xml";
-    
-    SortedMap<ServletHolder,String> extraServlets = 
-        setupTestInit(solrconfig,schema,true);
+    extraServlets = setupTestInit(solrconfig, schema, true);
     System.setProperty("enable.update.log", "true");
-    
-    
-    JettyConfig jc = buildJettyConfig("/solr");
-    jc = JettyConfig.builder(jc).withServlets(extraServlets).build();
-    solrCluster = new MiniSolrCloudCluster(3, tmpSolrHome.toPath(), jc);
-    File configDir = tmpSolrHome.toPath().resolve("collection1/conf").toFile();
-    solrCluster.uploadConfigDir(configDir, "conf1");
-
-    solrCluster.getSolrClient().setDefaultCollection(COLLECTION);
-    createTestCollection(COLLECTION);
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
-        "/solr", true, extraServlets);
   }
+
+
 
   @Override
   public void tearDown() throws Exception {
@@ -79,10 +67,7 @@ public class TestSolrCloud extends TestRerankBase {
     super.tearDown();
   }
   
-  @Test
-  public void testSimpleQuery() throws Exception {
-    
-    //add models and features
+  private void loadModelsAndFeatures() throws Exception {
     String featureJson1 = getFeatureInJson(
         "powpularityS", SolrFeature.class.getCanonicalName(),
         "test","{\"q\":\"{!func}pow(popularity,2)\"}");
@@ -93,18 +78,33 @@ public class TestSolrCloud extends TestRerankBase {
         "test", "{\"value\":2}");
     assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, featureJson2,
         "/responseHeader/status==0");
-    
-    
     String modelJson = getModelInJson(
         "powpularityS-model", RankSVMModel.class.getCanonicalName(),
         new String[] {"powpularityS","c3"}, "test", 
         "{\"weights\":{\"powpularityS\":1.0,\"c3\":1.0}}");
     assertJPut(CommonLTRParams.MODEL_STORE_END_POINT, modelJson,
         "/responseHeader/status==0");
-    
-    
     reloadCollection(COLLECTION);
+  }
 
+  private void setupSolrCluster(int numShards, int numReplicas) throws Exception {
+    JettyConfig jc = buildJettyConfig("/solr");
+    jc = JettyConfig.builder(jc).withServlets(extraServlets).build();
+    solrCluster = new MiniSolrCloudCluster(3, tmpSolrHome.toPath(), jc);
+    File configDir = tmpSolrHome.toPath().resolve("collection1/conf").toFile();
+    solrCluster.uploadConfigDir(configDir, "conf1");
+
+    solrCluster.getSolrClient().setDefaultCollection(COLLECTION);
+    createTestCollection(COLLECTION, numShards, numReplicas);
+    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), solrconfig, schema,
+        "/solr", true, extraServlets);
+    loadModelsAndFeatures();
+  }
+
+
+  @Test
+  public void testSimpleQuery() throws Exception {
+    setupSolrCluster(1,1);
     // Test regular query, it will sort the documents by inverse 
     // popularity (the less popular, docid == 1, will be in the first
     // position
@@ -142,13 +142,13 @@ public class TestSolrCloud extends TestRerankBase {
         queryResponse.getResults().get(3).get("features").toString());
   }
 
-  private void createCollection(String name, String config) throws Exception {
+  private void createCollection(String name, String config, int numShards, int numReplicas)
+      throws Exception {
     CollectionAdminResponse response;
-    final int numShards = 1;
-    final int numReplicas = 1;
     CollectionAdminRequest.Create create = 
         CollectionAdminRequest.createCollection(name, config, numShards, numReplicas);
-    create.setMaxShardsPerNode(1);
+    // Maybe this should be a randomized variable? 
+    create.setMaxShardsPerNode(2);
     response = create.process(solrCluster.getSolrClient());
 
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
@@ -158,8 +158,9 @@ public class TestSolrCloud extends TestRerankBase {
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(name, zkStateReader, false, true, 100);
   }
 
-  private void createTestCollection(String collection) throws Exception {
-    createCollection(collection, "conf1");
+  private void createTestCollection(String collection, int numShards, int numReplicas) 
+       throws Exception {
+    createCollection(collection, "conf1", numShards, numReplicas);
     
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
