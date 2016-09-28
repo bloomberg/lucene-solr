@@ -23,8 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.norm.Normalizer;
-import org.apache.solr.ltr.norm.StandardNormalizer;
 import org.junit.Test;
 
 public class TestStandardNormalizer {
