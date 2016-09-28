@@ -5,7 +5,7 @@
 	    {
                 "name":"feature2normalize",
                 "norm": {
-                    "class":"org.apache.solr.ltr.norm.impl.StandardNormalizer",
+                    "class":"org.apache.solr.ltr.norm.StandardNormalizer",
 
                     "params":{
                         "avg":0.0,

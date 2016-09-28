@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.norm.impl;
+package org.apache.solr.ltr.norm;
 
 import java.util.LinkedHashMap;
-
-import org.apache.solr.ltr.norm.Normalizer;
 
 public class MinMaxNormalizer extends Normalizer {
 

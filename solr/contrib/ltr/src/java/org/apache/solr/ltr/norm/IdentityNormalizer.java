@@ -14,61 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.norm.impl;
+package org.apache.solr.ltr.norm;
 
 import java.util.LinkedHashMap;
 
-import org.apache.solr.ltr.norm.Normalizer;
+public class IdentityNormalizer extends Normalizer {
 
-public class StandardNormalizer extends Normalizer {
+  public static final IdentityNormalizer INSTANCE = new IdentityNormalizer();
 
-  private float avg = 0f;
-  private float std = 1f;
+  public IdentityNormalizer() {
 
-  public float getAvg() {
-    return avg;
-  }
-
-  public void setAvg(float avg) {
-    this.avg = avg;
-  }
-
-  public float getStd() {
-    return std;
-  }
-
-  public void setStd(float std) {
-    this.std = std;
-  }
-
-  public void setAvg(String avg) {
-    this.avg = Float.parseFloat(avg);
-  }
-
-  public void setStd(String std) {
-    this.std = Float.parseFloat(std);
   }
 
   @Override
   public float normalize(float value) {
-    return (value - avg) / std;
+    return value;
   }
 
   @Override
   public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = new LinkedHashMap<>(2, 1.0f);
-    params.put("avg", avg);
-    params.put("std", std);
-    return params;
+    return null;
   }
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder(64); // default initialCapacity of 16 won't be enough
-    sb.append(getClass().getSimpleName()).append('(');
-    sb.append("avg=").append(avg);
-    sb.append(",std=").append(avg).append(')');
-    return sb.toString();
+    return getClass().getSimpleName();
   }
 
 }

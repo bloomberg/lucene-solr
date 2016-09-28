@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.norm.impl;
+package org.apache.solr.ltr.norm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.norm.Normalizer;
-import org.apache.solr.ltr.norm.impl.StandardNormalizer;
+import org.apache.solr.ltr.norm.StandardNormalizer;
 import org.junit.Test;
 
 public class TestStandardNormalizer {

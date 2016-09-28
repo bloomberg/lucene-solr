@@ -47,8 +47,8 @@ import org.apache.solr.ltr.feature.impl.ValueFeature;
 import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
+import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
-import org.apache.solr.ltr.norm.impl.IdentityNormalizer;
 import org.junit.Test;
 
 @SuppressCodecs("Lucene3x")
