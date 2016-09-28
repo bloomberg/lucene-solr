@@ -38,7 +38,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestSolrCloud extends TestRerankBase {
+public class TestSolrCloud  extends TestRerankBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -104,7 +104,11 @@ public class TestSolrCloud extends TestRerankBase {
 
   @Test
   public void testSimpleQuery() throws Exception {
-    setupSolrCluster(1,1);
+    // will randomly pick a configuration with [1..5] shards and [1..3] replicas
+    int numberOfShards = 1; //random().nextInt(4)+1;
+    int numberOfReplicas = random().nextInt(2)+1;
+
+    setupSolrCluster(numberOfShards, numberOfReplicas);
     // Test regular query, it will sort the documents by inverse 
     // popularity (the less popular, docid == 1, will be in the first
     // position
@@ -112,15 +116,15 @@ public class TestSolrCloud extends TestRerankBase {
 
     query.setRequestHandler("/query");
     query.setFields("*,score");
-    query.setParam("rows", "4");   
+    query.setParam("rows", "8");
         
     QueryResponse queryResponse = 
         solrCluster.getSolrClient().query(COLLECTION,query); 
     assertEquals(8, queryResponse.getResults().getNumFound());
-    assertEquals("1", queryResponse.getResults().get(0).get("id").toString());
-    assertEquals("2", queryResponse.getResults().get(1).get("id").toString());
-    assertEquals("3", queryResponse.getResults().get(2).get("id").toString());
-    assertEquals("4", queryResponse.getResults().get(3).get("id").toString());
+    assertEquals("5", queryResponse.getResults().get(0).get("id").toString());
+    assertEquals("6", queryResponse.getResults().get(1).get("id").toString());
+    assertEquals("7", queryResponse.getResults().get(2).get("id").toString());
+    assertEquals("8", queryResponse.getResults().get(3).get("id").toString());
     
     // Test re-rank and feature vectors returned
     query.setFields("*,score,features:[fv]");
@@ -194,28 +198,28 @@ public class TestSolrCloud extends TestRerankBase {
     doc.setField("id", "5");
     doc.setField("title", "a1");
     doc.setField("description", "bloom");
-    doc.setField("popularity", 5);
+    doc.setField("popularity", 0);
     solrCluster.getSolrClient().add(collection, doc);
 
     doc = new SolrInputDocument();
     doc.setField("id", "6");
     doc.setField("title", "a1");
     doc.setField("description", "bloom");
-    doc.setField("popularity", 6);
+    doc.setField("popularity", 0);
     solrCluster.getSolrClient().add(collection, doc);
 
     doc = new SolrInputDocument();
     doc.setField("id", "7");
     doc.setField("title", "a1");
     doc.setField("description", "bloom");
-    doc.setField("popularity", 7);
+    doc.setField("popularity", 0);
     solrCluster.getSolrClient().add(collection, doc);
 
     doc = new SolrInputDocument();
     doc.setField("id", "8");
     doc.setField("title", "a1");
     doc.setField("description", "bloom");
-    doc.setField("popularity", 8);
+    doc.setField("popularity", 0);
     solrCluster.getSolrClient().add(collection, doc);
     
     solrCluster.getSolrClient().commit(collection);
