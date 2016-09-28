@@ -148,7 +148,7 @@ using standard Solr queries. As an example:
  {
    "name" : "userFromMobile",
    "class" : "org.apache.solr.ltr.feature.ValueFeature",
-   "params" : { "value" : ${userFromMobile}, "required":true }
+   "params" : { "value" : "${userFromMobile}", "required":true }
  }
 ]
 ```
