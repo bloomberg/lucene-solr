@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.feature.FeatureStore;
+import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.log.LoggingModel;
 import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
@@ -181,7 +182,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           if (!resultsReranked) {
             // If results have not been reranked, the score passed in is the original query's
             // score, which some features can use instead of recalculating it
-            r.setDocInfoParam(CommonLTRParams.ORIGINAL_DOC_SCORE, new Float(score));
+            r.setDocInfoParam(OriginalScoreFeature.ORIGINAL_DOC_SCORE, new Float(score));
           }
           r.score();
           doc.addField(name,

@@ -29,10 +29,10 @@ import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
+import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.search.SolrIndexSearcher;
 
 
@@ -196,7 +196,7 @@ public class LTRRescorer extends Rescorer {
       scorer.docID();
       scorer.iterator().advance(targetDoc);
 
-      scorer.setDocInfoParam(CommonLTRParams.ORIGINAL_DOC_SCORE, new Float(hit.score));
+      scorer.setDocInfoParam(OriginalScoreFeature.ORIGINAL_DOC_SCORE, new Float(hit.score));
       hit.score = scorer.score();
       if (hitUpto < topN) {
         reranked[hitUpto] = hit;

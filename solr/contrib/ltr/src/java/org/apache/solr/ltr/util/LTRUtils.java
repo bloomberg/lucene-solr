@@ -17,10 +17,7 @@
 package org.apache.solr.ltr.util;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-
-import org.apache.solr.common.params.SolrParams;
 
 public class LTRUtils {
 

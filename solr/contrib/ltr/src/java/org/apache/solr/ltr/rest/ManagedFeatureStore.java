@@ -27,7 +27,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.util.CommonLTRParams;

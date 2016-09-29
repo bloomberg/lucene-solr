@@ -59,9 +59,6 @@ public class CommonLTRParams {
   /** the name of the cache using for storing the feature value **/
   public static final String QUERY_FV_CACHE_NAME = "QUERY_DOC_FV";
 
-  public static final String VERSION = "version";
-  public static final String FEATURE_FIELD = "features";
-
   /** query parser plugin: the name of the attribute for setting the model **/
   public static final String MODEL = "model";
 
@@ -93,18 +90,10 @@ public class CommonLTRParams {
       + MODEL_STORE_NAME;
 
   public static final String LOGGER_NAME = "solr-feature-logger";
-  public static final String FEATURE_PARAM = "featureVectors";
 
-  // params for setting custom external info that features can use, like query
-  // intent
-  // TODO: Can we just pass the entire request all the way down to all
-  // models/features?
-  public static final String EXTERNAL_FEATURE_INFO = "efi.";
   // used inside fl to specify the feature store to use for the feature extraction
   public static final String FV_STORE = "store";
   // used inside fl to specify the format (dense|sparse) of the extracted features
   public static final String FV_FORMAT = "format";
 
-  // Name of key used to store the original score of a doc
-  public static final String ORIGINAL_DOC_SCORE = "ORIGINAL_DOC_SCORE";
 }

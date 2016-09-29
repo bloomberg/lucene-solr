@@ -57,6 +57,12 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
+  // params for setting custom external info that features can use, like query
+  // intent
+  // TODO: Can we just pass the entire request all the way down to all
+  // models/features?
+  static final String EXTERNAL_FEATURE_INFO = "efi.";
+
   private ManagedFeatureStore fr = null;
   private ManagedModelStore mr = null;
 
@@ -85,9 +91,9 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
     for (final Iterator<String> it = localParams.getParameterNamesIterator(); it
         .hasNext();) {
       final String name = it.next();
-      if (name.startsWith(CommonLTRParams.EXTERNAL_FEATURE_INFO)) {
+      if (name.startsWith(EXTERNAL_FEATURE_INFO)) {
         externalFeatureInfo.put(
-            name.substring(CommonLTRParams.EXTERNAL_FEATURE_INFO.length()),
+            name.substring(EXTERNAL_FEATURE_INFO.length()),
             new String[] {localParams.get(name)});
       }
     }

@@ -22,8 +22,6 @@ import java.util.Map;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
