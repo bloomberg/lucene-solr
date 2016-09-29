@@ -18,6 +18,7 @@ package org.apache.solr.ltr.ranking;
 
 import java.io.IOException;
 import java.util.List;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Weight;
@@ -26,7 +27,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.log.FeatureLogger;
@@ -51,15 +51,12 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
-  private String loggingModelName;
-  private String loggingModelClassName = LoggingModel.class.getCanonicalName();
+  public static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
+
+  private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
 
   public void setLoggingModelName(String loggingModelName) {
     this.loggingModelName = loggingModelName;
-  }
-
-  public void setLoggingModelClassName(String loggingModelClassName) {
-    this.loggingModelClassName = loggingModelClassName;
   }
 
   @Override
@@ -142,13 +139,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         featureStoreName = store.getName(); // if featureStoreName was null before this gets actual name
 
         try {
-          final SolrResourceLoader solrResourceLoader = req.getCore().getResourceLoader();
-          final LoggingModel lm = solrResourceLoader.newInstance(
-              loggingModelClassName,
-              LoggingModel.class,
-              new String[0], // no sub packages
-              new Class[] { String.class, String.class, List.class },
-              new Object[] { loggingModelName, featureStoreName, store.getFeatures() });
+          final LoggingModel lm = new LoggingModel(loggingModelName,
+              featureStoreName, store.getFeatures());
 
           reRankModel = new ModelQuery(lm, true); // request feature weights to be created for all features
 

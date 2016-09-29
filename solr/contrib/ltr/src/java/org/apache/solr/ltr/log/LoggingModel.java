@@ -53,13 +53,4 @@ public class LoggingModel extends LTRScoringModel {
         + " logging model, used only for logging the features");
   }
 
-  @Override
-  public String toString() {
-    if (name == null) {
-      return  getClass().getSimpleName() + "()";
-    } else {
-      return  getClass().getSimpleName() + "(name="+getName()+")";
-    }
-  }
-
 }
