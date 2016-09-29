@@ -72,16 +72,14 @@ public class OriginalScoreFeature extends Feature {
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
 
       final Scorer originalScorer = w.scorer(context);
-      return new OriginalScoreScorer(this, originalScorer,
-          DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
+      return new OriginalScoreScorer(this, originalScorer);
     }
 
     public class OriginalScoreScorer extends FeatureScorer {
       Scorer originalScorer;
 
-      public OriginalScoreScorer(FeatureWeight weight, Scorer originalScorer,
-          DocIdSetIterator itr) {
-        super(weight,itr);
+      public OriginalScoreScorer(FeatureWeight weight, Scorer originalScorer) {
+        super(weight,originalScorer.iterator());
         this.originalScorer = originalScorer;
       }
 
