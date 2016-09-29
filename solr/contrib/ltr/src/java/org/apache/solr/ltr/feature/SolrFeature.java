@@ -196,7 +196,7 @@ public class SolrFeature extends Feature {
       final DocIdSetIterator idItr = getDocIdSetIteratorFromQueries(
           queryAndFilters, context);
       if (idItr != null) {
-        return solrScorer == null ? new SolrFeatureFilterOnlyScorer(this, idItr)
+        return solrScorer == null ? new ValueFeatureScorer(this, 1f, idItr)
             : new SolrFeatureScorer(this, solrScorer, idItr);
       } else {
         return null;
@@ -238,13 +238,12 @@ public class SolrFeature extends Feature {
 
     public class SolrFeatureScorer extends FeatureScorer {
       final private Scorer solrScorer;
-      final private DocIdSetIterator itr;
 
       public SolrFeatureScorer(FeatureWeight weight, Scorer solrScorer,
           DocIdSetIterator filterIterator) {
-        super(weight);
+        super(weight, filterIterator);
         this.solrScorer = solrScorer;
-        itr = new SolrFeatureScorerIterator(filterIterator,
+        this.itr =  new SolrFeatureScorerIterator(filterIterator,
             solrScorer.iterator());
       }
 
@@ -259,17 +258,7 @@ public class SolrFeature extends Feature {
               + name, e);
         }
       }
-
-      @Override
-      public DocIdSetIterator iterator() {
-        return itr;
-      }
-
-      @Override
-      public int docID() {
-        return itr.docID();
-      }
-
+      
       private class SolrFeatureScorerIterator extends DocIdSetIterator {
 
         final private DocIdSetIterator filterIterator;
@@ -310,33 +299,6 @@ public class SolrFeature extends Feature {
 
       }
     }
-
-    public class SolrFeatureFilterOnlyScorer extends FeatureScorer {
-      final private DocIdSetIterator itr;
-
-      public SolrFeatureFilterOnlyScorer(FeatureWeight weight,
-          DocIdSetIterator iterator) {
-        super(weight);
-        itr = iterator;
-      }
-
-      @Override
-      public float score() throws IOException {
-        return 1f;
-      }
-
-      @Override
-      public DocIdSetIterator iterator() {
-        return itr;
-      }
-
-      @Override
-      public int docID() {
-        return itr.docID();
-      }
-
-    }
-
   }
 
 }

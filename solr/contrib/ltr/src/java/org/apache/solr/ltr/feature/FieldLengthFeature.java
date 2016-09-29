@@ -95,20 +95,20 @@ public class FieldLengthFeature extends Feature {
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       NumericDocValues norms = context.reader().getNormValues(field);
       if (norms == null){
-        return new ValueFeatureScorer(this, 0f);
+        return new ValueFeatureScorer(this, 0f, 
+            DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
       }
-      return new FieldLengthFeatureScorer(this, norms);
+      return new FieldLengthFeatureScorer(this, norms, 
+          DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
     }
 
     public class FieldLengthFeatureScorer extends FeatureScorer {
 
       NumericDocValues norms = null;
-      DocIdSetIterator itr;
 
       public FieldLengthFeatureScorer(FeatureWeight weight,
-          NumericDocValues norms) throws IOException {
-        super(weight);
-        itr = DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS);
+          NumericDocValues norms, DocIdSetIterator itr) throws IOException {
+        super(weight, itr);
         this.norms = norms;
 
         // In the constructor, docId is -1, so using 0 as default lookup
@@ -127,17 +127,6 @@ public class FieldLengthFeature extends Feature {
         final float numTerms = decodeNorm(l);
         return numTerms;
       }
-
-      @Override
-      public int docID() {
-        return itr.docID();
-      }
-
-      @Override
-      public DocIdSetIterator iterator() {
-        return itr;
-      }
-
     }
   }
 

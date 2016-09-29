@@ -229,9 +229,12 @@ public abstract class Feature extends Query {
 
       protected String name;
       private HashMap<String,Object> docInfo;
+      protected DocIdSetIterator itr;
 
-      public FeatureScorer(Feature.FeatureWeight weight) {
+      public FeatureScorer(Feature.FeatureWeight weight,
+          DocIdSetIterator itr) {
         super(weight);
+        this.itr = itr;
         name = weight.getName();
       }
 
@@ -262,29 +265,7 @@ public abstract class Feature extends Query {
       public int freq() throws IOException {
         throw new UnsupportedOperationException();
       }
-    }
-
-    /**
-     * Default FeatureScorer class that returns the score passed in. Can be used
-     * as a simple ValueFeature, or to return a default scorer in case an
-     * underlying feature's scorer is null.
-     */
-    public class ValueFeatureScorer extends FeatureScorer {
-
-      float constScore;
-      DocIdSetIterator itr;
-
-      public ValueFeatureScorer(FeatureWeight weight, float constScore) {
-        super(weight);
-        this.constScore = constScore;
-        itr = DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS);
-      }
-
-      @Override
-      public float score() {
-        return constScore;
-      }
-
+      
       @Override
       public int docID() {
         return itr.docID();
@@ -294,6 +275,26 @@ public abstract class Feature extends Query {
       public DocIdSetIterator iterator() {
         return itr;
       }
+    }
+
+    /**
+     * Default FeatureScorer class that returns the score passed in. Can be used
+     * as a simple ValueFeature, or to return a default scorer in case an
+     * underlying feature's scorer is null.
+     */
+    public class ValueFeatureScorer extends FeatureScorer {
+      float constScore;
+
+      public ValueFeatureScorer(FeatureWeight weight, float constScore,
+          DocIdSetIterator itr) {
+        super(weight,itr);
+        this.constScore = constScore;
+      }
+
+      @Override
+      public float score() {
+        return constScore;
+      }   
 
     }
 

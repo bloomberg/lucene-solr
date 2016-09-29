@@ -74,19 +74,18 @@ public class FieldValueFeature extends Feature {
 
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
-      return new FieldValueFeatureScorer(this, context);
+      return new FieldValueFeatureScorer(this, context,
+          DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
     }
 
     public class FieldValueFeatureScorer extends FeatureScorer {
 
       LeafReaderContext context = null;
-      DocIdSetIterator itr;
 
       public FieldValueFeatureScorer(FeatureWeight weight,
-          LeafReaderContext context) {
-        super(weight);
+          LeafReaderContext context, DocIdSetIterator itr) {
+        super(weight, itr);
         this.context = context;
-        itr = DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS);
       }
 
       @Override
@@ -123,17 +122,6 @@ public class FieldValueFeature extends Feature {
         // TODO define default value
         return 0;
       }
-
-      @Override
-      public int docID() {
-        return itr.docID();
-      }
-
-      @Override
-      public DocIdSetIterator iterator() {
-        return itr;
-      }
-
     }
   }
 

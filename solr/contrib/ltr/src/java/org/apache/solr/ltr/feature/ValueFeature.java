@@ -115,7 +115,8 @@ public class ValueFeature extends Feature {
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       if(featureValue!=null)
-        return new ValueFeatureScorer(this, featureValue);
+        return new ValueFeatureScorer(this, featureValue,
+            DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
       else
         return null;
     }
