@@ -108,7 +108,7 @@ public class FieldLengthFeature extends Feature {
       public FieldLengthFeatureScorer(FeatureWeight weight,
           NumericDocValues norms) throws IOException {
         super(weight);
-        itr = new MatchAllIterator();
+        itr = DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS);
         this.norms = norms;
 
         // In the constructor, docId is -1, so using 0 as default lookup

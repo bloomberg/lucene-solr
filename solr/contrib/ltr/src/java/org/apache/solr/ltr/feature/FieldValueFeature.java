@@ -86,7 +86,7 @@ public class FieldValueFeature extends Feature {
           LeafReaderContext context) {
         super(weight);
         this.context = context;
-        itr = new MatchAllIterator();
+        itr = DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS);
       }
 
       @Override

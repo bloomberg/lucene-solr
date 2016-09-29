@@ -30,7 +30,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.ltr.feature.MatchAllIterator;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
 import org.apache.solr.core.SolrResourceLoader;
@@ -278,7 +277,7 @@ public abstract class Feature extends Query {
       public ValueFeatureScorer(FeatureWeight weight, float constScore) {
         super(weight);
         this.constScore = constScore;
-        itr = new MatchAllIterator();
+        itr = DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS);
       }
 
       @Override
