@@ -79,9 +79,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     for (final Feature feat : features) {
       modelWeights.put(feat.name, 0.1);
     }
-    if (modelWeights.isEmpty()) {
-      modelWeights.put("", 0.0);
-    }
     nameParams.put("weights", modelWeights);
     return nameParams;
   }
