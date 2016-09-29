@@ -94,8 +94,10 @@ public class FieldLengthFeature extends Feature {
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
       NumericDocValues norms = context.reader().getNormValues(field);
+      if (norms == null){
+        return new ValueFeatureScorer(this, 0f);
+      }
       return new FieldLengthFeatureScorer(this, norms);
-
     }
 
     public class FieldLengthFeatureScorer extends FeatureScorer {
@@ -120,9 +122,6 @@ public class FieldLengthFeature extends Feature {
 
       @Override
       public float score() throws IOException {
-        if (norms == null) {
-          return 0.0f;
-        }
 
         final long l = norms.get(itr.docID());
         final float numTerms = decodeNorm(l);

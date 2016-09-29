@@ -123,38 +123,6 @@ public class ValueFeature extends Feature {
 
     
 
-    /**
-     * Default FeatureScorer class that returns the score passed in. Can be used
-     * as a simple ValueFeature, or to return a default scorer in case an
-     * underlying feature's scorer is null.
-     */
-    public class ValueFeatureScorer extends FeatureScorer {
-
-      float constScore;
-      DocIdSetIterator itr;
-
-      public ValueFeatureScorer(FeatureWeight weight, float constScore) {
-        super(weight);
-        this.constScore = constScore;
-        itr = new MatchAllIterator();
-      }
-
-      @Override
-      public float score() {
-        return constScore;
-      }
-
-      @Override
-      public int docID() {
-        return itr.docID();
-      }
-
-      @Override
-      public DocIdSetIterator iterator() {
-        return itr;
-      }
-
-    }
 
   }
 

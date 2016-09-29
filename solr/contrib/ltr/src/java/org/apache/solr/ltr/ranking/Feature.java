@@ -24,11 +24,13 @@ import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.solr.ltr.feature.MatchAllIterator;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
 import org.apache.solr.core.SolrResourceLoader;
@@ -262,7 +264,41 @@ public abstract class Feature extends Query {
         throw new UnsupportedOperationException();
       }
     }
-    
+
+    /**
+     * Default FeatureScorer class that returns the score passed in. Can be used
+     * as a simple ValueFeature, or to return a default scorer in case an
+     * underlying feature's scorer is null.
+     */
+    public class ValueFeatureScorer extends FeatureScorer {
+
+      float constScore;
+      DocIdSetIterator itr;
+
+      public ValueFeatureScorer(FeatureWeight weight, float constScore) {
+        super(weight);
+        this.constScore = constScore;
+        itr = new MatchAllIterator();
+      }
+
+      @Override
+      public float score() {
+        return constScore;
+      }
+
+      @Override
+      public int docID() {
+        return itr.docID();
+      }
+
+      @Override
+      public DocIdSetIterator iterator() {
+        return itr;
+      }
+
+    }
+
+
   }
 
 }
