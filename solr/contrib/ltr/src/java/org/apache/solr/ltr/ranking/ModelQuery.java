@@ -75,12 +75,7 @@ public class ModelQuery extends Query {
   private Semaphore querySemaphore; // limits the number of threads per query, so that multiple requests can be serviced simultaneously
 
   public ModelQuery(LTRScoringModel meta) {
-    this(meta, false);
-  }
-
-  public ModelQuery(LTRScoringModel meta, boolean extractAllFeatures) {
     this.meta = meta;
-    this.extractAllFeatures = extractAllFeatures; 
     querySemaphore = new Semaphore(LTRThreadModule.getMaxQueryThreads());
   }
 
@@ -94,6 +89,14 @@ public class ModelQuery extends Query {
 
   public FeatureLogger getFeatureLogger() {
     return fl;
+  }
+
+  public boolean getExtractAllFeatures() {
+    return extractAllFeatures;
+  }
+
+  public void setExtractAllFeatures(boolean extractAllFeatures) {
+    this.extractAllFeatures = extractAllFeatures;
   }
 
   public String getFeatureStoreName(){

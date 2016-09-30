@@ -68,10 +68,6 @@ public class CommonLTRParams {
    **/
   public static final String FV_RESPONSE_WRITER = "fvwt";
   /**
-   * if the log feature query param is off features will not be logged.
-   **/
-  public static final String LOG_FEATURES_QUERY_PARAM = "fvCache";
-  /**
    * query parser plugin:the param that will select how the number of document
    * to rerank
    **/
