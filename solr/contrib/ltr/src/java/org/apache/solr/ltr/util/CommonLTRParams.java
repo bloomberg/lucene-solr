@@ -63,11 +63,6 @@ public class CommonLTRParams {
   public static final String MODEL = "model";
 
   /**
-   * query parser plugin: the param that will select the format of the features
-   * in output (csv/json)
-   **/
-  public static final String FV_RESPONSE_WRITER = "fvwt";
-  /**
    * if the log feature query param is off features will not be logged.
    **/
   public static final String LOG_FEATURES_QUERY_PARAM = "fvCache";
@@ -88,12 +83,5 @@ public class CommonLTRParams {
   /** the model store rest endpoint **/
   public static final String MODEL_STORE_END_POINT = "/schema/"
       + MODEL_STORE_NAME;
-
-  public static final String LOGGER_NAME = "solr-feature-logger";
-
-  // used inside fl to specify the feature store to use for the feature extraction
-  public static final String FV_STORE = "store";
-  // used inside fl to specify the format (dense|sparse) of the extracted features
-  public static final String FV_FORMAT = "format";
 
 }

@@ -166,14 +166,15 @@ public class TestFeatureLogging extends TestRerankBase {
         "/query" + query.toQueryString(),
         "/grouped/title/groups/[0]/doclist/docs/[0]/=={'fv':'c1:1.0;c2:2.0;c3:3.0;pop:5.0'}");
 
-    query.add("fvwt", "json");
+    query.remove("fl");
+    query.add("fl", "fv:[fv fvwt=json]");
     res = restTestHarness.query("/query" + query.toQueryString());
     System.out.println(res);
     assertJQ(
         "/query" + query.toQueryString(),
         "/grouped/title/groups/[0]/doclist/docs/[0]/fv/=={'c1':1.0,'c2':2.0,'c3':3.0,'pop':5.0}");
     query.remove("fl");
-    query.add("fl", "fv:[fv]");
+    query.add("fl", "fv:[fv fvwt=json]");
 
     assertJQ(
         "/query" + query.toQueryString(),
@@ -195,9 +196,8 @@ public class TestFeatureLogging extends TestRerankBase {
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
     query.add("rows", "10");
-    query.add("fl", "*,score,fv:[fv store=test4]");
+    query.add("fl", "*,score,fv:[fv store=test4 fvwt=json]");
     query.add("rq", "{!ltr reRankDocs=10 model=sum4}");
-    query.add("fvwt", "json");
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/fv/=={'match':1.0,'c4':1.0}");
@@ -207,7 +207,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     //json - sparse feature format check
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4 format=sparse]");
+    query.add("fl", "*,score,fv:[fv store=test4 format=sparse fvwt=json]");
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/fv/=={'match':1.0,'c4':1.0}");
@@ -217,7 +217,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     //json - dense feature format check
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4 format=dense]");
+    query.add("fl", "*,score,fv:[fv store=test4 format=dense fvwt=json]");
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/fv/=={'match':1.0,'c4':1.0}");
@@ -227,9 +227,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     //csv - no feature format check (default to sparse)
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4]");
-    query.remove("fvwt");
-    query.add("fvwt", "csv");
+    query.add("fl", "*,score,fv:[fv store=test4 fvwt=csv]");
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/fv/=='match:1.0;c4:1.0'");
@@ -239,7 +237,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     //csv - sparse feature format check
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4 format=sparse]");
+    query.add("fl", "*,score,fv:[fv store=test4 format=sparse fvwt=csv]");
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/fv/=='match:1.0;c4:1.0'");
@@ -249,7 +247,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     //csv - dense feature format check
     query.remove("fl");
-    query.add("fl", "*,score,fv:[fv store=test4 format=dense]");
+    query.add("fl", "*,score,fv:[fv store=test4 format=dense fvwt=csv]");
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/docs/[0]/fv/=='match:1.0;c4:1.0'");

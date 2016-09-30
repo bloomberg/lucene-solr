@@ -16,13 +16,8 @@
  */
 package org.apache.solr.ltr.util;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class LTRUtils {
 
-  static public final Map<String,Object> EMPTY_MAP = new HashMap<String,Object>();
-  
   @Deprecated
   public static float convertToFloat(Object o) {
     float f = 0;

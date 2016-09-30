@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -457,12 +456,16 @@ public class ModelQuery extends Query {
     }
 
     public class ModelScorer extends Scorer {
-      protected HashMap<String,Object> docInfo;
-      protected Scorer featureTraversalScorer;
+      final private DocInfo docInfo;
+      final private Scorer featureTraversalScorer;
+
+      public DocInfo getDocInfo() {
+        return docInfo;
+      }
 
       public ModelScorer(Weight weight, List<FeatureScorer> featureScorers) {
         super(weight);
-        docInfo = new HashMap<String,Object>();
+        docInfo = new DocInfo();
         for (final FeatureScorer subSocer : featureScorers) {
           subSocer.setDocInfo(docInfo);
         }
@@ -477,10 +480,6 @@ public class ModelQuery extends Query {
       @Override
       public Collection<ChildScorer> getChildren() {
         return featureTraversalScorer.getChildren();
-      }
-
-      public void setDocInfoParam(String key, Object value) {
-        docInfo.put(key, value);
       }
 
       @Override

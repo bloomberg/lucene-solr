@@ -282,9 +282,9 @@ public class TestReRankingPipeline extends LuceneTestCase {
     ModelQuery query = new ModelQuery(meta);
     ModelWeight wgt = query.createWeight(null, true, 1f);
     ModelScorer modelScr = wgt.scorer(null);
-    modelScr.setDocInfoParam("ORIGINAL_SCORE", 1);
+    modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
     for (final ChildScorer feat : modelScr.getChildren()) {
-      assert (((Feature.FeatureWeight.FeatureScorer) feat.child).hasDocParam("ORIGINAL_SCORE"));
+      assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
     }
 
     features = makeFieldValueFeatures(new int[] {0, 1, 2}, "final-score");
@@ -298,9 +298,9 @@ public class TestReRankingPipeline extends LuceneTestCase {
     query = new ModelQuery(meta);
     wgt = query.createWeight(null, true, 1f);
     modelScr = wgt.scorer(null);
-    modelScr.setDocInfoParam("ORIGINAL_SCORE", 1);
+    modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
     for (final ChildScorer feat : modelScr.getChildren()) {
-      assert (((Feature.FeatureWeight.FeatureScorer) feat.child).hasDocParam("ORIGINAL_SCORE"));
+      assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
     }
   }
 
