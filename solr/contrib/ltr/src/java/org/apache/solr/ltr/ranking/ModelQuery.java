@@ -456,8 +456,12 @@ public class ModelQuery extends Query {
     }
 
     public class ModelScorer extends Scorer {
-      final protected DocInfo docInfo;
-      final protected Scorer featureTraversalScorer;
+      final private DocInfo docInfo;
+      final private Scorer featureTraversalScorer;
+
+      public DocInfo getDocInfo() {
+        return docInfo;
+      }
 
       public ModelScorer(Weight weight, List<FeatureScorer> featureScorers) {
         super(weight);

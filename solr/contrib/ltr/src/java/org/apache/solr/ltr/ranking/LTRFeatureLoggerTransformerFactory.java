@@ -194,7 +194,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           if (!resultsReranked) {
             // If results have not been reranked, the score passed in is the original query's
             // score, which some features can use instead of recalculating it
-            r.docInfo.setOriginalDocScore(new Float(score));
+            r.getDocInfo().setOriginalDocScore(new Float(score));
           }
           r.score();
           doc.addField(name,
