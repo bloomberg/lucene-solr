@@ -51,6 +51,21 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
+  // used inside fl to specify the output format (csv/json) of the extracted features
+  public static final String FV_RESPONSE_WRITER = "fvwt";
+
+  // used inside fl to specify the format (dense|sparse) of the extracted features
+  public static final String FV_FORMAT = "format";
+
+  // used inside fl to specify the feature store to use for the feature extraction
+  public static final String FV_STORE = "store";
+
+  public static FeatureLogger<?> getFeatureLogger(SolrQueryRequest req) {
+    final String stringFormat = (String) req.getContext().get(FV_RESPONSE_WRITER);
+    final String featureFormat = (String) req.getContext().get(FV_FORMAT);
+    return FeatureLogger.getFeatureLogger(stringFormat, featureFormat);
+  }
+
   public static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
@@ -71,9 +86,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
     // Hint to enable feature vector cache since we are requesting features
     req.getContext().put(CommonLTRParams.LOG_FEATURES_QUERY_PARAM, true);
-    req.getContext().put(CommonLTRParams.FV_STORE, params.get(CommonLTRParams.FV_STORE));
-    req.getContext().put(CommonLTRParams.FV_FORMAT, params.get(CommonLTRParams.FV_FORMAT));
-    req.getContext().put(CommonLTRParams.FV_RESPONSE_WRITER, params.get(CommonLTRParams.FV_RESPONSE_WRITER));
+    req.getContext().put(FV_STORE, params.get(FV_STORE));
+    req.getContext().put(FV_FORMAT, params.get(FV_FORMAT));
+    req.getContext().put(FV_RESPONSE_WRITER, params.get(FV_RESPONSE_WRITER));
 
     return new FeatureTransformer(name, params, req);
   }
@@ -129,7 +144,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       // Setup ModelQuery
       reRankModel = (ModelQuery) req.getContext().get(CommonLTRParams.MODEL);
       resultsReranked = (reRankModel != null);
-      String featureStoreName = params.get(CommonLTRParams.FV_STORE);
+      String featureStoreName = (String)req.getContext().get(FV_STORE);
       if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getFeatureStoreName())))) {
         // if store is set in the trasformer we should overwrite the logger
 
@@ -156,9 +171,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       }
 
       if (reRankModel.getFeatureLogger() == null){
-        final String featureResponseFormat = req.getParams().get(CommonLTRParams.FV_RESPONSE_WRITER,"csv");
-        final String featureFormat = req.getParams().get(CommonLTRParams.FV_FORMAT,"sparse");
-        reRankModel.setFeatureLogger(FeatureLogger.getFeatureLogger(featureResponseFormat,featureFormat));
+        reRankModel.setFeatureLogger( getFeatureLogger(req) );
       }
       reRankModel.setRequest(req);
 

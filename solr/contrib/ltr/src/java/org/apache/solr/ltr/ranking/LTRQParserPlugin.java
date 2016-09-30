@@ -155,7 +155,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
       final String modelFeatureStoreName = meta.getFeatureStoreName();
       final Boolean extractFeatures = (Boolean) req.getContext().get(CommonLTRParams.LOG_FEATURES_QUERY_PARAM);
-      final String fvStoreName = (String) req.getContext().get(CommonLTRParams.FV_STORE);
+      final String fvStoreName = (String) req.getContext().get(LTRFeatureLoggerTransformerFactory.FV_STORE);
       // Check if features are requested and if the model feature store and feature-transform feature store are the same
       final boolean featuresRequestedFromSameStore = (extractFeatures != null && (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ) ? extractFeatures.booleanValue():false;
       
@@ -164,12 +164,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       // Enable the feature vector caching if we are extracting features, and the features
       // we requested are the same ones we are reranking with 
       if (featuresRequestedFromSameStore) {
-        final String fvFeatureFormat = (String) req.getContext().get(CommonLTRParams.FV_FORMAT);
-        final FeatureLogger<?> solrLogger = FeatureLogger
-            .getFeatureLogger((String) req.getContext().get(CommonLTRParams.FV_RESPONSE_WRITER),
-                fvFeatureFormat);
-        reRankModel.setFeatureLogger(solrLogger);
-        req.getContext().put(CommonLTRParams.LOGGER_NAME, solrLogger);
+        reRankModel.setFeatureLogger( LTRFeatureLoggerTransformerFactory.getFeatureLogger(req) );
       }
       req.getContext().put(CommonLTRParams.MODEL, reRankModel);
 
