@@ -21,7 +21,7 @@ import java.util.HashMap;
 public class DocInfo extends HashMap<String,Object> {
 
   // Name of key used to store the original score of a doc
-  public static final String ORIGINAL_DOC_SCORE = "ORIGINAL_DOC_SCORE";
+  private static final String ORIGINAL_DOC_SCORE = "ORIGINAL_DOC_SCORE";
 
   public DocInfo() {
     super();
@@ -31,13 +31,12 @@ public class DocInfo extends HashMap<String,Object> {
     put(DocInfo.ORIGINAL_DOC_SCORE, score);
   }
 
-  public float getOriginalDocScoreOrDefault(float def) {
-    final Float originalDocScore = (Float)get(DocInfo.ORIGINAL_DOC_SCORE);
-    return (originalDocScore == null ? def : originalDocScore.floatValue());
-  }
-
   public Float getOriginalDocScore() {
     return (Float)get(DocInfo.ORIGINAL_DOC_SCORE);
+  }
+
+  public boolean hasOriginalDocScore() {
+    return containsKey(DocInfo.ORIGINAL_DOC_SCORE);
   }
 
 }

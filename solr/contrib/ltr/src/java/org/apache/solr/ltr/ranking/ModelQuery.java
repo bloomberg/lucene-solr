@@ -478,10 +478,6 @@ public class ModelQuery extends Query {
         return featureTraversalScorer.getChildren();
       }
 
-      public void setOriginalDocScore(Float score) {
-        docInfo.setOriginalDocScore(score);
-      }
-
       @Override
       public int docID() {
         return featureTraversalScorer.docID();

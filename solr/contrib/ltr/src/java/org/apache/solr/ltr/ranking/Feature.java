@@ -245,12 +245,8 @@ public abstract class Feature extends Query {
         this.docInfo = docInfo;
       }
 
-      public float getOriginalDocScoreOrDefault(float def) {
-        return (docInfo == null ? def : docInfo.getOriginalDocScoreOrDefault(def));
-      }
-
-      public Float getOriginalDocScore() {
-        return (docInfo == null ? null : docInfo.getOriginalDocScore());
+      public DocInfo getDocInfo() {
+        return docInfo;
       }
 
       @Override
