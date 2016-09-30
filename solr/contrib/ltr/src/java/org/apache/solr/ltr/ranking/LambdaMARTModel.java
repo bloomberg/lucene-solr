@@ -26,20 +26,78 @@ import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.norm.Normalizer;
-import org.apache.solr.ltr.util.LTRUtils;
+import org.apache.solr.util.SolrPluginUtils;
 
 public class LambdaMARTModel extends LTRScoringModel {
 
-  private final List<RegressionTree> trees = new ArrayList<RegressionTree>();
+  private final HashMap<String,Integer> fname2index;
+  private List<RegressionTree> trees;
 
-  class RegressionTreeNode {
+  public static RegressionTree createRegressionTree(Map<String,Object> map,
+      HashMap<String,Integer> fname2index) {
+    final RegressionTree rt = new RegressionTree(fname2index);
+    if (map != null) {
+      SolrPluginUtils.invokeSetters(rt, map.entrySet());
+    }
+    return rt;
+  }
+
+  public static RegressionTreeNode createRegressionTreeNode(Map<String,Object> map,
+      HashMap<String,Integer> fname2index) {
+    final RegressionTreeNode rtn = new RegressionTreeNode(fname2index);
+    if (map != null) {
+      SolrPluginUtils.invokeSetters(rtn, map.entrySet());
+    }
+    return rtn;
+  }
+
+  public static class RegressionTreeNode {
     private static final float NODE_SPLIT_SLACK = 1E-6f;
-    private final float value;
-    private final String feature;
-    private final int featureIndex;
-    private final float threshold;
-    private final RegressionTreeNode left;
-    private final RegressionTreeNode right;
+
+    private final HashMap<String,Integer> fname2index;
+
+    private float value = 0f;
+    private String feature;
+    private int featureIndex = -1;
+    private Float threshold;
+    private RegressionTreeNode left;
+    private RegressionTreeNode right;
+
+    public void setValue(float value) {
+      this.value = value;
+    }
+
+    public void setValue(String value) {
+      this.value = Float.parseFloat(value);
+    }
+
+    public void setFeature(String feature) {
+      this.feature = feature;
+      final Integer idx = fname2index.get(this.feature);
+      // this happens if the tree specifies a feature that does not exist
+      // this could be due to lambdaSmart building off of pre-existing trees
+      // that use a feature that is no longer output during feature extraction
+      // TODO: make lambdaSmart (in rank_svm_final repo )
+      // either remove trees that depend on such features
+      // or prune them back above the split on that feature
+      featureIndex = (idx == null) ? -1 : idx;
+    }
+
+    public void setThreshold(float threshold) {
+      this.threshold = threshold + NODE_SPLIT_SLACK;
+    }
+
+    public void setThreshold(String threshold) {
+      this.threshold = Float.parseFloat(threshold) + NODE_SPLIT_SLACK;
+    }
+
+    public void setLeft(Object left) {
+      this.left = createRegressionTreeNode((Map<String,Object>) left, fname2index);
+    }
+
+    public void setRight(Object right) {
+      this.right = createRegressionTreeNode((Map<String,Object>) right, fname2index);
+    }
 
     public boolean isLeaf() {
       return feature == null;
@@ -56,9 +114,9 @@ public class LambdaMARTModel extends LTRScoringModel {
       }
 
       if (featureVector[featureIndex] <= threshold) {
-        return left.score(featureVector);
+        return (left == null ? 0f : left.score(featureVector));
       } else {
-        return right.score(featureVector);
+        return (right == null ? 0f : right.score(featureVector));
       }
     }
 
@@ -87,123 +145,156 @@ public class LambdaMARTModel extends LTRScoringModel {
       }
     }
 
-    public RegressionTreeNode(Map<String,Object> map,
-        HashMap<String,Integer> fname2index) throws ModelException {
-      if (map.containsKey("value")) {
-        value = LTRUtils.convertToFloat(map.get("value"));
-        feature = null;
-        featureIndex = -1;
-        threshold = 0f;
-        left = null;
-        right = null;
+    @Override
+    public String toString() {
+      final StringBuilder sb = new StringBuilder();
+      if (isLeaf()) {
+        sb.append(value);
       } else {
-
-        final Object of = map.get("feature");
-        if (null == of) {
-          throw new ModelException(
-              "LambdaMARTModel tree node is missing feature");
+        sb.append("(feature=").append(feature);
+        if (threshold != null) {
+          sb.append(",threshold=").append(threshold.floatValue()-NODE_SPLIT_SLACK);
+        } else {
+          sb.append(",threshold=").append(threshold);
         }
+        sb.append(",left=").append(left);
+        sb.append(",right=").append(right);
+        sb.append(')');
+      }
+      return sb.toString();
+    }
 
-        value = 0f;
-        feature = (String) of;
-        final Integer idx = fname2index.get(feature);
-        // this happens if the tree specifies a feature that does not exist
-        // this could be due to lambdaSmart building off of pre-existing trees
-        // that use a feature that is no longer output during feature extraction
-        // TODO: make lambdaSmart (in rank_svm_final repo )
-        // either remove trees that depend on such features
-        // or prune them back above the split on that feature
-        featureIndex = (idx == null) ? -1 : idx;
+    public RegressionTreeNode(HashMap<String,Integer> fname2index) throws ModelException {
+      this.fname2index = fname2index;
+    }
 
-        final Object ot = map.get("threshold");
-        if (null == ot) {
-          throw new ModelException(
-              "LambdaMARTModel tree node is missing threshold");
-        }
-
-        threshold = LTRUtils.convertToFloat(ot) + NODE_SPLIT_SLACK;
-
-        final Object ol = map.get("left");
-        if (null == ol) {
-          throw new ModelException("LambdaMARTModel tree node is missing left");
-        }
-
-        left = new RegressionTreeNode((Map<String,Object>) ol, fname2index);
-
-        final Object or = map.get("right");
-        if (null == or) {
-          throw new ModelException("LambdaMARTModel tree node is missing right");
-        }
-
-        right = new RegressionTreeNode((Map<String,Object>) or, fname2index);
+    public void validate() throws ModelException {
+      if (isLeaf()) {
+        return;
+      }
+      if (null == threshold) {
+        throw new ModelException("LambdaMARTModel tree node is missing threshold");
+      }
+      if (null == left) {
+        throw new ModelException("LambdaMARTModel tree node is missing left");
+      } else {
+        left.validate();
+      }
+      if (null == right) {
+        throw new ModelException("LambdaMARTModel tree node is missing right");
+      } else {
+        right.validate();
+      }
+      if (left.isLeaf() && right.isLeaf()) {
+        System.out.println("cpoerschke debug: should throw "+new ModelException("LambdaMARTModel tree node has two leaves"));
+        //throw new ModelException("LambdaMARTModel tree node has two leaves");
       }
     }
 
   }
 
-  class RegressionTree {
-    private final float weight;
-    private final RegressionTreeNode root;
+  public static class RegressionTree {
+
+    private final HashMap<String,Integer> fname2index;
+
+    private Float weight;
+    private RegressionTreeNode root;
+
+    public void setWeight(float weight) {
+      this.weight = new Float(weight);
+    }
+
+    public void setWeight(String weight) {
+      this.weight = new Float(weight);
+    }
+
+    public void setTree(Object root) {
+      this.root = createRegressionTreeNode((Map<String,Object>)root, fname2index);
+    }
 
     public float score(float[] featureVector) {
-      return weight * root.score(featureVector);
+      return (weight == null || root == null ? 0f : weight.floatValue() * root.score(featureVector));
     }
 
     public String explain(float[] featureVector) {
-      return root.explain(featureVector);
+      return (root == null ? "tree missing" : root.explain(featureVector));
     }
 
-    public RegressionTree(Map<String,Object> map,
-        HashMap<String,Integer> fname2index) throws ModelException {
-      final Object ow = map.get("weight");
-      if (null == ow) {
-        throw new ModelException(
-            "LambdaMARTModel tree doesn't contain a weight");
+    @Override
+    public String toString() {
+      final StringBuilder sb = new StringBuilder();
+      sb.append("(weight=").append(weight);
+      sb.append(",root=").append(root);
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public RegressionTree(HashMap<String,Integer> fname2index) throws ModelException {
+      this.fname2index = fname2index;
+    }
+
+    public void validate() throws ModelException {
+      if (weight == null) {
+        throw new ModelException("LambdaMARTModel tree doesn't contain a weight");
       }
-
-      weight = LTRUtils.convertToFloat(ow);
-
-      final Object ot = map.get("tree");
-
-      if (null == ot) {
+      if (root == null) {
         throw new ModelException("LambdaMARTModel tree doesn't contain a tree");
+      } else {
+        root.validate();
       }
-
-      root = new RegressionTreeNode((Map<String,Object>) ot, fname2index);
     }
   }
 
+  public void setTrees(Object trees) {
+    if (trees != null) {
+      this.trees = new ArrayList<RegressionTree>();
+      for (final Object o : (List<Object>) trees) {
+        final RegressionTree rt = createRegressionTree((Map<String,Object>) o, this.fname2index);
+        this.trees.add(rt);
+      }
+    } else {
+      this.trees = null;
+    }
+  }
+
+  public LambdaMARTModel(String name, List<ModelFeature> modelFeatures,
+      String featureStoreName, List<Feature> allFeatures,
+      Map<String,Object> params) {
+    super(name, modelFeatures, featureStoreName, allFeatures, params);
+
+    fname2index = new HashMap<String,Integer>();
+    for (int i = 0; i < modelFeatures.size(); ++i) {
+      final String key = modelFeatures.get(i).getFeatureName();
+      fname2index.put(key, i);
+    }
+  }
+
+  @Deprecated
   public LambdaMARTModel(String name, List<Feature> features,
       List<Normalizer> norms,
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) throws ModelException {
     super(name, features, norms, featureStoreName, allFeatures, params);
-    
-    if (!hasParams()) {
-      throw new ModelException("LambdaMARTModel doesn't contain any params");
-    }
 
-    final HashMap<String,Integer> fname2index = new HashMap<String,Integer>();
+    fname2index = new HashMap<String,Integer>();
     for (int i = 0; i < features.size(); ++i) {
       final String key = features.get(i).getName();
       fname2index.put(key, i);
     }
-
-    
-    final List<Object> jsonTrees = getParams().containsKey("trees") ?
-        (List<Object>) getParams().get("trees") : null;
-
-    if (jsonTrees != null) {
-      for (final Object o : jsonTrees) {
-        final Map<String,Object> t = (Map<String,Object>) o;
-        final RegressionTree rt = new RegressionTree(t, fname2index);
-        trees.add(rt);
-      }
-    }
-
   }
 
   @Override
+  public void validate() throws ModelException {
+    super.validate();
+    if (trees == null) {
+      throw new ModelException("no trees declared for model "+name);
+    }
+    for (RegressionTree tree : trees) {
+      tree.validate();
+    }
+  }
+
+ @Override
   public float score(float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (final RegressionTree t : trees) {
@@ -246,4 +337,22 @@ public class LambdaMARTModel extends LTRScoringModel {
     return Explanation.match(finalScore, toString()
         + " model applied to features, sum of:", details);
   }
+
+  @Override
+  public String toString() {
+    final StringBuilder sb = new StringBuilder(getClass().getSimpleName());
+    sb.append("(name=").append(getName());
+    if (trees != null) {
+    sb.append(",trees=[");
+    for (int ii = 0; ii < trees.size(); ++ii) {
+      if (ii>0) sb.append(',');
+      sb.append(trees.get(ii));
+    }
+    sb.append("])");
+    } else {
+      sb.append(",trees=null)");
+    }
+    return sb.toString();
+  }
+
 }

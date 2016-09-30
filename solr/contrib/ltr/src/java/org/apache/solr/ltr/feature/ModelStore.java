@@ -48,10 +48,6 @@ public class ModelStore {
     availableModels.clear();
   }
   
-  public int size() {
-    return availableModels.size();
-  }
-  
   public List<LTRScoringModel> getModels() {
     final List<LTRScoringModel> availableModelsValues = 
         new ArrayList<LTRScoringModel>(availableModels.values());

@@ -182,11 +182,11 @@ public class ModelQuery extends Query {
   @Override
   public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
       throws IOException {   
-    final Collection<Feature> modelFeatures = meta.getFeatures();
-    final Collection<Feature> allFeatures = meta.getAllFeatures();
+    final Collection<FeatureWeightCreator> modelFeatures = meta.getFeatureWeightCreators();
+    final Collection<FeatureWeightCreator> allFeatures = meta.getAllFeatureWeightCreators();
     int modelFeatSize = modelFeatures.size();
    
-    Collection<Feature> features = null;
+    Collection<FeatureWeightCreator> features = null;
     if (this.extractAllFeatures) {
       features = allFeatures;
     }
@@ -208,7 +208,7 @@ public class ModelQuery extends Query {
       for (final FeatureWeight fw : featureWeights) {
         extractedFeatureWeights[i++] = fw;
       }
-      for (final Feature f : modelFeatures){
+      for (final FeatureWeightCreator f : modelFeatures) {
         modelFeaturesWeights[j++] = extractedFeatureWeights[f.getIndex()]; // we can lookup by featureid because all features will be extracted when this.extractAllFeatures is set
       }
     }
@@ -222,12 +222,12 @@ public class ModelQuery extends Query {
   }
 
   private void createWeights(IndexSearcher searcher, boolean needsScores, float boost, 
-      List<FeatureWeight > featureWeights, Collection<Feature> features) throws IOException {
+      List<FeatureWeight > featureWeights, Collection<FeatureWeightCreator> features) throws IOException {
     final SolrQueryRequest req = getRequest();
     // since the feature store is a linkedhashmap order is preserved
-    for (final Feature f : features) {
+    for (final FeatureWeightCreator f : features) {
         try{
-          FeatureWeight fw = f.createWeight(searcher, needsScores, req, originalQuery, efi);
+          FeatureWeight fw = f.createFeatureWeight(searcher, needsScores, req, originalQuery, efi);
           featureWeights.add(fw);
         } catch (final Exception e) {
           throw new RuntimeException("Exception from createWeight for " + f.toString() + " "
@@ -237,12 +237,12 @@ public class ModelQuery extends Query {
   }
 
   class CreateWeightCallable implements Callable<FeatureWeight>{
-    private Feature f;
+    private FeatureWeightCreator f;
     IndexSearcher searcher;
     boolean needsScores;
     SolrQueryRequest req;
 
-    public CreateWeightCallable(Feature f, IndexSearcher searcher, boolean needsScores, SolrQueryRequest req){
+    public CreateWeightCallable(FeatureWeightCreator f, IndexSearcher searcher, boolean needsScores, SolrQueryRequest req){
       this.f = f;
       this.searcher = searcher;
       this.needsScores = needsScores;
@@ -251,7 +251,7 @@ public class ModelQuery extends Query {
 
     public FeatureWeight call() throws Exception{
       try {
-        FeatureWeight fw  = f.createWeight(searcher, needsScores, req, originalQuery, efi);
+        FeatureWeight fw  = f.createFeatureWeight(searcher, needsScores, req, originalQuery, efi);
         return fw;
       } catch (final Exception e) {
         throw new RuntimeException("Exception from createWeight for " + f.toString() + " "
@@ -264,13 +264,13 @@ public class ModelQuery extends Query {
   } // end of call CreateWeightCallable
 
   private void createWeightsParallel(IndexSearcher searcher, boolean needsScores, float boost,
-      List<FeatureWeight > featureWeights, Collection<Feature> features) throws RuntimeException {
+      List<FeatureWeight > featureWeights, Collection<FeatureWeightCreator> features) throws RuntimeException {
 
     final SolrQueryRequest req = getRequest();
     Executor executor = LTRThreadModule.createWeightScoreExecutor;
     List<Future<FeatureWeight> > futures = new ArrayList<>(features.size());
     try{
-      for (final Feature f : features) {
+      for (final FeatureWeightCreator f : features) {
         CreateWeightCallable callable = new CreateWeightCallable(f, searcher, needsScores, req);
         RunnableFuture<FeatureWeight> runnableFuture = new FutureTask<>(callable);
         querySemaphore.acquire(); // always acquire before the ltrSemaphore is acquired, to guarantee a that the current query is within the limit for max. threads 

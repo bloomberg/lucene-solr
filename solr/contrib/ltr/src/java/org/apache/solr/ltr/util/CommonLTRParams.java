@@ -18,22 +18,6 @@ package org.apache.solr.ltr.util;
 
 public class CommonLTRParams {
 
-  /** name of the attribute containing the feature name **/
-  public static final String FEATURE_NAME = "name";
-  /** name of the attribute containing the normalizer **/
-  public static final String FEATURE_NORM = "norm";
-  /** name of the attribute containing the model name **/
-  public static final Object MODEL_NAME = "name";
-  /** name of the attribute containing the model type **/
-  public static final Object MODEL_CLASS = "class";
-  /** name of the attribute containing the feature store used **/
-  public static final Object MODEL_FEATURE_STORE = "store";
-  /** name of the attribute containing the model params **/
-  public static final Object MODEL_PARAMS = "params";
-  /** name of the attribute containing the features used by the mode **/
-  public static final Object MODEL_FEATURE_LIST = "features";
-
-
   /**
    * Managed feature store: the name of the attribute containing all the
    * features of a feature store

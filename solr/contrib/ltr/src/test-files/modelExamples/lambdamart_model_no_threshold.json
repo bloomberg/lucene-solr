@@ -8,14 +8,14 @@
     "params":{
         "trees": [
             {
-                "weight" : 1,
+                "weight" : "1f",
                 "tree": {
                     "feature": "matchedTitle",
                     "left" : {
-                        "value" : -100
+                        "value" : "-100"
                     },
                     "right": {
-                        "value" : 75
+                        "value" : "75"
                     }
                 }
             }

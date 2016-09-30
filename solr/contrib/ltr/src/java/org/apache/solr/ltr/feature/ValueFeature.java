@@ -21,7 +21,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.ltr.ranking.Feature;
@@ -85,7 +84,7 @@ public class ValueFeature extends Feature {
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores, 
+  public FeatureWeight createFeatureWeight(IndexSearcher searcher, boolean needsScores, 
       SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
       throws IOException {
     return new ValueFeatureWeight(searcher, request, originalQuery, efi);

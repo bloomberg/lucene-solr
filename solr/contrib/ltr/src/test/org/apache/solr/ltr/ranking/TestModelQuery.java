@@ -44,6 +44,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
+import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.ltr.feature.TestLTRScoringModel;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
@@ -54,7 +56,7 @@ import org.junit.Test;
 @SuppressCodecs("Lucene3x")
 public class TestModelQuery extends LuceneTestCase {
 
-  final private static SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
+  public final static SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
 
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = newSearcher(r, false, false);
@@ -134,7 +136,7 @@ public class TestModelQuery extends LuceneTestCase {
         new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
     final Map<String,Object> modelParams = makeFeatureWeights(features);
 
-    final LTRScoringModel algorithm1 = RankSVMModel.create(
+    final LTRScoringModel algorithm1 = TestLTRScoringModel.createRankSVMModel(
         "testModelName",
         features, norms, "testStoreName", allFeatures, modelParams);
 
@@ -160,7 +162,7 @@ public class TestModelQuery extends LuceneTestCase {
     assertEquals(m1, m2);
     assertEquals(m1.hashCode(), m2.hashCode());
 
-    final LTRScoringModel algorithm2 = RankSVMModel.create(
+    final LTRScoringModel algorithm2 = TestLTRScoringModel.createRankSVMModel(
         "testModelName2",
         features, norms, "testStoreName", allFeatures, modelParams);
     final ModelQuery m3 = new ModelQuery(algorithm2);
@@ -168,7 +170,7 @@ public class TestModelQuery extends LuceneTestCase {
     assertFalse(m1.equals(m3));
     assertFalse(m1.hashCode() == m3.hashCode());
 
-    final LTRScoringModel algorithm3 = RankSVMModel.create(
+    final LTRScoringModel algorithm3 = TestLTRScoringModel.createRankSVMModel(
         "testModelName",
         features, norms, "testStoreName3", allFeatures, modelParams);
     final ModelQuery m4 = new ModelQuery(algorithm3);
@@ -218,7 +220,7 @@ public class TestModelQuery extends LuceneTestCase {
     List<Normalizer> norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    RankSVMModel meta = RankSVMModel.create("test",
+    LTRScoringModel meta = TestLTRScoringModel.createRankSVMModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
 
@@ -245,7 +247,7 @@ public class TestModelQuery extends LuceneTestCase {
     norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    meta = RankSVMModel.create("test",
+    meta = TestLTRScoringModel.createRankSVMModel("test",
         features, norms, "test", allFeatures, makeFeatureWeights(features));
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
@@ -263,7 +265,7 @@ public class TestModelQuery extends LuceneTestCase {
     norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    meta = RankSVMModel.create("test",
+    meta = TestLTRScoringModel.createRankSVMModel("test",
         features, norms, "test", allFeatures, makeFeatureWeights(features));
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
@@ -287,7 +289,7 @@ public class TestModelQuery extends LuceneTestCase {
     norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),norm));
-    final RankSVMModel normMeta = RankSVMModel.create("test",
+    final LTRScoringModel normMeta = TestLTRScoringModel.createRankSVMModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
 

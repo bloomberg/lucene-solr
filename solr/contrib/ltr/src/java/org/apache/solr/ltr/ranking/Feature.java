@@ -37,7 +37,7 @@ import org.apache.solr.util.SolrPluginUtils;
 /**
  * A 'recipe' for computing a feature
  */
-public abstract class Feature extends Query {
+public abstract class Feature extends Query implements FeatureWeightCreator {
 
   final protected String name;
   private int index = -1;
@@ -76,7 +76,7 @@ public abstract class Feature extends Query {
     return sb.toString();
   }
 
-  public abstract FeatureWeight createWeight(IndexSearcher searcher,
+  public abstract FeatureWeight createFeatureWeight(IndexSearcher searcher,
       boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException;
 
   @Override

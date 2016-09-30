@@ -42,7 +42,7 @@ public class OriginalScoreFeature extends Feature {
   }
 
   @Override
-  public OriginalScoreWeight createWeight(IndexSearcher searcher,
+  public OriginalScoreWeight createFeatureWeight(IndexSearcher searcher,
       boolean needsScores, SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) throws IOException {
     return new OriginalScoreWeight(searcher, request, originalQuery, efi);
 

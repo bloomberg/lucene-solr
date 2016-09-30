@@ -10,12 +10,12 @@
             {
                 "tree": {
                     "feature": "matchedTitle",
-                    "threshold": 0.5,
+                    "threshold": "0.5f",
                     "left" : {
-                        "value" : -100
+                        "value" : "-100"
                     },
                     "right": {
-                        "value" : 75
+                        "value" : "75"
                     }
                 }
             }

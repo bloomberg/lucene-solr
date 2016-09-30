@@ -4,9 +4,9 @@
     "params":{
         "trees": [
             {
-                "weight" : 2,
+                "weight" : "2f",
                 "tree": {
-                    "value" : -10
+                    "value" : "-10"
                 }
             }
         ]

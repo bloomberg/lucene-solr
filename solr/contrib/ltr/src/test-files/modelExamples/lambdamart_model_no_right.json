@@ -8,12 +8,12 @@
     "params":{
         "trees": [
             {
-                "weight" : 1,
+                "weight" : "1f",
                 "tree": {
                     "feature": "matchedTitle",
-                    "threshold": 0.5,
+                    "threshold": "0.5f",
                     "left" : {
-                        "value" : -100
+                        "value" : "-100"
                     }
                 }
             }

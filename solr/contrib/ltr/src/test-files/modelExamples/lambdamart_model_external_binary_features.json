@@ -8,28 +8,28 @@
   "params":{
     "trees": [
       {
-        "weight" : 1,
+        "weight" : "1f",
         "tree": {
           "feature": "user_device_smartphone",
-          "threshold": 0.5,
+          "threshold": "0.5f",
           "left" : {
-            "value" : 0
+            "value" : "0"
           },
           "right" : {
-            "value" : 50
+            "value" : "50"
           }
 
         }},
       {
-        "weight" : 1,
+        "weight" : "1f",
         "tree": {
           "feature": "user_device_tablet",
-          "threshold": 0.5,
+          "threshold": "0.5f",
           "left" : {
-            "value" : 0
+            "value" : "0"
           },
           "right" : {
-            "value" : 65
+            "value" : "65"
           }
 
         }}
