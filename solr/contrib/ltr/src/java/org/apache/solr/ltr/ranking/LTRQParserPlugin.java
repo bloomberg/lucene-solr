@@ -166,7 +166,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       if (featuresRequestedFromSameStore) {
         final String fvFeatureFormat = (String) req.getContext().get(CommonLTRParams.FV_FORMAT);
         final FeatureLogger<?> solrLogger = FeatureLogger
-            .getFeatureLogger(params.get(CommonLTRParams.FV_RESPONSE_WRITER),
+            .getFeatureLogger((String) req.getContext().get(CommonLTRParams.FV_RESPONSE_WRITER),
                 fvFeatureFormat);
         reRankModel.setFeatureLogger(solrLogger);
         req.getContext().put(CommonLTRParams.LOGGER_NAME, solrLogger);

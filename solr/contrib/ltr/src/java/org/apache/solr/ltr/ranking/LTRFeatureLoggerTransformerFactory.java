@@ -73,6 +73,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     req.getContext().put(CommonLTRParams.LOG_FEATURES_QUERY_PARAM, true);
     req.getContext().put(CommonLTRParams.FV_STORE, params.get(CommonLTRParams.FV_STORE));
     req.getContext().put(CommonLTRParams.FV_FORMAT, params.get(CommonLTRParams.FV_FORMAT));
+    req.getContext().put(CommonLTRParams.FV_RESPONSE_WRITER, params.get(CommonLTRParams.FV_RESPONSE_WRITER));
 
     return new FeatureTransformer(name, params, req);
   }
