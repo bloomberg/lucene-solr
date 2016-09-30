@@ -79,7 +79,7 @@ public class OriginalScoreFeature extends Feature {
       Scorer originalScorer;
 
       public OriginalScoreScorer(FeatureWeight weight, Scorer originalScorer) {
-        super(weight,originalScorer.iterator());
+        super(weight,null);
         this.originalScorer = originalScorer;
       }
 

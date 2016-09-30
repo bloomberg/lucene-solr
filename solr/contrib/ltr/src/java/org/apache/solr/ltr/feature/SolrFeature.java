@@ -264,7 +264,6 @@ public class SolrFeature extends Feature {
 
       final private DocIdSetIterator filterIterator;
       final private DocIdSetIterator scorerFilter;
-      int docID;
 
       SolrFeatureScorerIterator(DocIdSetIterator filterIterator,
           DocIdSetIterator scorerFilter) {
@@ -279,7 +278,7 @@ public class SolrFeature extends Feature {
 
       @Override
       public int nextDoc() throws IOException {
-        docID = filterIterator.nextDoc();
+        int docID = filterIterator.nextDoc();
         scorerFilter.advance(docID);
         return docID;
       }
@@ -288,7 +287,7 @@ public class SolrFeature extends Feature {
       public int advance(int target) throws IOException {
         // We use iterator to catch the scorer up since
         // that checks if the target id is in the query + all the filters
-        docID = filterIterator.advance(target);
+        int docID = filterIterator.advance(target);
         scorerFilter.advance(docID);
         return docID;
       }
