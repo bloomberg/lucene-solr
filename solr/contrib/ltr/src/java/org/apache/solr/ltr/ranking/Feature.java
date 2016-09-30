@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.ranking;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -227,35 +226,31 @@ public abstract class Feature extends Query {
      */
     public abstract class FeatureScorer extends Scorer {
 
-      protected String name;
-      private HashMap<String,Object> docInfo;
+      final protected String name;
+      private DocInfo docInfo;
 
       public FeatureScorer(Feature.FeatureWeight weight) {
         super(weight);
         name = weight.getName();
+        docInfo = null;
       }
 
       @Override
       public abstract float score() throws IOException;
 
-
       /**
        * Used to provide context from initial score steps to later reranking steps.
        */
-      public void setDocInfo(HashMap<String,Object> iDocInfo) {
-        docInfo = iDocInfo;
+      public void setDocInfo(DocInfo docInfo) {
+        this.docInfo = docInfo;
       }
 
-      public Object getDocParam(String key) {
-        return docInfo.get(key);
+      public float getOriginalDocScoreOrDefault(float def) {
+        return (docInfo == null ? def : docInfo.getOriginalDocScoreOrDefault(def));
       }
 
-      public boolean hasDocParam(String key) {
-        if (docInfo != null) {
-          return docInfo.containsKey(key);
-        } else {
-          return false;
-        }
+      public Float getOriginalDocScore() {
+        return (docInfo == null ? null : docInfo.getOriginalDocScore());
       }
 
       @Override
