@@ -68,12 +68,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   @Override
   public DocTransformer create(String name, SolrParams params,
       SolrQueryRequest req) {
-
-    // Hint to enable feature vector cache since we are requesting features
-    req.getContext().put(CommonLTRParams.LOG_FEATURES_QUERY_PARAM, true);
-    req.getContext().put(CommonLTRParams.FV_STORE, params.get(CommonLTRParams.FV_STORE));
-    req.getContext().put(CommonLTRParams.FV_FORMAT, params.get(CommonLTRParams.FV_FORMAT));
-
     return new FeatureTransformer(name, params, req);
   }
 
@@ -142,7 +136,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           final LoggingModel lm = new LoggingModel(loggingModelName,
               featureStoreName, store.getFeatures());
 
-          reRankModel = new ModelQuery(lm, true); // request feature weights to be created for all features
+          reRankModel = new ModelQuery(lm);
 
           // Local transformer efi if provided
           reRankModel.setExternalFeatureInfo( LTRQParserPlugin.extractEFIParams(params) );
@@ -155,9 +149,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       }
 
       if (reRankModel.getFeatureLogger() == null){
-        final String featureResponseFormat = req.getParams().get(CommonLTRParams.FV_RESPONSE_WRITER,"csv");
-        final String featureFormat = req.getParams().get(CommonLTRParams.FV_FORMAT,"sparse");
+        final String featureResponseFormat = req.getParams().get(CommonLTRParams.FV_RESPONSE_WRITER);
+        final String featureFormat = params.get(CommonLTRParams.FV_FORMAT);
         reRankModel.setFeatureLogger(FeatureLogger.getFeatureLogger(featureResponseFormat,featureFormat));
+        reRankModel.setExtractAllFeatures(true); // request feature weights to be created for all features
       }
       reRankModel.setRequest(req);
 
