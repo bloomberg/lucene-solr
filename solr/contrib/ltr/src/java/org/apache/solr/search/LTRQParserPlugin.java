@@ -168,7 +168,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       // Enable the feature vector caching if we are extracting features, and the features
       // we requested are the same ones we are reranking with 
       if (featuresRequestedFromSameStore) {
-        reRankModel.setFeatureLogger( LTRFeatureLoggerTransformerFactory.getFeatureLogger(req) );
+        reRankModel.setFeatureLogger( getFeatureLogger(req) );
       }
       req.getContext().put(CommonLTRParams.MODEL, reRankModel);
 
@@ -187,5 +187,10 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
         boolean extractAllFeatures) {
       return new ModelQuery(ltrScoringModel, extractAllFeatures);
     }
+
+    protected FeatureLogger<?> getFeatureLogger(SolrQueryRequest req) {
+      return LTRFeatureLoggerTransformerFactory.newFeatureLogger(req);
+    }
+
   }
 }
