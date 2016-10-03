@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.ranking.LambdaMARTModel;
+import org.apache.solr.ltr.model.LambdaMARTModel;
 import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

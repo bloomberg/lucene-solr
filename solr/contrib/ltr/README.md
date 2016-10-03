@@ -247,7 +247,7 @@ libSVM model format to the format specified above.
 ###### model2.json
 ```json
 {
-    "class":"org.apache.solr.ltr.ranking.LambdaMARTModel",
+    "class":"org.apache.solr.ltr.model.LambdaMARTModel",
     "name":"lambdamartmodel",
     "features":[
         { "name": "userTextTitleMatch"},

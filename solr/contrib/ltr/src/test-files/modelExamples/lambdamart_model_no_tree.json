@@ -1,5 +1,5 @@
 {
-    "class":"org.apache.solr.ltr.ranking.LambdaMARTModel",
+    "class":"org.apache.solr.ltr.model.LambdaMARTModel",
     "name":"lambdamartmodel_no_tree",
     "features":[
         { "name": "matchedTitle"},
