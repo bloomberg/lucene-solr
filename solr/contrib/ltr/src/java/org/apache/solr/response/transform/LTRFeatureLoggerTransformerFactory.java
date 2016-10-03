@@ -30,7 +30,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.log.FeatureLogger;
-import org.apache.solr.ltr.log.LoggingModel;
+import org.apache.solr.ltr.model.LoggingModel;
 import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
