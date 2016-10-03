@@ -376,6 +376,10 @@ public class ModelQuery extends Query {
       } 
     }
 
+    public FeatureInfo[] getFeaturesInfo(){
+      return featuresInfo;
+    }
+
     /**
      * Goes through all the stored feature values, and calculates the normalized
      * values for all the features that will be used for scoring.

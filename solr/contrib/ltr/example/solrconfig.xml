@@ -866,7 +866,7 @@
   will add the features as an extra field in the response. The name of the field we will be the the name of the
   transformer enclosed between brackets (in this case [features]). In order to get the feature vector you will have to
   specify that you want the field (e.g., fl="*,[features])  -->
-  <transformer name="features" class="org.apache.solr.ltr.ranking.LTRFeatureLoggerTransformerFactory" />
+  <transformer name="features" class="org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory" />
 
 
   <!-- A request handler that returns indented JSON by default -->

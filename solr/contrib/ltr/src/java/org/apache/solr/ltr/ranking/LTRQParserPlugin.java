@@ -37,6 +37,7 @@ import org.apache.solr.ltr.rest.ManagedModelStore;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.search.QParser;

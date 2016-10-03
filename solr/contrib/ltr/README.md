@@ -99,7 +99,7 @@ BONUS: Train an actual machine learning model
   In order to get the feature vector you will have to
   specify that you want the field (e.g., fl="*,[features])  -->
 
-  <transformer name="features" class="org.apache.solr.ltr.ranking.LTRFeatureLoggerTransformerFactory" />
+  <transformer name="features" class="org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory" />
 
   <query>
     ...

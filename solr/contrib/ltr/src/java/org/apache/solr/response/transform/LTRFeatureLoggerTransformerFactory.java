@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.ranking;
+package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.util.List;
@@ -31,6 +31,8 @@ import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.log.LoggingModel;
+import org.apache.solr.ltr.ranking.LTRQParserPlugin;
+import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
@@ -212,7 +214,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           }
           r.score();
           doc.addField(name,
-              featureLogger.makeFeatureVector(modelWeight.featuresInfo));
+              featureLogger.makeFeatureVector(modelWeight.getFeaturesInfo()));
         }
       } else {
         doc.addField(name, fv);
