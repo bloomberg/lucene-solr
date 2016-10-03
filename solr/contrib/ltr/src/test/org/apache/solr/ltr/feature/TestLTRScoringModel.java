@@ -29,7 +29,6 @@ import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
-import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.apache.solr.ltr.rest.ManagedModelStore;
 import org.junit.BeforeClass;

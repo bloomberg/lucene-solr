@@ -47,12 +47,12 @@
  * </p>
  * <p>
  * The {@link org.apache.solr.ltr.ranking.ModelQuery} will take care of computing the values of
- * all the features (see {@link org.apache.solr.ltr.ranking.Feature}) and then will delegate the final score
+ * all the features (see {@link org.apache.solr.ltr.feature.Feature}) and then will delegate the final score
  * generation to the {@link org.apache.solr.ltr.model.LTRScoringModel}, by calling the method
  * {@link org.apache.solr.ltr.model.LTRScoringModel#score(float[] modelFeatureValuesNormalized) score(float[] modelFeatureValuesNormalized)}.
  * </p>
  * <p>
- * Finally, a {@link org.apache.solr.ltr.ranking.Feature} will produce a particular value for each document, so
+ * Finally, a {@link org.apache.solr.ltr.feature.Feature} will produce a particular value for each document, so
  * it is modeled as a {@link org.apache.lucene.search.Query}. The package <i>org.apache.solr.ltr.feature</i> contains several examples
  * of features. One benefit of extending the Query object is that we can reuse
  * Query as a feature, see for example {@link org.apache.solr.ltr.feature.SolrFeature}.

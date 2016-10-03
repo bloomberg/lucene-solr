@@ -193,7 +193,7 @@ See the [Run a Rerank Query](#run-a-rerank-query) section for how to pass in ext
 
 ### Custom Features
 Custom features can be created by extending from
-org.apache.solr.ltr.ranking.Feature, however this is generally not recommended.
+org.apache.solr.ltr.feature.Feature, however this is generally not recommended.
 The majority of features should be possible to create using the methods described
 above.
 

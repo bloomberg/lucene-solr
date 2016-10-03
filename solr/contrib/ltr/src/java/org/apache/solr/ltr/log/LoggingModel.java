@@ -22,9 +22,9 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
+import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.norm.Normalizer;
-import org.apache.solr.ltr.ranking.Feature;
 
 /**
  * a stubbed reranking model that will be used only for computing the features.

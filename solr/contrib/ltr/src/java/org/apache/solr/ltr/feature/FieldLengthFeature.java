@@ -27,7 +27,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.SmallFloat;
-import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class FieldLengthFeature extends Feature {

@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.junit.BeforeClass;
 import org.junit.Test;

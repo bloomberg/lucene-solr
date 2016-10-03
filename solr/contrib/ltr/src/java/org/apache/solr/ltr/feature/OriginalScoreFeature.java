@@ -27,7 +27,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.ranking.DocInfo;
-import org.apache.solr.ltr.ranking.Feature;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class OriginalScoreFeature extends Feature {
