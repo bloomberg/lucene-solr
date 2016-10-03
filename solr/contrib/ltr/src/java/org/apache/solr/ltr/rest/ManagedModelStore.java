@@ -55,6 +55,15 @@ public class ManagedModelStore extends ManagedResource implements
   /** the model store rest endpoint **/
   public static final String REST_END_POINT = "/schema/model-store";
 
+  /** name of the attribute containing the features used by the mode **/
+  private static final Object MODEL_FEATURE_LIST = "features";
+
+  /**
+   * Managed model store: the name of the attribute containing all the models of
+   * a model store
+   **/
+  private static final String MODELS_JSON_FIELD = "models";
+
   /** name of the attribute containing the normalizer type **/
   public static final String CLASS_KEY = "class";
   /** name of the attribute containing the normalizer params **/
@@ -147,14 +156,14 @@ public class ManagedModelStore extends ManagedResource implements
     String featureStoreName = (String) map.get(CommonLTRParams.MODEL_FEATURE_STORE);
     final FeatureStore fstore = featureStores.getFeatureStore(featureStoreName);
     featureStoreName = fstore.getName();  // if featureStoreName was null before this gets actual name
-    if (!map.containsKey(CommonLTRParams.MODEL_FEATURE_LIST)) {
+    if (!map.containsKey(MODEL_FEATURE_LIST)) {
       // check if the model has a list of features to be used for computing the
       // ranking score
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "Missing mandatory field features");
     }
     final List<Object> featureList = (List<Object>) map
-        .get(CommonLTRParams.MODEL_FEATURE_LIST);
+        .get(MODEL_FEATURE_LIST);
     final List<Feature> features = new ArrayList<>();
     final List<Normalizer> norms = new ArrayList<>();
     for (final Object modelFeature : featureList) {
@@ -260,7 +269,7 @@ public class ManagedModelStore extends ManagedResource implements
   public void doGet(BaseSolrResource endpoint, String childId) {
 
     final SolrQueryResponse response = endpoint.getSolrResponse();
-    response.add(CommonLTRParams.MODELS_JSON_FIELD,
+    response.add(MODELS_JSON_FIELD,
         modelAsManagedResources(store));
   }
 

@@ -36,7 +36,6 @@ import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.rest.ManagedModelStore;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory;
@@ -70,6 +69,15 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
   private ManagedFeatureStore fr = null;
   private ManagedModelStore mr = null;
+
+  /** query parser plugin: default number of documents to rerank **/
+  public static final int DEFAULT_RERANK_DOCS = 200;
+
+  /**
+   * query parser plugin:the param that will select how the number of document
+   * to rerank
+   **/
+  public static final String RERANK_DOCS = "reRankDocs";
 
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
@@ -151,7 +159,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
     @Override
     public Query parse() throws SyntaxError {
       // ReRanking Model
-      final String modelName = localParams.get(CommonLTRParams.MODEL);
+      final String modelName = localParams.get(LTRFeatureLoggerTransformerFactory.MODEL);
       if ((modelName == null) || modelName.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Must provide model in the request");
@@ -160,11 +168,11 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       final LTRScoringModel meta = mr.getModel(modelName);
       if (meta == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
-            "cannot find " + CommonLTRParams.MODEL + " " + modelName);
+            "cannot find " + LTRFeatureLoggerTransformerFactory.MODEL + " " + modelName);
       }
 
       final String modelFeatureStoreName = meta.getFeatureStoreName();
-      final Boolean extractFeatures = (Boolean) req.getContext().get(CommonLTRParams.LOG_FEATURES_QUERY_PARAM);
+      final Boolean extractFeatures = (Boolean) req.getContext().get(LTRFeatureLoggerTransformerFactory.LOG_FEATURES_QUERY_PARAM);
       final String fvStoreName = (String) req.getContext().get(LTRFeatureLoggerTransformerFactory.FV_STORE);
       // Check if features are requested and if the model feature store and feature-transform feature store are the same
       final boolean featuresRequestedFromSameStore = (extractFeatures != null && (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ) ? extractFeatures.booleanValue():false;
@@ -178,10 +186,9 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       if (featuresRequestedFromSameStore) {
         reRankModel.setFeatureLogger( LTRFeatureLoggerTransformerFactory.getFeatureLogger(req) );
       }
-      req.getContext().put(CommonLTRParams.MODEL, reRankModel);
+      req.getContext().put(LTRFeatureLoggerTransformerFactory.MODEL, reRankModel);
 
-      int reRankDocs = localParams.getInt(CommonLTRParams.RERANK_DOCS,
-          CommonLTRParams.DEFAULT_RERANK_DOCS);
+      int reRankDocs = localParams.getInt(RERANK_DOCS, DEFAULT_RERANK_DOCS);
       reRankDocs = Math.max(1, reRankDocs);
 
       // External features

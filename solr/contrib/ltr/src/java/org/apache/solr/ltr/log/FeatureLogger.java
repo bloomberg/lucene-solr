@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
@@ -36,6 +35,10 @@ import org.slf4j.LoggerFactory;
 public abstract class FeatureLogger<FV_TYPE> {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /** the name of the cache using for storing the feature value **/
+  private static final String QUERY_FV_CACHE_NAME = "QUERY_DOC_FV";
+
   protected enum FeatureFormat {DENSE, SPARSE};
   protected final FeatureFormat featureFormat;
   
@@ -63,7 +66,7 @@ public abstract class FeatureLogger<FV_TYPE> {
       return false;
     }
     // FIXME: Confirm this hashing works
-    return searcher.cacheInsert(CommonLTRParams.QUERY_FV_CACHE_NAME,
+    return searcher.cacheInsert(QUERY_FV_CACHE_NAME,
         modelQuery.hashCode() + (31 * docid),featureVector) != null;
   }
 
@@ -120,7 +123,7 @@ public abstract class FeatureLogger<FV_TYPE> {
   public FV_TYPE getFeatureVector(int docid, ModelQuery reRankModel,
       SolrIndexSearcher searcher) {
     final SolrCache fvCache = searcher
-        .getCache(CommonLTRParams.QUERY_FV_CACHE_NAME);
+        .getCache(QUERY_FV_CACHE_NAME);
     return fvCache == null ? null : (FV_TYPE) fvCache.get(reRankModel
         .hashCode() + (31 * docid));
   }

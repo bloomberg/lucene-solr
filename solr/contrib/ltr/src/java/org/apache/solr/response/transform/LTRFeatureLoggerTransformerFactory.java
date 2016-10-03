@@ -36,7 +36,6 @@ import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.transform.DocTransformer;
@@ -72,6 +71,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
 
+  /** query parser plugin: the name of the attribute for setting the model **/
+  public static final String MODEL = "model";
+
+  /**
+   * if the log feature query param is off features will not be logged.
+   **/
+  public static final String LOG_FEATURES_QUERY_PARAM = "fvCache";
+
   public void setLoggingModelName(String loggingModelName) {
     this.loggingModelName = loggingModelName;
   }
@@ -87,7 +94,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       SolrQueryRequest req) {
 
     // Hint to enable feature vector cache since we are requesting features
-    req.getContext().put(CommonLTRParams.LOG_FEATURES_QUERY_PARAM, true);
+    req.getContext().put(LOG_FEATURES_QUERY_PARAM, true);
     req.getContext().put(FV_STORE, params.get(FV_STORE));
     req.getContext().put(FV_FORMAT, params.get(FV_FORMAT));
     req.getContext().put(FV_RESPONSE_WRITER, params.get(FV_RESPONSE_WRITER));
@@ -144,7 +151,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       leafContexts = searcher.getTopReaderContext().leaves();
 
       // Setup ModelQuery
-      reRankModel = (ModelQuery) req.getContext().get(CommonLTRParams.MODEL);
+      reRankModel = (ModelQuery) req.getContext().get(MODEL);
       resultsReranked = (reRankModel != null);
       String featureStoreName = (String)req.getContext().get(FV_STORE);
       if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getScoringModel().getFeatureStoreName())))) {

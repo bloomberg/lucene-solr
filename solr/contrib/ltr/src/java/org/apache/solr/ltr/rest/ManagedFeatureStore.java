@@ -29,7 +29,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureStore;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
@@ -56,6 +55,18 @@ public class ManagedFeatureStore extends ManagedResource implements
   private static final String FEATURE_STORE_NAME_KEY = "store";
 
   private final Map<String,FeatureStore> stores = new HashMap<>();
+
+  /**
+   * Managed feature store: the name of the attribute containing all the feature
+   * stores
+   **/
+  private static final String FEATURE_STORE_JSON_FIELD = "featureStores";
+
+  /**
+   * Managed feature store: the name of the attribute containing all the
+   * features of a feature store
+   **/
+  private static final String FEATURES_JSON_FIELD = "features";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -150,14 +161,14 @@ public class ManagedFeatureStore extends ManagedResource implements
 
     // If no feature store specified, show all the feature stores available
     if (childId == null) {
-      response.add(CommonLTRParams.FEATURE_STORE_JSON_FIELD, stores.keySet());
+      response.add(FEATURE_STORE_JSON_FIELD, stores.keySet());
     } else {
       final FeatureStore store = getFeatureStore(childId);
       if (store == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "missing feature store [" + childId + "]");
       }
-      response.add(CommonLTRParams.FEATURES_JSON_FIELD,
+      response.add(FEATURES_JSON_FIELD,
           featuresAsManagedResources(store));
     }
   }
