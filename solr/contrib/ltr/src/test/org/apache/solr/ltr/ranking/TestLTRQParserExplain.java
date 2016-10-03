@@ -19,6 +19,7 @@ package org.apache.solr.ltr.ranking;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
+import org.apache.solr.ltr.model.RankSVMModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

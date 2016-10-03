@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.ranking;
+package org.apache.solr.ltr.model;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +23,6 @@ import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
-import org.apache.solr.ltr.model.LTRScoringModel;
-import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.norm.Normalizer;
 
 public class RankSVMModel extends LTRScoringModel {

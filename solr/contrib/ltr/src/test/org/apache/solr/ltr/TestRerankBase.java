@@ -44,7 +44,7 @@ import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.feature.ValueFeature.ValueFeatureWeight;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
-import org.apache.solr.ltr.ranking.RankSVMModel;
+import org.apache.solr.ltr.model.RankSVMModel;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.rest.ManagedModelStore;
 import org.apache.solr.ltr.util.CommonLTRParams;

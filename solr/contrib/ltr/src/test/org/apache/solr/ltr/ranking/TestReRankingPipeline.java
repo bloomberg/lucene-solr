@@ -46,6 +46,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.model.LTRScoringModel;
+import org.apache.solr.ltr.model.RankSVMModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;

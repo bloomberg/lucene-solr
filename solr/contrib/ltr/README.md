@@ -210,7 +210,7 @@ to the bias value you'd like and make a weight of 1.0 for that feature.
 ###### model.json
 ```json
 {
-    "class":"org.apache.solr.ltr.ranking.RankSVMModel",
+    "class":"org.apache.solr.ltr.model.RankSVMModel",
     "name":"myModelName",
     "features":[
         { "name": "userTextTitleMatch"},

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.feature;
+package org.apache.solr.ltr.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,11 +25,13 @@ import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.ltr.TestRerankBase;
+import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
+import org.apache.solr.ltr.model.RankSVMModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
-import org.apache.solr.ltr.ranking.RankSVMModel;
 import org.apache.solr.ltr.rest.ManagedModelStore;
 import org.junit.BeforeClass;
 import org.junit.Test;

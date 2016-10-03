@@ -1,5 +1,5 @@
 {
-  "class":"org.apache.solr.ltr.ranking.RankSVMModel",
+  "class":"org.apache.solr.ltr.model.RankSVMModel",
   "name":"svm-efi",
   "features":[
     {"name":"sampleConstant"},

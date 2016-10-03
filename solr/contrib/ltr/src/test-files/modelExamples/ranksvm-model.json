@@ -1,5 +1,5 @@
 {
-	"class":"org.apache.solr.ltr.ranking.RankSVMModel",
+	"class":"org.apache.solr.ltr.model.RankSVMModel",
 	"name":"6029760550880411648",
 	"features":[
         {"name":"title"},

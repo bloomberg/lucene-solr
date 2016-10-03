@@ -43,7 +43,7 @@
  * defines how to combine the features in order to create a new
  * score for a document. A new learning to rank model is plugged
  * into the framework  by extending {@link org.apache.solr.ltr.model.LTRScoringModel},
- * (see for example {@link org.apache.solr.ltr.model.LambdaMARTModel} and {@link org.apache.solr.ltr.ranking.RankSVMModel}).
+ * (see for example {@link org.apache.solr.ltr.model.LambdaMARTModel} and {@link org.apache.solr.ltr.model.RankSVMModel}).
  * </p>
  * <p>
  * The {@link org.apache.solr.ltr.ranking.ModelQuery} will take care of computing the values of

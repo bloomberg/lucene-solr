@@ -21,6 +21,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.SolrFeature;
+import org.apache.solr.ltr.model.RankSVMModel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

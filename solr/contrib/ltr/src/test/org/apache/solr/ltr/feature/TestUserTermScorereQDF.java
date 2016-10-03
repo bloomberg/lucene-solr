@@ -17,7 +17,7 @@
 package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.ltr.ranking.RankSVMModel;
+import org.apache.solr.ltr.model.RankSVMModel;
 import org.junit.Test;
 
 public class TestUserTermScorereQDF extends TestQueryFeature {
