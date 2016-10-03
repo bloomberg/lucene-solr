@@ -62,10 +62,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   // used inside fl to specify the feature store to use for the feature extraction
   public static final String FV_STORE = "store";
 
-  public static FeatureLogger<?> getFeatureLogger(SolrQueryRequest req) {
+  public static FeatureLogger<?> newFeatureLogger(SolrQueryRequest req) {
     final String stringFormat = (String) req.getContext().get(FV_RESPONSE_WRITER);
     final String featureFormat = (String) req.getContext().get(FV_FORMAT);
-    return FeatureLogger.getFeatureLogger(stringFormat, featureFormat);
+    return FeatureLogger.newFeatureLogger(stringFormat, featureFormat);
   }
 
   public static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
@@ -191,6 +191,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       }
       modelWeight = (ModelWeight) w;
 
+    }
+
+    protected FeatureLogger<?> getFeatureLogger(SolrQueryRequest req) {
+      return newFeatureLogger(req);
     }
 
     @Override
