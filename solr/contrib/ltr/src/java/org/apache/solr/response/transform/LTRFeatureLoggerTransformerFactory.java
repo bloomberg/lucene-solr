@@ -31,7 +31,6 @@ import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.log.LoggingModel;
-import org.apache.solr.ltr.ranking.LTRQParserPlugin;
 import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
@@ -42,6 +41,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.search.LTRQParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrPluginUtils;
 

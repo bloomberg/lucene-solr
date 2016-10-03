@@ -21,14 +21,14 @@
  * a <b>LTR model</b>.
  * </p>
  * <p>
- * A LTR model is plugged into the ranking through the {@link org.apache.solr.ltr.ranking.LTRQParserPlugin},
+ * A LTR model is plugged into the ranking through the {@link org.apache.solr.search.LTRQParserPlugin},
  * a {@link org.apache.solr.search.QParserPlugin}. The plugin will
  * read from the request the model (instance of {@link org.apache.solr.ltr.ranking.ModelQuery})
  * used to perform the request plus other
- * parameters. The plugin will generate a {@link org.apache.solr.ltr.ranking.LTRQuery}:
+ * parameters. The plugin will generate a {@link org.apache.solr.search.ltr.LTRQuery}:
  * a particular {@link org.apache.solr.search.RankQuery}
  * that will encapsulate the given model and use it to
- * rescore and rerank the document (by using an {@link org.apache.solr.ltr.ranking.LTRCollector}).
+ * rescore and rerank the document (by using an {@link org.apache.solr.search.ltr.LTRCollector}).
  * </p>
  * <p>
  * A model will be applied on each document through a {@link org.apache.solr.ltr.ranking.ModelQuery}, a

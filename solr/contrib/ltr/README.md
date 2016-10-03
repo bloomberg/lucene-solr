@@ -90,7 +90,7 @@ BONUS: Train an actual machine learning model
   ...
 
   <!-- Query parser used to rerank top docs with a provided model -->
-  <queryParser name="ltr" class="org.apache.solr.ltr.ranking.LTRQParserPlugin" />
+  <queryParser name="ltr" class="org.apache.solr.search.LTRQParserPlugin" />
 
   <!--  Transformer that will encode the document features in the response.
   For each document the transformer will add the features as an extra field
@@ -390,7 +390,7 @@ About half the time for ranking is spent in the creation of weights for each fea
 
 <config>
   <!-- Query parser used to rerank top docs with a provided model -->
-  <queryParser name="ltr" class="org.apache.solr.ltr.ranking.LTRQParserPlugin">
+  <queryParser name="ltr" class="org.apache.solr.search.LTRQParserPlugin">
      <int name="LTRMaxThreads">10</int> <!-- Maximum threads to use for all queries -->
      <int name="LTRMaxQueryThreads">5</int> <!-- Maximum threads to use for a single query-->
   </queryParser>

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.ranking;
+package org.apache.solr.search.ltr;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -31,6 +31,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.log.FeatureLogger;
+import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -204,7 +205,7 @@ public class LTRRescorer extends Rescorer {
         // document
         if (featureLogger != null) {
           featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
-              modelWeight.featuresInfo);
+              modelWeight.getFeaturesInfo());
         }
       } else if (hitUpto == topN) {
         // collected topN document, I create the heap
@@ -221,7 +222,7 @@ public class LTRRescorer extends Rescorer {
           heapAdjust(reranked, topN, 0);
           if (featureLogger != null) {
             featureLogger.log(hit.doc, reRankModel, solrIndexSearch,
-                modelWeight.featuresInfo);
+                modelWeight.getFeaturesInfo());
           }
         }
       }

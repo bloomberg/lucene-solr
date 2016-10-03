@@ -51,6 +51,7 @@ import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
+import org.apache.solr.search.ltr.LTRRescorer;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;

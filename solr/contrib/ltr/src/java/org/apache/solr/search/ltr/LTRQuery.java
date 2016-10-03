@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.ranking;
+package org.apache.solr.search.ltr;
 
 import java.io.IOException;
 import java.util.Map;
@@ -30,6 +30,7 @@ import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.QueryElevationComponent;
+import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.RankQuery;

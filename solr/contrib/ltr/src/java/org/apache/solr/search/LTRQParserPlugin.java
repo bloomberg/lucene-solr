@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.ranking;
+package org.apache.solr.search;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -31,6 +31,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.model.LTRScoringModel;
+import org.apache.solr.ltr.ranking.LTRThreadModule;
+import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.rest.ManagedModelStore;
@@ -43,6 +45,7 @@ import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.ltr.LTRQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

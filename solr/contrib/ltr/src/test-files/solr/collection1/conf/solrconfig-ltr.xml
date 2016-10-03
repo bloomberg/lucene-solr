@@ -21,7 +21,7 @@
 
  <!-- Query parser used to rerank top docs with a provided model -->
  <queryParser name="ltr"
-  class="org.apache.solr.ltr.ranking.LTRQParserPlugin" />
+  class="org.apache.solr.search.LTRQParserPlugin" />
 
  <query>
   <filterCache class="solr.FastLRUCache" size="4096"
