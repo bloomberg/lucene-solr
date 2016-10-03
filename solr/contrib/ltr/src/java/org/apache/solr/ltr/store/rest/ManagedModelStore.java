@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.rest;
+package org.apache.solr.ltr.store.rest;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -31,12 +31,12 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
-import org.apache.solr.ltr.feature.FeatureStore;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
-import org.apache.solr.ltr.model.ModelStore;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
+import org.apache.solr.ltr.store.FeatureStore;
+import org.apache.solr.ltr.store.ModelStore;
 import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;

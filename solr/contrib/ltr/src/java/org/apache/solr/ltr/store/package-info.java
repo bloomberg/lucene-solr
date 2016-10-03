@@ -16,7 +16,6 @@
  */
 
 /**
- * Contains the {@link org.apache.solr.rest.ManagedResource} that encapsulate
- * the feature and the model stores.
+ * Contains feature and model store related classes.
  */
-package org.apache.solr.ltr.rest;
+package org.apache.solr.ltr.store;

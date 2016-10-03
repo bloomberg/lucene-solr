@@ -14,12 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.feature;
+package org.apache.solr.ltr.store;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+
+import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.ltr.feature.FeatureException;
 
 public class FeatureStore {
 

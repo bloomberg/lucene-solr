@@ -14,13 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.model;
+package org.apache.solr.ltr.store;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.solr.ltr.model.LTRScoringModel;
+import org.apache.solr.ltr.model.ModelException;
 
 /**
  * Contains the model and features declared.

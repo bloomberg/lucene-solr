@@ -23,6 +23,8 @@ import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
+import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.RestManager;

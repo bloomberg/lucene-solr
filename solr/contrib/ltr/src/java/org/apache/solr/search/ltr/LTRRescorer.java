@@ -29,7 +29,6 @@ import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.ltr.feature.OriginalScoreFeature;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
