@@ -34,7 +34,7 @@ import org.apache.solr.ltr.rest.ManagedModelStore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestLTRScoringModel extends TestRerankBase {
+public class TestRankSVMModel extends TestRerankBase {
 
   static ManagedModelStore store = null;
   static FeatureStore fstore = null;
