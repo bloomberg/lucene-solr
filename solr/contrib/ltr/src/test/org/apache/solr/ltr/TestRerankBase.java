@@ -47,7 +47,6 @@ import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.model.RankSVMModel;
 import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.rest.ManagedModelStore;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.ManagedResourceStorage;
@@ -69,10 +68,8 @@ public class TestRerankBase extends RestTestBase {
   protected static File tmpSolrHome;
   protected static File tmpConfDir;
 
-  public static final String FEATURE_FILE_NAME = "_schema_"
-      + CommonLTRParams.FEATURE_STORE_NAME + ".json";
-  public static final String MODEL_FILE_NAME = "_schema_"
-      + CommonLTRParams.MODEL_STORE_NAME + ".json";
+  public static final String FEATURE_FILE_NAME = "_schema_feature-store.json";
+  public static final String MODEL_FILE_NAME = "_schema_model-store.json";
   public static final String PARENT_ENDPOINT = "/schema/*";
 
   protected static final String COLLECTION = "collection1";
@@ -96,7 +93,7 @@ public class TestRerankBase extends RestTestBase {
   public static ManagedFeatureStore getNewManagedFeatureStore() {
     final ManagedFeatureStore fs = (ManagedFeatureStore) h.getCore()
         .getRestManager()
-        .getManagedResource(CommonLTRParams.FEATURE_STORE_END_POINT);
+        .getManagedResource(ManagedFeatureStore.REST_END_POINT);
     return fs;
   }
 
@@ -104,7 +101,7 @@ public class TestRerankBase extends RestTestBase {
 
     final ManagedModelStore fs = (ManagedModelStore) h.getCore()
         .getRestManager()
-        .getManagedResource(CommonLTRParams.MODEL_STORE_END_POINT);
+        .getManagedResource(ManagedModelStore.REST_END_POINT);
     return fs;
   }
   
@@ -249,7 +246,7 @@ public class TestRerankBase extends RestTestBase {
       throws Exception {
     final String feature = getFeatureInJson(name, type, "test", params);
     log.info("loading feauture \n{} ", feature);
-    assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
         "/responseHeader/status==0");
   }
 
@@ -257,7 +254,7 @@ public class TestRerankBase extends RestTestBase {
       String params) throws Exception {
     final String feature = getFeatureInJson(name, type, fstore, params);
     log.info("loading feauture \n{} ", feature);
-    assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
         "/responseHeader/status==0");
   }
 
@@ -270,7 +267,7 @@ public class TestRerankBase extends RestTestBase {
       String fstore, String params) throws Exception {
     final String model = getModelInJson(name, type, features, fstore, params);
     log.info("loading model \n{} ", model);
-    assertJPut(CommonLTRParams.MODEL_STORE_END_POINT, model,
+    assertJPut(ManagedModelStore.REST_END_POINT, model,
         "/responseHeader/status==0");
   }
 
@@ -280,7 +277,7 @@ public class TestRerankBase extends RestTestBase {
     final String multipleModels = FileUtils.readFileToString(
         new File(url.toURI()), "UTF-8");
 
-    assertJPut(CommonLTRParams.MODEL_STORE_END_POINT, multipleModels,
+    assertJPut(ManagedModelStore.REST_END_POINT, multipleModels,
         "/responseHeader/status==0");
   }
 
@@ -324,7 +321,7 @@ public class TestRerankBase extends RestTestBase {
         new File(url.toURI()), "UTF-8");
     log.info("send \n{}", multipleFeatures);
 
-    assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, multipleFeatures,
+    assertJPut(ManagedFeatureStore.REST_END_POINT, multipleFeatures,
         "/responseHeader/status==0");
   }
 

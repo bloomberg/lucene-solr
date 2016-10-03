@@ -73,15 +73,5 @@ public class CommonLTRParams {
   public static final String RERANK_DOCS = "reRankDocs";
   /** query parser plugin: default number of documents to rerank **/
   public static final int DEFAULT_RERANK_DOCS = 200;
-  /** name of the feature store **/
-  public static final String FEATURE_STORE_NAME = "feature-store";
-  /** name of the model store **/
-  public static final String MODEL_STORE_NAME = "model-store";
-  /** the feature store rest endpoint **/
-  public static final String FEATURE_STORE_END_POINT = "/schema/"
-      + FEATURE_STORE_NAME;
-  /** the model store rest endpoint **/
-  public static final String MODEL_STORE_END_POINT = "/schema/"
-      + MODEL_STORE_NAME;
 
 }

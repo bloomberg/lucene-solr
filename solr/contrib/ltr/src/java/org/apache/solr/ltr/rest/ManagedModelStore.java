@@ -52,6 +52,9 @@ import org.slf4j.LoggerFactory;
 public class ManagedModelStore extends ManagedResource implements
     ManagedResource.ChildResourceSupport {
 
+  /** the model store rest endpoint **/
+  public static final String REST_END_POINT = "/schema/model-store";
+
   /** name of the attribute containing the normalizer type **/
   public static final String CLASS_KEY = "class";
   /** name of the attribute containing the normalizer params **/

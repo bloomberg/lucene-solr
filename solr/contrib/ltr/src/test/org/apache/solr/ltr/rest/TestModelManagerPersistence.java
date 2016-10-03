@@ -24,7 +24,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.RankSVMModel;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
@@ -44,11 +43,11 @@ public class TestModelManagerPersistence extends TestRerankBase {
     loadFeature("feature", ValueFeature.class.getCanonicalName(), "test",
         "{\"value\":2}");
     System.out.println(restTestHarness
-        .query(CommonLTRParams.FEATURE_STORE_END_POINT + "/test"));
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test",
+        .query(ManagedFeatureStore.REST_END_POINT + "/test"));
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test",
         "/features/[0]/name=='feature'");
     restTestHarness.reload();
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test",
         "/features/[0]/name=='feature'");
     loadFeature("feature1", ValueFeature.class.getCanonicalName(), "test1",
         "{\"value\":2}");
@@ -56,22 +55,22 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "{\"value\":2}");
     loadFeature("feature3", ValueFeature.class.getCanonicalName(), "test2",
         "{\"value\":2}");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test",
         "/features/[0]/name=='feature'");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test",
         "/features/[1]/name=='feature2'");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test1",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test1",
         "/features/[0]/name=='feature1'");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test2",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test2",
         "/features/[0]/name=='feature3'");
     restTestHarness.reload();
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test",
         "/features/[0]/name=='feature'");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test",
         "/features/[1]/name=='feature2'");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test1",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test1",
         "/features/[0]/name=='feature1'");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test2",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test2",
         "/features/[0]/name=='feature3'");
     loadModel("test-model", RankSVMModel.class.getCanonicalName(),
         new String[] {"feature"}, "test", "{\"weights\":{\"feature\":1.0}}");
@@ -97,28 +96,28 @@ public class TestModelManagerPersistence extends TestRerankBase {
       assertTrue(store.equals("test") || store.equals("test1"));
     }
     
-    assertJDelete(CommonLTRParams.FEATURE_STORE_END_POINT + "/test2",
+    assertJDelete(ManagedFeatureStore.REST_END_POINT + "/test2",
         "/responseHeader/status==0");
-    assertJDelete(CommonLTRParams.MODEL_STORE_END_POINT + "/test-model2",
+    assertJDelete(ManagedModelStore.REST_END_POINT + "/test-model2",
         "/responseHeader/status==0");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test2",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test2",
         "/features/==[]");
-    assertJQ(CommonLTRParams.MODEL_STORE_END_POINT + "/test-model2",
+    assertJQ(ManagedModelStore.REST_END_POINT + "/test-model2",
         "/models/[0]/name=='test-model'");
     restTestHarness.reload();
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test2",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test2",
         "/features/==[]");  
-    assertJQ(CommonLTRParams.MODEL_STORE_END_POINT + "/test-model2",
+    assertJQ(ManagedModelStore.REST_END_POINT + "/test-model2",
         "/models/[0]/name=='test-model'");
 
-    assertJDelete(CommonLTRParams.MODEL_STORE_END_POINT + "/*",
+    assertJDelete(ManagedModelStore.REST_END_POINT + "/*",
         "/responseHeader/status==0");
-    assertJDelete(CommonLTRParams.FEATURE_STORE_END_POINT + "/*",
+    assertJDelete(ManagedFeatureStore.REST_END_POINT + "/*",
         "/responseHeader/status==0");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test1",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test1",
         "/features/==[]");
     restTestHarness.reload();
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/test1",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test1",
         "/features/==[]");
 
   }

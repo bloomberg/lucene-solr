@@ -43,6 +43,9 @@ import org.slf4j.LoggerFactory;
 public class ManagedFeatureStore extends ManagedResource implements
     ManagedResource.ChildResourceSupport {
 
+  /** the feature store rest endpoint **/
+  public static final String REST_END_POINT = "/schema/feature-store";
+
   /** name of the attribute containing the feature class **/
   public static final String CLASS_KEY = "class";
   /** name of the attribute containing the feature name **/

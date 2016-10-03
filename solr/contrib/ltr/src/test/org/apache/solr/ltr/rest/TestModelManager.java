@@ -23,7 +23,6 @@ import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.RankSVMModel;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.RestManager;
@@ -42,8 +41,8 @@ public class TestModelManager extends TestRerankBase {
 
   @Before
   public void restart() throws Exception {
-    restTestHarness.delete(CommonLTRParams.FEATURE_STORE_END_POINT + "/*");
-    restTestHarness.delete(CommonLTRParams.MODEL_STORE_END_POINT + "/*");
+    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/*");
+    restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/*");
 
   }
 
@@ -90,31 +89,31 @@ public class TestModelManager extends TestRerankBase {
 
     // Add features
     String feature = "{\"name\": \"test1\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }";
-    assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
         "/responseHeader/status==0");
 
     feature = "{\"name\": \"test2\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }";
-    assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
         "/responseHeader/status==0");
 
     feature = "{\"name\": \"test3\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }";
-    assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
         "/responseHeader/status==0");
 
     feature = "{\"name\": \"test33\", \"store\": \"TEST\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }";
-    assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
         "/responseHeader/status==0");
 
     final String multipleFeatures = "[{\"name\": \"test4\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} }"
         + ",{\"name\": \"test5\", \"class\": \""+valueFeatureClassName+"\", \"params\": {\"value\": 1} } ]";
-    assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, multipleFeatures,
+    assertJPut(ManagedFeatureStore.REST_END_POINT, multipleFeatures,
         "/responseHeader/status==0");
 
     final String fieldValueFeatureClassName = FieldValueFeature.class.getCanonicalName();
     
     // Add bad feature (wrong params)_
     final String badfeature = "{\"name\": \"fvalue\", \"class\": \""+fieldValueFeatureClassName+"\", \"params\": {\"value\": 1} }";
-    assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, badfeature,
+    assertJPut(ManagedFeatureStore.REST_END_POINT, badfeature,
         "/error/msg/=='No setter corrresponding to \\'value\\' in "+fieldValueFeatureClassName+"'");
 
     final String rankSVMModelClassName = RankSVMModel.class.getCanonicalName();
@@ -122,22 +121,22 @@ public class TestModelManager extends TestRerankBase {
     // Add models
     String model = "{ \"name\":\"testmodel1\", \"class\":\""+rankSVMModelClassName+"\", \"features\":[] }";
     // fails since it does not have features
-    assertJPut(CommonLTRParams.MODEL_STORE_END_POINT, model,
+    assertJPut(ManagedModelStore.REST_END_POINT, model,
         "/responseHeader/status==400");
     // fails since it does not have weights
     model = "{ \"name\":\"testmodel2\", \"class\":\""+rankSVMModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}] }";
-    assertJPut(CommonLTRParams.MODEL_STORE_END_POINT, model,
+    assertJPut(ManagedModelStore.REST_END_POINT, model,
         "/responseHeader/status==400");
     // success
     model = "{ \"name\":\"testmodel3\", \"class\":\""+rankSVMModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}}}";
-    assertJPut(CommonLTRParams.MODEL_STORE_END_POINT, model,
+    assertJPut(ManagedModelStore.REST_END_POINT, model,
         "/responseHeader/status==0");
     // success
     final String multipleModels = "[{ \"name\":\"testmodel4\", \"class\":\""+rankSVMModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}} }\n"
         + ",{ \"name\":\"testmodel5\", \"class\":\""+rankSVMModelClassName+"\", \"features\":[{\"name\":\"test1\"}, {\"name\":\"test2\"}],\"params\":{\"weights\":{\"test1\":1.5,\"test2\":2.0}} } ]";
-    assertJPut(CommonLTRParams.MODEL_STORE_END_POINT, multipleModels,
+    assertJPut(ManagedModelStore.REST_END_POINT, multipleModels,
         "/responseHeader/status==0");
-    final String qryResult = JQ(CommonLTRParams.MODEL_STORE_END_POINT);
+    final String qryResult = JQ(ManagedModelStore.REST_END_POINT);
 
     assert (qryResult.contains("\"name\":\"testmodel3\"")
         && qryResult.contains("\"name\":\"testmodel4\"") && qryResult
@@ -147,11 +146,11 @@ public class TestModelManager extends TestRerankBase {
      * assertJQ(LTRParams.MSTORE_END_POINT, "/models/[1]/name=='testmodel4'");
      * assertJQ(LTRParams.MSTORE_END_POINT, "/models/[2]/name=='testmodel5'");
      */
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT,
+    assertJQ(ManagedFeatureStore.REST_END_POINT,
         "/featureStores==['TEST','_DEFAULT_']");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/_DEFAULT_",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/_DEFAULT_",
         "/features/[0]/name=='test1'");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/TEST",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/TEST",
         "/features/[0]/name=='test33'");
   }
 
@@ -160,9 +159,9 @@ public class TestModelManager extends TestRerankBase {
     loadFeatures("features-ranksvm.json");
     loadModels("ranksvm-model.json");
 
-    assertJQ(CommonLTRParams.MODEL_STORE_END_POINT,
+    assertJQ(ManagedModelStore.REST_END_POINT,
         "/models/[0]/name=='6029760550880411648'");
-    assertJQ(CommonLTRParams.FEATURE_STORE_END_POINT + "/_DEFAULT_",
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/_DEFAULT_",
         "/features/[1]/name=='description'");
   }
 

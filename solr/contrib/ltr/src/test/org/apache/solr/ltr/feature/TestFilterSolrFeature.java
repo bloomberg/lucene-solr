@@ -20,7 +20,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.RankSVMModel;
-import org.apache.solr.ltr.util.CommonLTRParams;
+import org.apache.solr.ltr.rest.ManagedFeatureStore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -84,7 +84,7 @@ public class TestFilterSolrFeature extends TestRerankBase {
     // Missing q/fq
     final String feature = getFeatureInJson("badFeature", "test",
         SolrFeature.class.getCanonicalName(), "{\"df\":\"foo\"]}");
-    assertJPut(CommonLTRParams.FEATURE_STORE_END_POINT, feature,
+    assertJPut(ManagedFeatureStore.REST_END_POINT, feature,
         "/responseHeader/status==500");
   }
   

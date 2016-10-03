@@ -151,7 +151,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         // if store is set in the trasformer we should overwrite the logger
 
         final ManagedFeatureStore fr = (ManagedFeatureStore) req.getCore().getRestManager()
-            .getManagedResource(CommonLTRParams.FEATURE_STORE_END_POINT);
+            .getManagedResource(ManagedFeatureStore.REST_END_POINT);
 
         final FeatureStore store = fr.getFeatureStore(featureStoreName);
         featureStoreName = store.getName(); // if featureStoreName was null before this gets actual name
