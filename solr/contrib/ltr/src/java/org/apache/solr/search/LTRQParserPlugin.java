@@ -70,6 +70,9 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
   private ManagedFeatureStore fr = null;
   private ManagedModelStore mr = null;
 
+  /** query parser plugin: the name of the attribute for setting the model **/
+  public static final String MODEL = "model";
+
   /** query parser plugin: default number of documents to rerank **/
   public static final int DEFAULT_RERANK_DOCS = 200;
 
@@ -159,7 +162,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
     @Override
     public Query parse() throws SyntaxError {
       // ReRanking Model
-      final String modelName = localParams.get(LTRFeatureLoggerTransformerFactory.MODEL);
+      final String modelName = localParams.get(LTRQParserPlugin.MODEL);
       if ((modelName == null) || modelName.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Must provide model in the request");
@@ -168,7 +171,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       final LTRScoringModel meta = mr.getModel(modelName);
       if (meta == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
-            "cannot find " + LTRFeatureLoggerTransformerFactory.MODEL + " " + modelName);
+            "cannot find " + LTRQParserPlugin.MODEL + " " + modelName);
       }
 
       final String modelFeatureStoreName = meta.getFeatureStoreName();
@@ -186,7 +189,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       if (featuresRequestedFromSameStore) {
         reRankModel.setFeatureLogger( LTRFeatureLoggerTransformerFactory.getFeatureLogger(req) );
       }
-      req.getContext().put(LTRFeatureLoggerTransformerFactory.MODEL, reRankModel);
+      req.getContext().put(LTRFeatureLoggerTransformerFactory.MODEL_QUERY, reRankModel);
 
       int reRankDocs = localParams.getInt(RERANK_DOCS, DEFAULT_RERANK_DOCS);
       reRankDocs = Math.max(1, reRankDocs);

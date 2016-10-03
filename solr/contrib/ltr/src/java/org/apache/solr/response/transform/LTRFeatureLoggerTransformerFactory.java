@@ -71,8 +71,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
 
-  /** query parser plugin: the name of the attribute for setting the model **/
-  public static final String MODEL = "model";
+  /** key of the ModelQuery in the request context **/
+  public static final String MODEL_QUERY = "model";
 
   /**
    * if the log feature query param is off features will not be logged.
@@ -151,7 +151,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       leafContexts = searcher.getTopReaderContext().leaves();
 
       // Setup ModelQuery
-      reRankModel = (ModelQuery) req.getContext().get(MODEL);
+      reRankModel = (ModelQuery) req.getContext().get(MODEL_QUERY);
       resultsReranked = (reRankModel != null);
       String featureStoreName = (String)req.getContext().get(FV_STORE);
       if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getScoringModel().getFeatureStoreName())))) {
