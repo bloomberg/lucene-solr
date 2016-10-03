@@ -59,8 +59,13 @@ import org.slf4j.LoggerFactory;
  */
 public class ModelQuery extends Query {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   // contains a description of the model
-  protected LTRScoringModel meta;
+  final private LTRScoringModel ltrScoringModel;
+  final private boolean extractAllFeatures;
+  final private Semaphore querySemaphore; // limits the number of threads per query, so that multiple requests can be serviced simultaneously
+
   // feature logger to output the features.
   protected FeatureLogger<?> fl;
   // Map of external parameters, such as query intent, that can be used by
@@ -70,22 +75,19 @@ public class ModelQuery extends Query {
   protected Query originalQuery;
   // Original solr request
   protected SolrQueryRequest request;
-  protected boolean extractAllFeatures;
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private Semaphore querySemaphore; // limits the number of threads per query, so that multiple requests can be serviced simultaneously
 
-  public ModelQuery(LTRScoringModel meta) {
-    this(meta, false);
+  public ModelQuery(LTRScoringModel ltrScoringModel) {
+    this(ltrScoringModel, false);
   }
 
-  public ModelQuery(LTRScoringModel meta, boolean extractAllFeatures) {
-    this.meta = meta;
+  public ModelQuery(LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
+    this.ltrScoringModel = ltrScoringModel;
     this.extractAllFeatures = extractAllFeatures; 
     querySemaphore = new Semaphore(LTRThreadModule.getMaxQueryThreads());
   }
 
-  public LTRScoringModel getMetadata() {
-    return meta;
+  public LTRScoringModel getScoringModel() {
+    return ltrScoringModel;
   }
 
   public void setFeatureLogger(FeatureLogger fl) {
@@ -96,12 +98,12 @@ public class ModelQuery extends Query {
     return fl;
   }
 
-  public String getFeatureStoreName(){
-    return meta.getFeatureStoreName();
+  public void setOriginalQuery(Query originalQuery) {
+    this.originalQuery = originalQuery;
   }
 
-  public void setOriginalQuery(Query mainQuery) {
-    originalQuery = mainQuery;
+  public Query getOriginalQuery() {
+    return originalQuery;
   }
 
   public void setExternalFeatureInfo(Map<String,String[]> externalFeatureInfo) {
@@ -116,11 +118,15 @@ public class ModelQuery extends Query {
     this.request = request;
   }
 
+  public SolrQueryRequest getRequest() {
+    return request;
+  }
+  
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = classHash();
-    result = (prime * result) + ((meta == null) ? 0 : meta.hashCode());
+    result = (prime * result) + ((ltrScoringModel == null) ? 0 : ltrScoringModel.hashCode());
     result = (prime * result)
         + ((originalQuery == null) ? 0 : originalQuery.hashCode());
     if (efi == null) {
@@ -143,11 +149,11 @@ public class ModelQuery extends Query {
   }
 
   private boolean equalsTo(ModelQuery other) {
-    if (meta == null) {
-      if (other.meta != null) {
+    if (ltrScoringModel == null) {
+      if (other.ltrScoringModel != null) {
         return false;
       }
-    } else if (!meta.equals(other.meta)) {
+    } else if (!ltrScoringModel.equals(other.ltrScoringModel)) {
       return false;
     }
     if (originalQuery == null) {
@@ -176,15 +182,11 @@ public class ModelQuery extends Query {
     return true;
   }
 
-  public SolrQueryRequest getRequest() {
-    return request;
-  }
-  
   @Override
   public ModelWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
       throws IOException {   
-    final Collection<Feature> modelFeatures = meta.getFeatures();
-    final Collection<Feature> allFeatures = meta.getAllFeatures();
+    final Collection<Feature> modelFeatures = ltrScoringModel.getFeatures();
+    final Collection<Feature> allFeatures = ltrScoringModel.getAllFeatures();
     int modelFeatSize = modelFeatures.size();
    
     Collection<Feature> features = null;
@@ -396,7 +398,7 @@ public class ModelQuery extends Query {
         }
         pos++;
       }
-      meta.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
+      ltrScoringModel.normalizeFeaturesInPlace(modelFeatureValuesNormalized);
     }
 
     @Override
@@ -410,7 +412,7 @@ public class ModelQuery extends Query {
       final List<Explanation> featureExplanations = new ArrayList<>();
       for (int idx = 0 ;idx < modelFeatureWeights.length; ++idx) {
         final FeatureWeight f = modelFeatureWeights[idx]; 
-        Explanation e = meta.getNormalizerExplanation(explanations[f.getIndex()], idx);
+        Explanation e = ltrScoringModel.getNormalizerExplanation(explanations[f.getIndex()], idx);
         featureExplanations.add(e);
       }
       // TODO this calls twice the scorers, could be optimized.
@@ -419,7 +421,7 @@ public class ModelQuery extends Query {
 
       final float finalScore = bs.score();
 
-      return meta.explain(context, doc, finalScore, featureExplanations);
+      return ltrScoringModel.explain(context, doc, finalScore, featureExplanations);
 
     }
 
@@ -554,7 +556,7 @@ public class ModelQuery extends Query {
             }
           }
           makeNormalizedFeatures();
-          return meta.score(modelFeatureValuesNormalized);
+          return ltrScoringModel.score(modelFeatureValuesNormalized);
         }
 
         @Override
@@ -648,7 +650,7 @@ public class ModelQuery extends Query {
             }
           }
           makeNormalizedFeatures();
-          return meta.score(modelFeatureValuesNormalized);
+          return ltrScoringModel.score(modelFeatureValuesNormalized);
         }
 
         @Override

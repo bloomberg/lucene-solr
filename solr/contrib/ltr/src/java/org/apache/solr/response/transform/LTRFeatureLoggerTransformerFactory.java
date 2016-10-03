@@ -147,7 +147,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       reRankModel = (ModelQuery) req.getContext().get(CommonLTRParams.MODEL);
       resultsReranked = (reRankModel != null);
       String featureStoreName = (String)req.getContext().get(FV_STORE);
-      if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getFeatureStoreName())))) {
+      if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getScoringModel().getFeatureStoreName())))) {
         // if store is set in the trasformer we should overwrite the logger
 
         final ManagedFeatureStore fr = (ManagedFeatureStore) req.getCore().getRestManager()
