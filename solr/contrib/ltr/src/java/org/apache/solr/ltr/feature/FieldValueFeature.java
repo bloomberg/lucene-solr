@@ -36,10 +36,6 @@ public class FieldValueFeature extends Feature {
   private String field;
   private Set<String> fieldAsSet;
 
-
-
-  private double defaultValue = 0.0d;
-
   public String getField() {
     return field;
   }
@@ -48,8 +44,6 @@ public class FieldValueFeature extends Feature {
     this.field = field;
     fieldAsSet = Sets.newHashSet(field);
   }
-
-
 
   @Override
   public LinkedHashMap<String,Object> paramsToMap() {
@@ -67,14 +61,6 @@ public class FieldValueFeature extends Feature {
       SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
       throws IOException {
     return new FieldValueFeatureWeight(searcher, request, originalQuery, efi);
-  }
-
-  public double getDefaultValue() {
-    return defaultValue;
-  }
-
-  public void setDefaultValue(double defaultValue) {
-    this.defaultValue = defaultValue;
   }
 
   public class FieldValueFeatureWeight extends FeatureWeight {
@@ -108,7 +94,7 @@ public class FieldValueFeature extends Feature {
               fieldAsSet);
           final IndexableField indexableField = document.getField(field);
           if (indexableField == null) {
-            return (float)defaultValue;
+            return getDefaultValue();
           }
           final Number number = indexableField.numericValue();
           if (number != null) {
@@ -129,7 +115,7 @@ public class FieldValueFeature extends Feature {
           // do we want to return a default value?
           // do we want to fail?
         }
-        return (float)defaultValue;
+        return getDefaultValue();
       }
     }
   }

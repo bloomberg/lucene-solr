@@ -133,7 +133,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     final String fstore = "testIfADocumentDoesntHaveAFieldASetDefaultValueIsReturned";
 
     loadFeature("popularity42", FieldValueFeature.class.getCanonicalName(), fstore,
-            "{\"field\":\"popularity\",\"defaultValue\":42.0}");
+            "{\"field\":\"popularity\",\"defaultValue\":\"42.0\"}");
 
     SolrQuery query = new SolrQuery();
     query.setQuery("id:42");
