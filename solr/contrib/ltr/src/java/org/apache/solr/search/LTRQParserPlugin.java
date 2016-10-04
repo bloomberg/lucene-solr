@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -43,7 +44,7 @@ import org.apache.solr.rest.RestManager;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.ltr.LTRQuery;
+import org.apache.solr.search.ltr.LTRRescorer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,7 @@ import org.slf4j.LoggerFactory;
  */
 public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String NAME = "ltr";
+  private static Query defaultQuery = new MatchAllDocsQuery();
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -210,4 +212,47 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       return new LTRQuery(reRankModel, reRankDocs);
     }
   }
+
+  private class LTRQuery extends AbstractReRankQuery {
+    private final ModelQuery reRankModel;
+
+    public LTRQuery(ModelQuery reRankModel, int reRankDocs) {
+      super(defaultQuery, reRankDocs, new LTRRescorer(reRankModel));
+      this.reRankModel = reRankModel;
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * classHash() + (mainQuery.hashCode() + reRankModel.hashCode() + reRankDocs);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return sameClassAs(o) &&  equalsTo(getClass().cast(o));
+    }
+
+    private boolean equalsTo(LTRQuery other) {    
+      return (mainQuery.equals(other.mainQuery)
+          && reRankModel.equals(other.reRankModel) && (reRankDocs == other.reRankDocs));
+    }
+
+    @Override
+    public RankQuery wrap(Query _mainQuery) {
+      super.wrap(_mainQuery);    
+      reRankModel.setOriginalQuery(_mainQuery);
+      return this;
+    }
+
+    @Override
+    public String toString(String field) {
+      return "{!ltr mainQuery='" + mainQuery.toString() + "' reRankModel='"
+          + reRankModel.toString() + "' reRankDocs=" + reRankDocs + "}";
+    }
+    
+    @Override
+    protected Query rewrite(Query rewrittenMainQuery) throws IOException {
+      return new LTRQuery(reRankModel, reRankDocs).wrap(rewrittenMainQuery);
+    }
+  }
+
 }
