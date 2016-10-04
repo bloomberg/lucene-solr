@@ -95,6 +95,15 @@ public class SolrFeature extends Feature {
       throws IOException {
     return new SolrFeatureWeight(searcher, request, originalQuery, efi);
   }
+  
+  @Override
+  protected void validate() throws FeatureException {
+    super.validate();
+   
+    if ((q == null || q.isEmpty()) &&
+         ((fq == null) || fq.isEmpty()))
+      throw new FeatureException("Solr Feature: FQ or Q have not been provided");
+  }
 
   public class SolrFeatureWeight extends FeatureWeight {
     Weight solrQueryWeight;
@@ -107,11 +116,6 @@ public class SolrFeature extends Feature {
       try {
         String solrQuery = q;
         final List<String> fqs = fq;
-
-        if (((solrQuery == null) || solrQuery.isEmpty())
-            && ((fqs == null) || fqs.isEmpty())) {
-          throw new IOException("ERROR: FQ or Q have not been provided");
-        }
 
         if ((solrQuery == null) || solrQuery.isEmpty()) {
           solrQuery = "*:*";

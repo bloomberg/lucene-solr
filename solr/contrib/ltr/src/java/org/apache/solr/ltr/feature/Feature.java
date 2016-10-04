@@ -56,12 +56,17 @@ public abstract class Feature extends Query {
     if (params != null) {
       SolrPluginUtils.invokeSetters(f, params.entrySet());
     }
+    f.validate();
     return f;
   }
 
   public Feature(String name, Map<String,Object> params) {
     this.name = name;
     this.params = params;
+  }
+  
+  protected void validate() throws FeatureException {
+    
   }
 
   @Override

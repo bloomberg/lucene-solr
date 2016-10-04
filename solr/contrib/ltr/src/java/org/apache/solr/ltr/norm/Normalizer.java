@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
@@ -48,6 +49,12 @@ public abstract class Normalizer {
     if (params != null) {
       SolrPluginUtils.invokeSetters(f, params.entrySet());
     }
+    f.validate();
     return f;
   }
+  
+  protected void validate() throws ModelException {
+    
+  }
+
 }

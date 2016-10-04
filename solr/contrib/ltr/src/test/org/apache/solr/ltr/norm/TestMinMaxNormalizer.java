@@ -18,11 +18,14 @@ package org.apache.solr.ltr.norm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.ltr.model.ModelException;
 import org.junit.Test;
 
 public class TestMinMaxNormalizer {
@@ -82,9 +85,16 @@ public class TestMinMaxNormalizer {
     final Map<String,Object> params = new HashMap<String,Object>();
     params.put("min", "10.0f");
     params.put("max", "10.0f");
-    implTestMinMax(params,
-        10.0f,
-        10.0f);
+    final ModelException expectedException = 
+        new ModelException("MinMax Normalizer delta must not be zero");
+    try {
+        implTestMinMax(params,
+              10.0f,
+              10.0f);
+        fail("testMinMaxNormalizerMinEqualToMax failed to throw exception: "+expectedException);
+    } catch(ModelException actualException) {
+        assertEquals(expectedException.toString(), actualException.toString());
+    }
   }
 
   @Test

@@ -18,6 +18,8 @@ package org.apache.solr.ltr.norm;
 
 import java.util.LinkedHashMap;
 
+import org.apache.solr.ltr.model.ModelException;
+
 public class StandardNormalizer extends Normalizer {
 
   private float avg = 0f;
@@ -50,6 +52,13 @@ public class StandardNormalizer extends Normalizer {
   @Override
   public float normalize(float value) {
     return (value - avg) / std;
+  }
+  
+  @Override
+  protected void validate() throws ModelException {
+    super.validate();
+    if (std <= 0f)
+      throw new ModelException("Standard Normalizer standard deviation must be positive");
   }
 
   @Override
