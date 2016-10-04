@@ -32,7 +32,7 @@ public class TestFeatureStore extends TestRerankBase {
   @BeforeClass
   public static void setup() throws Exception {
     setuptest();
-    fstore = getNewManagedFeatureStore();
+    fstore = getManagedFeatureStore();
   }
 
   @Test

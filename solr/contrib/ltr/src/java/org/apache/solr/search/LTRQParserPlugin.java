@@ -41,7 +41,6 @@ import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
-import org.apache.solr.rest.RestManager;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
@@ -136,17 +135,8 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     final SolrResourceLoader solrResourceLoader = (SolrResourceLoader) loader;
-    final RestManager.Registry registry = solrResourceLoader.getManagedResourceRegistry();
-
-    registry.registerManagedResource(
-        ManagedFeatureStore.REST_END_POINT,
-        ManagedFeatureStore.class,
-        this);
-
-    registry.registerManagedResource(
-        ManagedModelStore.REST_END_POINT,
-        ManagedModelStore.class,
-        this);
+    ManagedFeatureStore.registerManagedFeatureStore(solrResourceLoader, this);
+    ManagedModelStore.registerManagedModelStore(solrResourceLoader, this);
   }
 
   @Override
@@ -170,9 +160,6 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
     public LTRQParser(String qstr, SolrParams localParams, SolrParams params,
         SolrQueryRequest req) {
       super(qstr, localParams, params, req);
-
-      mr = (ManagedModelStore) req.getCore().getRestManager()
-          .getManagedResource(ManagedModelStore.REST_END_POINT);
     }
 
     @Override

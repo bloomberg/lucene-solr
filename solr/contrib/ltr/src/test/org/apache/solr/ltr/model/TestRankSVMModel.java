@@ -56,8 +56,8 @@ public class TestRankSVMModel extends TestRerankBase {
   public static void setup() throws Exception {
     setuptest();
     // loadFeatures("features-store-test-model.json");
-    store = getNewManagedModelStore();
-    fstore = getNewManagedFeatureStore().getFeatureStore("test");
+    store = getManagedModelStore();
+    fstore = getManagedFeatureStore().getFeatureStore("test");
 
   }
 

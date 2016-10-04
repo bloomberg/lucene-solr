@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
@@ -35,6 +36,7 @@ import org.apache.solr.ltr.store.ModelStore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
+import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,19 @@ import org.slf4j.LoggerFactory;
  */
 public class ManagedModelStore extends ManagedResource implements
     ManagedResource.ChildResourceSupport {
+
+  public static void registerManagedModelStore(SolrResourceLoader solrResourceLoader,
+      ManagedResourceObserver managedResourceObserver) {
+    solrResourceLoader.getManagedResourceRegistry().registerManagedResource(
+        REST_END_POINT,
+        ManagedModelStore.class,
+        managedResourceObserver);
+  }
+
+  public static ManagedModelStore getManagedModelStore(SolrCore core) {
+    return (ManagedModelStore) core.getRestManager()
+        .getManagedResource(REST_END_POINT);
+  }
 
   /** the model store rest endpoint **/
   public static final String REST_END_POINT = "/schema/model-store";

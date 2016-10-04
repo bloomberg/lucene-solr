@@ -88,21 +88,12 @@ public class TestRerankBase extends RestTestBase {
     bulkIndex();
   }
 
-  // NOTE: this will return a new rest manager since the getCore() method
-  // returns a new instance of a restManager.
-  public static ManagedFeatureStore getNewManagedFeatureStore() {
-    final ManagedFeatureStore fs = (ManagedFeatureStore) h.getCore()
-        .getRestManager()
-        .getManagedResource(ManagedFeatureStore.REST_END_POINT);
-    return fs;
+  public static ManagedFeatureStore getManagedFeatureStore() {
+    return ManagedFeatureStore.getManagedFeatureStore(h.getCore());
   }
 
-  public static ManagedModelStore getNewManagedModelStore() {
-
-    final ManagedModelStore fs = (ManagedModelStore) h.getCore()
-        .getRestManager()
-        .getManagedResource(ManagedModelStore.REST_END_POINT);
-    return fs;
+  public static ManagedModelStore getManagedModelStore() {
+    return ManagedModelStore.getManagedModelStore(h.getCore());
   }
   
   protected static SortedMap<ServletHolder,String>  setupTestInit(
@@ -287,7 +278,7 @@ public class TestRerankBase extends RestTestBase {
         + modelFileName);
     final String modelJson = FileUtils.readFileToString(new File(url.toURI()),
         "UTF-8");
-    final ManagedModelStore ms = getNewManagedModelStore();
+    final ManagedModelStore ms = getManagedModelStore();
 
     url = TestRerankBase.class.getResource("/featureExamples/"
         + featureFileName);
@@ -301,7 +292,7 @@ public class TestRerankBase extends RestTestBase {
       throw new ModelException("ObjectBuilder failed parsing json", ioExc);
     }
 
-    final ManagedFeatureStore fs = getNewManagedFeatureStore();
+    final ManagedFeatureStore fs = getManagedFeatureStore();
     // fs.getFeatureStore(null).clear();
     fs.doDeleteChild(null, "*"); // is this safe??
     // based on my need to call this I dont think that

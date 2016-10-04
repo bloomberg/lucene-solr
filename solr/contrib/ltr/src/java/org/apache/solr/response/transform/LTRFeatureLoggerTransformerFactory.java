@@ -151,8 +151,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (docsWereNotReranked || (featureStoreName != null && (!featureStoreName.equals(scoringQuery.getScoringModel().getFeatureStoreName())))) {
         // if store is set in the transformer we should overwrite the logger
 
-        final ManagedFeatureStore fr = (ManagedFeatureStore) req.getCore().getRestManager()
-            .getManagedResource(ManagedFeatureStore.REST_END_POINT);
+        final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
 
         final FeatureStore store = fr.getFeatureStore(featureStoreName);
         featureStoreName = store.getName(); // if featureStoreName was null before this gets actual name
