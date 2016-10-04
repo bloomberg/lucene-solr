@@ -173,12 +173,10 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
             "cannot find " + LTRQParserPlugin.MODEL + " " + modelName);
       }
 
-      final String modelFeatureStoreName = meta.getFeatureStoreName();
-      final Boolean extractFeatures = (Boolean) req.getContext().get(LTRFeatureLoggerTransformerFactory.LOG_FEATURES_QUERY_PARAM);
-      final String fvStoreName = (String) req.getContext().get(LTRFeatureLoggerTransformerFactory.FV_STORE);
       // Check if features are requested and if the model feature store and feature-transform feature store are the same
-      final boolean featuresRequestedFromSameStore = (extractFeatures != null && (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ) ? extractFeatures.booleanValue():false;
-      
+      final boolean featuresRequestedFromSameStore =
+          LTRFeatureLoggerTransformerFactory.featuresRequestedFromSameStore(meta.getFeatureStoreName(), req);
+
       final ModelQuery reRankModel = new ModelQuery(meta, 
           extractEFIParams(localParams), 
           featuresRequestedFromSameStore);

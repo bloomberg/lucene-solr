@@ -76,7 +76,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   /**
    * if the log feature query param is off features will not be logged.
    **/
-  public static final String LOG_FEATURES_QUERY_PARAM = "fvCache";
+  private static final String LOG_FEATURES_QUERY_PARAM = "fvCache";
+
+  // Check if features are requested and if the model feature store and feature-transform feature store are the same
+  public static boolean featuresRequestedFromSameStore(String modelFeatureStoreName, SolrQueryRequest req) {
+    final Boolean extractFeatures = (Boolean) req.getContext().get(LOG_FEATURES_QUERY_PARAM);
+    final String fvStoreName = (String) req.getContext().get(FV_STORE);
+    return (extractFeatures != null && (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ) ? extractFeatures.booleanValue():false;
+  }
 
   public void setLoggingModelName(String loggingModelName) {
     this.loggingModelName = loggingModelName;
