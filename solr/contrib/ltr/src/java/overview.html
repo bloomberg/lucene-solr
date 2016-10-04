@@ -70,7 +70,7 @@ Finally, a {@link org.apache.solr.ltr.feature.Feature} will produce a particular
 it is modeled as a {@link org.apache.lucene.search.Query}. The package {@link org.apache.solr.ltr.feature} contains several examples
 of features. One benefit of extending the Query object is that we can reuse
 Query as a feature, see for example {@link org.apache.solr.ltr.feature.SolrFeature}.
-Features for a document can also be returned in the response by using Document Trasformer provided by {@link org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory}.
+Features for a document can also be returned in the response by using {@link org.apache.solr.response.transform.DocTransformer DocTrasformer} provided by {@link org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory}.
 </p>
 </body>
 </html>
