@@ -32,6 +32,7 @@ import org.apache.solr.ltr.ModelQuery;
 import org.apache.solr.ltr.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.ModelQuery.ModelWeight.ModelScorer;
+import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.ltr.model.LoggingModel;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
@@ -52,26 +53,17 @@ import org.apache.solr.util.SolrPluginUtils;
 public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   // used inside fl to specify the output format (csv/json) of the extracted features
-  public static final String FV_RESPONSE_WRITER = "fvwt";
+  private static final String FV_RESPONSE_WRITER = "fvwt";
 
   // used inside fl to specify the format (dense|sparse) of the extracted features
-  public static final String FV_FORMAT = "format";
+  private static final String FV_FORMAT = "format";
 
   // used inside fl to specify the feature store to use for the feature extraction
-  public static final String FV_STORE = "store";
-
-  public static FeatureLogger<?> createFeatureLogger(SolrQueryRequest req) {
-    final String stringFormat = (String) req.getContext().get(FV_RESPONSE_WRITER);
-    final String featureFormat = (String) req.getContext().get(FV_FORMAT);
-    return FeatureLogger.createFeatureLogger(stringFormat, featureFormat);
-  }
+  private static final String FV_STORE = "store";
 
   public static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
-
-  /** key of the ModelQuery in the request context **/
-  public static final String MODEL_QUERY = "model";
 
   /**
    * if the log feature query param is off features will not be logged.
@@ -93,10 +85,16 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       SolrQueryRequest req) {
 
     // Hint to enable feature vector cache since we are requesting features
-    req.getContext().put(LOG_FEATURES_QUERY_PARAM, true);
-    req.getContext().put(FV_STORE, params.get(FV_STORE));
-    req.getContext().put(FV_FORMAT, params.get(FV_FORMAT));
-    req.getContext().put(FV_RESPONSE_WRITER, params.get(FV_RESPONSE_WRITER));
+    SolrQueryRequestContextUtils.setUseFvCache(req);
+
+    // Communicate which feature store we are requesting features for
+    SolrQueryRequestContextUtils.setFvStoreName(req, params.get(FV_STORE));
+
+    // Create and supply the feature logger to be used
+    SolrQueryRequestContextUtils.setFeatureLogger(req,
+        FeatureLogger.createFeatureLogger(
+            params.get(FV_RESPONSE_WRITER),
+            params.get(FV_FORMAT)));
 
     return new FeatureTransformer(name, params, req);
   }
@@ -150,9 +148,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       leafContexts = searcher.getTopReaderContext().leaves();
 
       // Setup ModelQuery
-      reRankModel = (ModelQuery) req.getContext().get(MODEL_QUERY);
+      reRankModel = SolrQueryRequestContextUtils.getModelQuery(req);
       resultsReranked = (reRankModel != null);
-      String featureStoreName = (String)req.getContext().get(FV_STORE);
+      String featureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getScoringModel().getFeatureStoreName())))) {
         // if store is set in the trasformer we should overwrite the logger
 
@@ -180,7 +178,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       }
 
       if (reRankModel.getFeatureLogger() == null){
-        reRankModel.setFeatureLogger( createFeatureLogger(req) );
+        reRankModel.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
       }
       reRankModel.setRequest(req);
 
