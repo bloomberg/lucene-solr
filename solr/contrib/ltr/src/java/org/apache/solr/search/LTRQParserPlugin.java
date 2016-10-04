@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.ranking.ModelQuery;
@@ -44,7 +45,6 @@ import org.apache.solr.rest.RestManager;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.ltr.LTRRescorer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
