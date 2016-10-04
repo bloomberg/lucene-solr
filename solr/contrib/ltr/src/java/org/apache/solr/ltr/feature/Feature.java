@@ -42,8 +42,7 @@ public abstract class Feature extends Query {
 
   final protected String name;
   private int index = -1;
-
-  float defaultValue = 0.0f;
+  private float defaultValue = 0.0f;
 
   final private Map<String,Object> params;
 
@@ -191,7 +190,7 @@ public abstract class Feature extends Query {
     }
 
     public float getDefaultValue() {
-      return defaultValue;
+      return Feature.this.defaultValue;
     }
 
     @Override
