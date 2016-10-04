@@ -30,7 +30,9 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.request.SolrQueryRequest;
 
 import com.google.common.collect.Sets;
-
+/**
+ * This feature returns the value of a field in the current document
+ */
 public class FieldValueFeature extends Feature {
 
   private String field;
