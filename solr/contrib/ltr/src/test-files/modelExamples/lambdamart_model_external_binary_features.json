@@ -9,7 +9,7 @@
     "trees": [
       {
         "weight" : "1f",
-        "tree": {
+        "root": {
           "feature": "user_device_smartphone",
           "threshold": "0.5f",
           "left" : {
@@ -22,7 +22,7 @@
         }},
       {
         "weight" : "1f",
-        "tree": {
+        "root": {
           "feature": "user_device_tablet",
           "threshold": "0.5f",
           "left" : {

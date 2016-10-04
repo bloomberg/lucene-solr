@@ -8,7 +8,7 @@
     "params":{
         "trees": [
             {
-                "tree": {
+                "root": {
                     "feature": "matchedTitle",
                     "threshold": "0.5f",
                     "left" : {

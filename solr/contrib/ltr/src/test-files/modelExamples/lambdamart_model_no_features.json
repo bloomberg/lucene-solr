@@ -5,7 +5,7 @@
         "trees": [
             {
                 "weight" : "2f",
-                "tree": {
+                "root": {
                     "value" : "-10"
                 }
             }

@@ -192,7 +192,7 @@ public class LambdaMARTModel extends LTRScoringModel {
       this.weight = new Float(weight);
     }
 
-    public void setTree(Object root) {
+    public void setRoot(Object root) {
       this.root = createRegressionTreeNode((Map<String,Object>)root);
     }
 

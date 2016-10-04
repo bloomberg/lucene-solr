@@ -9,7 +9,7 @@
         "trees": [
             {
                 "weight" : "1f",
-                "tree": {
+                "root": {
                     "feature": "matchedTitle",
                     "threshold": "0.5f",
                     "right": {

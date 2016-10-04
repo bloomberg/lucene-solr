@@ -9,7 +9,7 @@
         "trees": [
             {
                 "weight" : "1f",
-                "tree": {
+                "root": {
                     "threshold": "0.5f",
                     "left" : {
                         "value" : "-100"
