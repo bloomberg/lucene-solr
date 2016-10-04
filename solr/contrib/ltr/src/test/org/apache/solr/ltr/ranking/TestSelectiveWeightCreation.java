@@ -317,8 +317,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     TopDocs hits = searcher.search(bqBuilder.build(), 10);
     assertEquals(3, hits.totalHits);
     assertEquals("2", searcher.doc(hits.scoreDocs[0].doc).get("id"));
-    assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
-    assertEquals("0", searcher.doc(hits.scoreDocs[2].doc).get("id"));
 
     List<Feature> features = makeFeatures(new int[] {0, 2, 3});
     final List<Feature> allFeatures = makeFeatures(new int[] {0, 1, 2, 3, 4, 5,

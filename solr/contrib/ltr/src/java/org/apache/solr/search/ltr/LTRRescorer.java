@@ -120,7 +120,7 @@ public class LTRRescorer extends Rescorer {
     final ModelWeight modelWeight = (ModelWeight) searcher
         .createNormalizedWeight(reRankModel, true);
 
-    // FIXME: I dislike that we have no gaurentee this is actually a
+    // FIXME: I dislike that we have no guarantee this is actually a
     // SolrIndexReader.
     // We should do something about that
     final SolrIndexSearcher solrIndexSearch = (SolrIndexSearcher) searcher;

@@ -31,8 +31,8 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
-import org.apache.lucene.codecs.lucene54.Lucene54DocValuesProducer.SparseBits;
-import org.apache.lucene.codecs.lucene54.Lucene54DocValuesProducer.SparseLongValues;
+import org.apache.lucene.codecs.lucene54.Lucene54DocValuesProducer.SparseNumericDocValues;
+import org.apache.lucene.codecs.lucene54.Lucene54DocValuesProducer.SparseNumericDocValuesRandomAccessWrapper;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -61,12 +61,12 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.store.RAMInputStream;
 import org.apache.lucene.store.RAMOutputStream;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LongValues;
@@ -206,19 +206,14 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
     for (LeafReaderContext context : indexReader.leaves()) {
       final LeafReader reader = context.reader();
       final NumericDocValues numeric = DocValues.getNumeric(reader, "numeric");
-      final Bits numericBits = DocValues.getDocsWithField(reader, "numeric");
 
       final SortedDocValues sorted = DocValues.getSorted(reader, "sorted");
-      final Bits sortedBits = DocValues.getDocsWithField(reader, "sorted");
 
       final BinaryDocValues binary = DocValues.getBinary(reader, "binary");
-      final Bits binaryBits = DocValues.getDocsWithField(reader, "binary");
 
       final SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(reader, "sorted_numeric");
-      final Bits sortedNumericBits = DocValues.getDocsWithField(reader, "sorted_numeric");
 
       final SortedSetDocValues sortedSet = DocValues.getSortedSet(reader, "sorted_set");
-      final Bits sortedSetBits = DocValues.getDocsWithField(reader, "sorted_set");
 
       for (int i = 0; i < reader.maxDoc(); ++i) {
         final Document doc = reader.document(i);
@@ -226,49 +221,43 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
         final Long value = valueField == null ? null : valueField.numericValue().longValue();
 
         if (value == null) {
-          assertEquals(0, numeric.get(i));
-          assertEquals(-1, sorted.getOrd(i));
-          assertEquals(new BytesRef(), binary.get(i));
-
-          assertFalse(numericBits.get(i));
-          assertFalse(sortedBits.get(i));
-          assertFalse(binaryBits.get(i));
+          assertTrue(numeric.docID() + " vs " + i, numeric.docID() < i);
         } else {
-          assertEquals(value.longValue(), numeric.get(i));
-          assertTrue(sorted.getOrd(i) >= 0);
-          assertEquals(new BytesRef(Long.toString(value)), sorted.lookupOrd(sorted.getOrd(i)));
-          assertEquals(new BytesRef(Long.toString(value)), binary.get(i));
-
-          assertTrue(numericBits.get(i));
-          assertTrue(sortedBits.get(i));
-          assertTrue(binaryBits.get(i));
+          assertEquals(i, numeric.nextDoc());
+          assertEquals(i, binary.nextDoc());
+          assertEquals(i, sorted.nextDoc());
+          assertEquals(value.longValue(), numeric.longValue());
+          assertTrue(sorted.ordValue() >= 0);
+          assertEquals(new BytesRef(Long.toString(value)), sorted.lookupOrd(sorted.ordValue()));
+          assertEquals(new BytesRef(Long.toString(value)), binary.binaryValue());
         }
 
         final IndexableField[] valuesFields = doc.getFields("values");
-        final Set<Long> valueSet = new HashSet<>();
-        for (IndexableField sf : valuesFields) {
-          valueSet.add(sf.numericValue().longValue());
-        }
-
-        sortedNumeric.setDocument(i);
-        assertEquals(valuesFields.length, sortedNumeric.count());
-        for (int j = 0; j < sortedNumeric.count(); ++j) {
-          assertTrue(valueSet.contains(sortedNumeric.valueAt(j)));
-        }
-        sortedSet.setDocument(i);
-        int sortedSetCount = 0;
-        while (true) {
-          long ord = sortedSet.nextOrd();
-          if (ord == SortedSetDocValues.NO_MORE_ORDS) {
-            break;
+        if (valuesFields.length == 0) {
+          assertTrue(sortedNumeric.docID() + " vs " + i, sortedNumeric.docID() < i);
+        } else {
+          final Set<Long> valueSet = new HashSet<>();
+          for (IndexableField sf : valuesFields) {
+            valueSet.add(sf.numericValue().longValue());
           }
-          assertTrue(valueSet.contains(Long.parseLong(sortedSet.lookupOrd(ord).utf8ToString())));
-          sortedSetCount++;
-        }
-        assertEquals(valueSet.size(), sortedSetCount);
 
-        assertEquals(!valueSet.isEmpty(), sortedNumericBits.get(i));
-        assertEquals(!valueSet.isEmpty(), sortedSetBits.get(i));
+          assertEquals(i, sortedNumeric.nextDoc());
+          assertEquals(valuesFields.length, sortedNumeric.docValueCount());
+          for (int j = 0; j < sortedNumeric.docValueCount(); ++j) {
+            assertTrue(valueSet.contains(sortedNumeric.nextValue()));
+          }
+          assertEquals(i, sortedSet.nextDoc());
+          int sortedSetCount = 0;
+          while (true) {
+            long ord = sortedSet.nextOrd();
+            if (ord == SortedSetDocValues.NO_MORE_ORDS) {
+              break;
+            }
+            assertTrue(valueSet.contains(Long.parseLong(sortedSet.lookupOrd(ord).utf8ToString())));
+            sortedSetCount++;
+          }
+          assertEquals(valueSet.size(), sortedSetCount);
+        }
       }
     }
 
@@ -439,13 +428,13 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
 
-  public void testSparseLongValues() {
+  public void testSparseLongValues() throws IOException {
     final int iters = atLeast(5);
     for (int iter = 0; iter < iters; ++iter) {
       final int numDocs = TestUtil.nextInt(random(), 0, 100);
-      final long[] docIds = new long[numDocs];
+      final int[] docIds = new int[numDocs];
       final long[] values = new long[numDocs];
-      final long maxDoc;
+      final int maxDoc;
       if (numDocs == 0) {
         maxDoc = 1 + random().nextInt(10);
       } else {
@@ -471,35 +460,51 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
           return values[Math.toIntExact(index)];
         }
       };
-      final SparseBits liveBits = new SparseBits(maxDoc, numDocs, docIdsValues);
-      // random-access
-      for (int i = 0; i < 2000; ++i) {
-        final long docId = TestUtil.nextLong(random(), 0, maxDoc - 1);
-        final boolean exists = liveBits.get(Math.toIntExact(docId));
-        assertEquals(Arrays.binarySearch(docIds, docId) >= 0, exists);
-      }
+      final SparseNumericDocValues sparseValues = new SparseNumericDocValues(numDocs, docIdsValues, valuesValues);
+
       // sequential access
-      for (int docId = 0; docId < maxDoc; docId += random().nextInt(3)) {
-        final boolean exists = liveBits.get(Math.toIntExact(docId));
-        assertEquals(Arrays.binarySearch(docIds, docId) >= 0, exists);
+      assertEquals(-1, sparseValues.docID());
+      for (int i = 0; i < docIds.length; ++i) {
+        assertEquals(docIds[i], sparseValues.nextDoc());
+      }
+      assertEquals(DocIdSetIterator.NO_MORE_DOCS, sparseValues.nextDoc());
+
+      // advance
+      for (int i = 0; i < 2000; ++i) {
+        final int target = TestUtil.nextInt(random(), 0, (int) maxDoc);
+        int index = Arrays.binarySearch(docIds, target);
+        if (index < 0) {
+          index = -1 - index;
+        }
+        sparseValues.reset();
+        if (index > 0) {
+          assertEquals(docIds[index - 1], sparseValues.advance(Math.toIntExact(docIds[index - 1])));
+        }
+        if (index == docIds.length) {
+          assertEquals(DocIdSetIterator.NO_MORE_DOCS, sparseValues.advance(target));
+        } else {
+          assertEquals(docIds[index], sparseValues.advance(target));
+        }
       }
 
-      final SparseLongValues sparseValues = new SparseLongValues(liveBits, valuesValues, missingValue);
+      final SparseNumericDocValuesRandomAccessWrapper raWrapper = new SparseNumericDocValuesRandomAccessWrapper(sparseValues, missingValue);
+
       // random-access
       for (int i = 0; i < 2000; ++i) {
-        final long docId = TestUtil.nextLong(random(), 0, maxDoc - 1);
+        final int docId = TestUtil.nextInt(random(), 0, maxDoc - 1);
         final int idx = Arrays.binarySearch(docIds, docId);
-        final long value = sparseValues.get(docId);
+        final long value = raWrapper.get(docId);
         if (idx >= 0) {
           assertEquals(values[idx], value);
         } else {
           assertEquals(missingValue, value);
         }
       }
+
       // sequential access
       for (int docId = 0; docId < maxDoc; docId += random().nextInt(3)) {
         final int idx = Arrays.binarySearch(docIds, docId);
-        final long value = sparseValues.get(docId);
+        final long value = raWrapper.get(docId);
         if (idx >= 0) {
           assertEquals(values[idx], value);
         } else {
@@ -546,7 +551,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       RAMInputStream in = new RAMInputStream("", buffer);
       BytesRefBuilder b = new BytesRefBuilder();
       for (int i = 0; i < maxDoc; ++i) {
-        values.setDocument(i);
+        assertEquals(i, values.nextDoc());
         final int numValues = in.readVInt();
 
         for (int j = 0; j < numValues; ++j) {
@@ -595,10 +600,10 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       assertNotNull(values);
       RAMInputStream in = new RAMInputStream("", buffer);
       for (int i = 0; i < maxDoc; ++i) {
-        values.setDocument(i);
-        assertEquals(2, values.count());
-        assertEquals(in.readVLong(), values.valueAt(0));
-        assertEquals(in.readVLong(), values.valueAt(1));
+        assertEquals(i, values.nextDoc());
+        assertEquals(2, values.docValueCount());
+        assertEquals(in.readVLong(), values.nextValue());
+        assertEquals(in.readVLong(), values.nextValue());
       }
       r.close();
       dir.close();

@@ -17,46 +17,31 @@
 package org.apache.solr.search.ltr;
 
 import java.io.IOException;
-import java.util.Map;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
+
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Rescorer;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.FilterWeight;
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.handler.component.MergeStrategy;
-import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.ltr.ranking.ModelQuery;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.search.QueryCommand;
+import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.RankQuery;
+
 
 /**
  * The LTRQuery and LTRWeight wrap the main query to fetch matching docs. It
  * then provides its own TopDocsCollector, which goes through the top X docs and
  * reranks them using the provided reRankModel.
  */
-public class LTRQuery extends RankQuery {
-  private Query mainQuery = new MatchAllDocsQuery();
+public class LTRQuery extends AbstractReRankQuery {
+  private static Query defaultQuery = new MatchAllDocsQuery();
   private final ModelQuery reRankModel;
-  private final int reRankDocs;
-  private final Rescorer reRankRescorer;
-  private Map<BytesRef,Integer> boostedPriority;
 
   public LTRQuery(ModelQuery reRankModel, int reRankDocs) {
+    super(defaultQuery, reRankDocs, new LTRRescorer(reRankModel));
     this.reRankModel = reRankModel;
-    this.reRankDocs = reRankDocs;
-    this.reRankRescorer = new LTRRescorer(reRankModel);
   }
 
   @Override
   public int hashCode() {
-    //FIXME this hash function must be double checked
-    return (mainQuery.hashCode() + reRankModel.hashCode() + reRankDocs);
+    return 31 * classHash() + (mainQuery.hashCode() + reRankModel.hashCode() + reRankDocs);
   }
 
   @Override
@@ -64,47 +49,16 @@ public class LTRQuery extends RankQuery {
     return sameClassAs(o) &&  equalsTo(getClass().cast(o));
   }
 
-  private boolean equalsTo(LTRQuery other) {
-    
+  private boolean equalsTo(LTRQuery other) {    
     return (mainQuery.equals(other.mainQuery)
         && reRankModel.equals(other.reRankModel) && (reRankDocs == other.reRankDocs));
   }
 
-
-
   @Override
   public RankQuery wrap(Query _mainQuery) {
-    if (_mainQuery != null) {
-      mainQuery = _mainQuery;
-    }
-    reRankModel.setOriginalQuery(mainQuery);
+    super.wrap(_mainQuery);    
+    reRankModel.setOriginalQuery(_mainQuery);
     return this;
-  }
-
-  @Override
-  public MergeStrategy getMergeStrategy() {
-    return null;
-  }
-
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  @Override
-  public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd,
-      IndexSearcher searcher) throws IOException {
-
-    if (boostedPriority == null) {
-      final SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-      if (info != null) {
-        final Map context = info.getReq().getContext();
-        boostedPriority = (Map<BytesRef,Integer>) context
-            .get(QueryElevationComponent.BOOSTED_PRIORITY);
-        // https://github.com/apache/lucene-solr/blob/5775be6e6242c0f7ec108b10ebbf9da3a7d07a4b/lucene/queries/src/java/org/apache/lucene/queries/function/valuesource/TFValueSource.java#L56
-        // function query needs the searcher in the context
-        context.put("searcher", searcher);
-      }
-    }
-
-    return new LTRCollector(reRankDocs, len, reRankRescorer, cmd, searcher,
-        boostedPriority);
   }
 
   @Override
@@ -112,35 +66,9 @@ public class LTRQuery extends RankQuery {
     return "{!ltr mainQuery='" + mainQuery.toString() + "' reRankModel='"
         + reRankModel.toString() + "' reRankDocs=" + reRankDocs + "}";
   }
-
+  
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost)
-      throws IOException {
-    final Weight mainWeight = mainQuery.createWeight(searcher, needsScores, boost);
-    return new LTRWeight(searcher, mainWeight, reRankRescorer);
-  }
-
-  /**
-   * This is the weight for the main solr query in the LTRQuery. The only thing
-   * this really does is have an explain using the reRankQuery.
-   */
-  public class LTRWeight extends FilterWeight {
-    private final Rescorer reRankRescorer;
-    private final IndexSearcher searcher;
-
-    public LTRWeight(IndexSearcher searcher, Weight mainWeight,
-        Rescorer reRankRescorer) throws IOException {
-      super(LTRQuery.this,mainWeight);
-      this.reRankRescorer = reRankRescorer;
-      this.searcher = searcher;
-    }
-
-    @Override
-    public Explanation explain(LeafReaderContext context, int doc)
-        throws IOException {
-      final Explanation mainExplain = in.explain(context, doc);
-      return reRankRescorer.explain(searcher, mainExplain,
-          context.docBase + doc);
-    }
+  protected Query rewrite(Query rewrittenMainQuery) throws IOException {
+    return new LTRQuery(reRankModel, reRankDocs).wrap(rewrittenMainQuery);
   }
 }

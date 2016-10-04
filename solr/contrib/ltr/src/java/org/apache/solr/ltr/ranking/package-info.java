@@ -26,9 +26,9 @@
  * read from the request the model (instance of {@link org.apache.solr.ltr.ranking.ModelQuery})
  * used to perform the request plus other
  * parameters. The plugin will generate a {@link org.apache.solr.search.ltr.LTRQuery}:
- * a particular {@link org.apache.solr.search.RankQuery}
+ * a particular {@link org.apache.solr.search.AbstractReRankQuery}
  * that will encapsulate the given model and use it to
- * rescore and rerank the document (by using an {@link org.apache.solr.search.ltr.LTRCollector}).
+ * rescore and rerank the document (by using an {@link org.apache.solr.search.ReRankCollector}).
  * </p>
  * <p>
  * A model will be applied on each document through a {@link org.apache.solr.ltr.ranking.ModelQuery}, a

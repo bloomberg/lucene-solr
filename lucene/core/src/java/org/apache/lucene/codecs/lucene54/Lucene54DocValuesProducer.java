@@ -29,20 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.lucene54.Lucene54DocValuesConsumer.NumberType;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomAccessOrds;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
@@ -452,7 +440,58 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
   @Override
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.name);
-    return getNumeric(entry);
+    Bits docsWithField;
+
+    if (entry.format == SPARSE_COMPRESSED) {
+      return getSparseNumericDocValues(entry);
+    } else {
+      if (entry.missingOffset == ALL_MISSING) {
+        return DocValues.emptyNumeric();
+      } else if (entry.missingOffset == ALL_LIVE) {
+        LongValues values = getNumeric(entry);
+        return new NumericDocValues() {
+          private int docID = -1;
+
+          @Override
+          public int docID() {
+            return docID;
+          }
+
+          @Override
+          public int nextDoc() {
+            docID++;
+            if (docID == maxDoc) {
+              docID = NO_MORE_DOCS;
+            }
+            return docID;
+          }
+
+          @Override
+          public int advance(int target) {
+            if (target >= maxDoc) {
+              docID = NO_MORE_DOCS;
+            } else {
+              docID = target;
+            }
+            return docID;
+          }
+
+          @Override
+          public long cost() {
+            // TODO
+            return 0;
+          }
+
+          @Override
+          public long longValue() {
+            return values.get(docID);
+          }
+        };
+      } else {
+        docsWithField = getLiveBits(entry.missingOffset, maxDoc);
+      }
+    }
+    return new LegacyNumericDocValuesWrapper(docsWithField, getNumeric(entry));
   }
 
   @Override
@@ -526,8 +565,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
         };
       }
       case SPARSE_COMPRESSED:
-        final SparseBits docsWithField = getSparseLiveBits(entry);
-        final LongValues values = getNumeric(entry.nonMissingValues);
+        final SparseNumericDocValues values = getSparseNumericDocValues(entry);
         final long missingValue;
         switch (entry.numberType) {
           case ORDINAL:
@@ -539,141 +577,125 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           default:
             throw new AssertionError();
         }
-        return new SparseLongValues(docsWithField, values, missingValue);
+        return new SparseNumericDocValuesRandomAccessWrapper(values, missingValue);
       default:
         throw new AssertionError();
     }
   }
 
-  static class SparseBits implements Bits {
+  static final class SparseNumericDocValues extends NumericDocValues {
 
-    final long maxDoc, docIDsLength, firstDocId;
-    final LongValues docIds;
+    final int docIDsLength;
+    final LongValues docIds, values;
 
-    long index;     // index of docId in docIds
-    long docId;     // doc ID at index
-    long nextDocId; // doc ID at (index+1)
+    int index, doc;
 
-    SparseBits(long maxDoc, long docIDsLength, LongValues docIDs) {
-      if (docIDsLength > 0 && maxDoc <= docIDs.get(docIDsLength - 1)) {
-        throw new IllegalArgumentException("maxDoc must be > the last element of docIDs");
-      }
-      this.maxDoc = maxDoc;
+    SparseNumericDocValues(int docIDsLength, LongValues docIDs, LongValues values) {
       this.docIDsLength = docIDsLength;
       this.docIds = docIDs;
-      this.firstDocId = docIDsLength == 0 ? maxDoc : docIDs.get(0);
+      this.values = values;
       reset();
     }
 
-    private void reset() {
+    void reset() {
       index = -1;
-      this.docId = -1;
-      this.nextDocId = firstDocId;
+      doc = -1;
     }
 
-    /** Gallop forward and stop as soon as an index is found that is greater than
-     *  the given docId. {@code index} will store an index that stores a value
-     *  that is &lt;= {@code docId} while the return value will give an index
-     *  that stores a value that is &gt; {@code docId}. These indices can then be
-     *  used to binary search. */
-    private long gallop(long docId) {
-      index++;
-      this.docId = nextDocId;
-      long hiIndex = index + 1;
+    @Override
+    public int docID() {
+      return doc;
+    }
 
-      while (true) {
+    @Override
+    public int nextDoc() throws IOException {
+      if (index >= docIDsLength - 1) {
+        index = docIDsLength;
+        return doc = NO_MORE_DOCS;
+      }
+      return doc = (int) docIds.get(++index);
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      long loIndex = index;
+      long step = 1;
+      long hiIndex;
+      int hiDoc;
+
+      // gallop forward by exponentially growing the interval
+      // in order to find an interval so that the target doc
+      // is in ]lo, hi]. Compared to a regular binary search,
+      // this optimizes the case that the caller performs many
+      // advance calls by small deltas
+      do {
+        hiIndex = index + step;
         if (hiIndex >= docIDsLength) {
           hiIndex = docIDsLength;
-          nextDocId = maxDoc;
+          hiDoc = NO_MORE_DOCS;
           break;
         }
-
-        final long hiDocId = docIds.get(hiIndex);
-        if (hiDocId > docId) {
-          nextDocId = hiDocId;
+        hiDoc = (int) docIds.get(hiIndex);
+        if (hiDoc >= target) {
           break;
         }
+        step <<= 1;
+      } while (true);
 
-        final long delta = hiIndex - index;
-        index = hiIndex;
-        this.docId = hiDocId;
-        hiIndex += delta << 1; // double the step each time
-      }
-      return hiIndex;
-    }
-
-    private void binarySearch(long hiIndex, long docId) {
-      while (index + 1 < hiIndex) {
-        final long midIndex = (index + hiIndex) >>> 1;
-        final long midDocId = docIds.get(midIndex);
-        if (midDocId > docId) {
+      // now binary search
+      while (loIndex + 1 < hiIndex) {
+        final long midIndex = (loIndex + 1 + hiIndex) >>> 1;
+        final int midDoc = (int) docIds.get(midIndex);
+        if (midDoc >= target) {
           hiIndex = midIndex;
-          nextDocId = midDocId;
+          hiDoc = midDoc;
         } else {
-          index = midIndex;
-          this.docId = midDocId;
+          loIndex = midIndex;
         }
       }
-    }
 
-    private boolean checkInvariants(long nextIndex, long docId) {
-      assert this.docId <= docId;
-      assert this.nextDocId > docId;
-      assert (index == -1 && this.docId == -1) || this.docId == docIds.get(index);
-      assert (nextIndex == docIDsLength && nextDocId == maxDoc) || nextDocId == docIds.get(nextIndex);
-      return true;
-    }
-
-    private void exponentialSearch(long docId) {
-      // seek forward by doubling the interval on each iteration
-      final long hiIndex = gallop(docId);
-      assert checkInvariants(hiIndex, docId);
-
-      // now perform the actual binary search
-      binarySearch(hiIndex, docId);
-    }
-
-    boolean get(final long docId) {
-      if (docId < this.docId) {
-        // reading doc IDs backward, go back to the start
-        reset();
-      }
-
-      if (docId >= nextDocId) {
-        exponentialSearch(docId);
-      }
-
-      assert checkInvariants(index + 1, docId);
-      return docId == this.docId;
+      index = (int) hiIndex;
+      return doc = hiDoc;
     }
 
     @Override
-    public boolean get(int index) {
-      return get((long) index);
+    public long longValue() {
+      assert index >= 0;
+      assert index < docIDsLength;
+      return values.get(index);
     }
 
     @Override
-    public int length() {
-      return Math.toIntExact(maxDoc);
+    public long cost() {
+      return docIDsLength;
     }
   }
 
-  static class SparseLongValues extends LongValues {
+  static class SparseNumericDocValuesRandomAccessWrapper extends LongValues {
 
-    final SparseBits docsWithField;
-    final LongValues values;
+    final SparseNumericDocValues values;
     final long missingValue;
 
-    SparseLongValues(SparseBits docsWithField, LongValues values, long missingValue) {
-      this.docsWithField = docsWithField;
+    SparseNumericDocValuesRandomAccessWrapper(SparseNumericDocValues values, long missingValue) {
       this.values = values;
       this.missingValue = missingValue;
     }
 
     @Override
-    public long get(long docId) {
-      if (docsWithField.get(docId)) {
-        return values.get(docsWithField.index);
+    public long get(long longIndex) {
+      final int index = Math.toIntExact(longIndex);
+      int doc = values.docID();
+      if (doc >= index) {
+        values.reset();
+      }
+      assert values.docID() < index;
+      try {
+        doc = values.advance(index);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      if (doc == index) {
+        return values.longValue();
       } else {
         return missingValue;
       }
@@ -681,8 +703,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
 
   }
 
-  @Override
-  public BinaryDocValues getBinary(FieldInfo field) throws IOException {
+  LegacyBinaryDocValues getLegacyBinary(FieldInfo field) throws IOException {
     BinaryEntry bytes = binaries.get(field.name);
     switch(bytes.format) {
       case BINARY_FIXED_UNCOMPRESSED:
@@ -696,7 +717,13 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
     }
   }
 
-  private BinaryDocValues getFixedBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
+  @Override
+  public BinaryDocValues getBinary(FieldInfo field) throws IOException {
+    BinaryEntry be = binaries.get(field.name);
+    return new LegacyBinaryDocValuesWrapper(getLiveBits(be.missingOffset, maxDoc), getLegacyBinary(field));
+  }
+
+  private LegacyBinaryDocValues getFixedBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
     final IndexInput data = this.data.slice("fixed-binary", bytes.offset, bytes.count * bytes.maxLength);
 
     final BytesRef term = new BytesRef(bytes.maxLength);
@@ -717,7 +744,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
     };
   }
 
-  private BinaryDocValues getVariableBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
+  private LegacyBinaryDocValues getVariableBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
     final RandomAccessInput addressesData = this.data.randomAccessSlice(bytes.addressesOffset, bytes.addressesEndOffset - bytes.addressesOffset);
     final LongValues addresses = DirectMonotonicReader.getInstance(bytes.addressesMeta, addressesData);
 
@@ -778,7 +805,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
     return index;
   }
 
-  private BinaryDocValues getCompressedBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
+  private LegacyBinaryDocValues getCompressedBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
     final MonotonicBlockPackedReader addresses = getIntervalInstance(field, bytes);
     final ReverseTermsIndex index = getReverseIndexInstance(field, bytes);
     assert addresses.size() > 0; // we don't have to handle empty case
@@ -789,14 +816,96 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
     final int valueCount = (int) binaries.get(field.name).count;
-    final BinaryDocValues binary = getBinary(field);
+    final LegacyBinaryDocValues binary = getLegacyBinary(field);
     NumericEntry entry = ords.get(field.name);
     final LongValues ordinals = getNumeric(entry);
+    if (entry.format == SPARSE_COMPRESSED) {
+      final SparseNumericDocValues sparseValues = ((SparseNumericDocValuesRandomAccessWrapper) ordinals).values;
+      return new SortedDocValues() {
+
+        @Override
+        public int ordValue() {
+          return (int) sparseValues.longValue();
+        }
+
+        @Override
+        public BytesRef lookupOrd(int ord) {
+          return binary.get(ord);
+        }
+
+        @Override
+        public int getValueCount() {
+          return valueCount;
+        }
+
+        @Override
+        public int docID() {
+          return sparseValues.docID();
+        }
+
+        @Override
+        public int nextDoc() throws IOException {
+          return sparseValues.nextDoc();
+        }
+
+        @Override
+        public int advance(int target) throws IOException {
+          return sparseValues.advance(target);
+        }
+
+        @Override
+        public long cost() {
+          return sparseValues.cost();
+        }
+
+      };
+    }
     return new SortedDocValues() {
+      private int docID = -1;
+      private int ord;
 
       @Override
-      public int getOrd(int docID) {
-        return (int) ordinals.get(docID);
+      public int docID() {
+        return docID;
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        assert docID != NO_MORE_DOCS;
+        while (true) {
+          docID++;
+          if (docID == maxDoc) {
+            docID = NO_MORE_DOCS;
+            break;
+          }
+          ord = (int) ordinals.get(docID);
+          if (ord != -1) {
+            break;
+          }
+        }
+        return docID;
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        if (target >= maxDoc) {
+          docID = NO_MORE_DOCS;
+          return docID;
+        } else {
+          docID = target-1;
+          return nextDoc();
+        }
+      }
+          
+      @Override
+      public int ordValue() {
+        return ord;
+      }
+
+      @Override
+      public long cost() {
+        // TODO
+        return 0;
       }
 
       @Override
@@ -841,13 +950,95 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
     if (ss.format == SORTED_SINGLE_VALUED) {
       NumericEntry numericEntry = numerics.get(field.name);
       final LongValues values = getNumeric(numericEntry);
-      final Bits docsWithField;
       if (numericEntry.format == SPARSE_COMPRESSED) {
-        docsWithField = ((SparseLongValues) values).docsWithField;
-      } else {
-        docsWithField = getLiveBits(numericEntry.missingOffset, maxDoc);
+        SparseNumericDocValues sparseValues = ((SparseNumericDocValuesRandomAccessWrapper) values).values;
+        return new SortedNumericDocValues() {
+
+          @Override
+          public long nextValue() throws IOException {
+            return sparseValues.longValue();
+          }
+
+          @Override
+          public int docValueCount() {
+            return 1;
+          }
+
+          @Override
+          public int docID() {
+            return sparseValues.docID();
+          }
+
+          @Override
+          public int nextDoc() throws IOException {
+            return sparseValues.nextDoc();
+          }
+
+          @Override
+          public int advance(int target) throws IOException {
+            return sparseValues.advance(target);
+          }
+
+          @Override
+          public long cost() {
+            return sparseValues.cost();
+          }
+
+        };
       }
-      return DocValues.singleton(values, docsWithField);
+      final Bits docsWithField = getLiveBits(numericEntry.missingOffset, maxDoc);
+      return new SortedNumericDocValues() {
+        int docID = -1;
+
+        @Override
+        public int docID() {
+          return docID;
+        }
+
+        @Override
+        public int nextDoc() {
+          while (true) {
+            docID++;
+            if (docID == maxDoc) {
+              docID = NO_MORE_DOCS;
+              break;
+            }
+
+            if (docsWithField.get(docID)) {
+              // TODO: use .nextSetBit here, at least!!
+              break;
+            }
+          }
+          return docID;
+        }
+
+        @Override
+        public int advance(int target) {
+          if (target >= maxDoc) {
+            docID = NO_MORE_DOCS;
+            return docID;
+          } else {
+            docID = target-1;
+            return nextDoc();
+          }
+        }
+
+        @Override
+        public long cost() {
+          // TODO
+          return 0;
+        }
+
+        @Override
+        public int docValueCount() {
+          return 1;
+        }
+
+        @Override
+        public long nextValue() {
+          return values.get(docID);
+        }
+      };
     } else if (ss.format == SORTED_WITH_ADDRESSES) {
       NumericEntry numericEntry = numerics.get(field.name);
       final LongValues values = getNumeric(numericEntry);
@@ -856,21 +1047,57 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       return new SortedNumericDocValues() {
         long startOffset;
         long endOffset;
+        int docID = -1;
+        long upto;
 
         @Override
-        public void setDocument(int doc) {
-          startOffset = ordIndex.get(doc);
-          endOffset = ordIndex.get(doc+1L);
+        public int docID() {
+          return docID;
         }
 
         @Override
-        public long valueAt(int index) {
-          return values.get(startOffset + index);
+        public int nextDoc() {
+          while (true) {
+            docID++;
+            if (docID == maxDoc) {
+              docID = NO_MORE_DOCS;
+              return docID;
+            }
+            startOffset = ordIndex.get(docID);
+            endOffset = ordIndex.get(docID+1L);
+            if (endOffset > startOffset) {
+              break;
+            }
+          }
+          upto = startOffset;
+          return docID;
         }
 
         @Override
-        public int count() {
+        public int advance(int target) {
+          if (target >= maxDoc) {
+            docID = NO_MORE_DOCS;
+            return docID;
+          } else {
+            docID = target-1;
+            return nextDoc();
+          }
+        }
+        
+        @Override
+        public long cost() {
+          // TODO
+          return 0;
+        }
+        
+        @Override
+        public int docValueCount() {
           return (int) (endOffset - startOffset);
+        }
+        
+        @Override
+        public long nextValue() {
+          return values.get(upto++);
         }
       };
     } else if (ss.format == SORTED_SET_TABLE) {
@@ -882,22 +1109,58 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       return new SortedNumericDocValues() {
         int startOffset;
         int endOffset;
+        int docID = -1;
+        int upto;
 
         @Override
-        public void setDocument(int doc) {
-          final int ord = (int) ordinals.get(doc);
-          startOffset = offsets[ord];
-          endOffset = offsets[ord + 1];
+        public int docID() {
+          return docID;
         }
 
         @Override
-        public long valueAt(int index) {
-          return table[startOffset + index];
+        public int nextDoc() {
+          while (true) {
+            docID++;
+            if (docID == maxDoc) {
+              docID = NO_MORE_DOCS;
+              return docID;
+            }
+            int ord = (int) ordinals.get(docID);
+            startOffset = offsets[ord];
+            endOffset = offsets[ord+1];
+            if (endOffset > startOffset) {
+              break;
+            }
+          }
+          upto = startOffset;
+          return docID;
         }
 
         @Override
-        public int count() {
+        public int advance(int target) {
+          if (target >= maxDoc) {
+            docID = NO_MORE_DOCS;
+            return docID;
+          } else {
+            docID = target-1;
+            return nextDoc();
+          }
+        }
+        
+        @Override
+        public long cost() {
+          // TODO
+          return 0;
+        }
+
+        @Override
+        public int docValueCount() {
           return endOffset - startOffset;
+        }
+        
+        @Override
+        public long nextValue() {
+          return table[upto++];
         }
       };
     } else {
@@ -910,8 +1173,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
     SortedSetEntry ss = sortedSets.get(field.name);
     switch (ss.format) {
       case SORTED_SINGLE_VALUED:
-        final SortedDocValues values = getSorted(field);
-        return DocValues.singleton(values);
+        return DocValues.singleton(getSorted(field));
       case SORTED_WITH_ADDRESSES:
         return getSortedSetWithAddresses(field);
       case SORTED_SET_TABLE:
@@ -924,12 +1186,12 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
   private SortedSetDocValues getSortedSetWithAddresses(FieldInfo field) throws IOException {
     final long valueCount = binaries.get(field.name).count;
     // we keep the byte[]s and list of ords on disk, these could be large
-    final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
+    final LongBinaryDocValues binary = (LongBinaryDocValues) getLegacyBinary(field);
     final LongValues ordinals = getNumeric(ords.get(field.name));
     // but the addresses to the ord stream are in RAM
     final LongValues ordIndex = getOrdIndexInstance(field, ordIndexes.get(field.name));
 
-    return new RandomAccessOrds() {
+    return new LegacySortedSetDocValuesWrapper(new LegacySortedSetDocValues() {
       long startOffset;
       long offset;
       long endOffset;
@@ -978,28 +1240,19 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           return super.termsEnum();
         }
       }
-
-      @Override
-      public long ordAt(int index) {
-        return ordinals.get(startOffset + index);
-      }
-
-      @Override
-      public int cardinality() {
-        return (int) (endOffset - startOffset);
-      }
-    };
+      }, maxDoc);
   }
 
   private SortedSetDocValues getSortedSetTable(FieldInfo field, SortedSetEntry ss) throws IOException {
     final long valueCount = binaries.get(field.name).count;
-    final LongBinaryDocValues binary = (LongBinaryDocValues) getBinary(field);
-    final LongValues ordinals = getNumeric(ords.get(field.name));
+    final LongBinaryDocValues binary = (LongBinaryDocValues) getLegacyBinary(field);
+    final NumericEntry ordinalsEntry = ords.get(field.name);
+    final LongValues ordinals = getNumeric(ordinalsEntry);
 
     final long[] table = ss.table;
     final int[] offsets = ss.tableOffsets;
 
-    return new RandomAccessOrds() {
+    return new LegacySortedSetDocValuesWrapper(new LegacySortedSetDocValues() {
 
       int offset, startOffset, endOffset;
 
@@ -1011,22 +1264,12 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
       }
 
       @Override
-      public long ordAt(int index) {
-        return table[startOffset + index];
-      }
-
-      @Override
       public long nextOrd() {
         if (offset == endOffset) {
           return NO_MORE_ORDS;
         } else {
           return table[offset++];
         }
-      }
-
-      @Override
-      public int cardinality() {
-        return endOffset - startOffset;
       }
 
       @Override
@@ -1056,8 +1299,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
           return super.termsEnum();
         }
       }
-
-    };
+      }, maxDoc);
   }
 
   private Bits getLiveBits(final long offset, final int count) throws IOException {
@@ -1086,34 +1328,11 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
     }
   }
 
-  private SparseBits getSparseLiveBits(NumericEntry entry) throws IOException {
+  private SparseNumericDocValues getSparseNumericDocValues(NumericEntry entry) throws IOException {
     final RandomAccessInput docIdsData = this.data.randomAccessSlice(entry.missingOffset, entry.offset - entry.missingOffset);
     final LongValues docIDs = DirectMonotonicReader.getInstance(entry.monotonicMeta, docIdsData);
-    return new SparseBits(maxDoc, entry.numDocsWithValue, docIDs);
-  }
-
-  @Override
-  public Bits getDocsWithField(FieldInfo field) throws IOException {
-    switch(field.getDocValuesType()) {
-      case SORTED_SET:
-        return DocValues.docsWithValue(getSortedSet(field), maxDoc);
-      case SORTED_NUMERIC:
-        return DocValues.docsWithValue(getSortedNumeric(field), maxDoc);
-      case SORTED:
-        return DocValues.docsWithValue(getSorted(field), maxDoc);
-      case BINARY:
-        BinaryEntry be = binaries.get(field.name);
-        return getLiveBits(be.missingOffset, maxDoc);
-      case NUMERIC:
-        NumericEntry ne = numerics.get(field.name);
-        if (ne.format == SPARSE_COMPRESSED) {
-          return getSparseLiveBits(ne);
-        } else {
-          return getLiveBits(ne.missingOffset, maxDoc);
-        }
-      default:
-        throw new AssertionError();
-    }
+    final LongValues values = getNumeric(entry.nonMissingValues); // cannot be sparse
+    return new SparseNumericDocValues(Math.toIntExact(entry.numDocsWithValue), docIDs, values);
   }
 
   @Override
@@ -1191,7 +1410,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
   }
 
   // internally we compose complex dv (sorted/sortedset) from other ones
-  static abstract class LongBinaryDocValues extends BinaryDocValues {
+  static abstract class LongBinaryDocValues extends LegacyBinaryDocValues {
     @Override
     public final BytesRef get(int docID) {
       return get((long)docID);
