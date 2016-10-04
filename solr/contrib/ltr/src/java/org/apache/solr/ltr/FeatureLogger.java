@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.log;
+package org.apache.solr.ltr;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;

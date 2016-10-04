@@ -14,8 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.ltr;
 
-/**
- * FeatureLogger can be registered in a model and provide a strategy for logging the feature values.
- */
-package org.apache.solr.ltr.log;
+import java.util.HashMap;
+
+public class DocInfo extends HashMap<String,Object> {
+
+  // Name of key used to store the original score of a doc
+  private static final String ORIGINAL_DOC_SCORE = "ORIGINAL_DOC_SCORE";
+
+  public DocInfo() {
+    super();
+  }
+
+  public void setOriginalDocScore(Float score) {
+    put(DocInfo.ORIGINAL_DOC_SCORE, score);
+  }
+
+  public Float getOriginalDocScore() {
+    return (Float)get(DocInfo.ORIGINAL_DOC_SCORE);
+  }
+
+  public boolean hasOriginalDocScore() {
+    return containsKey(DocInfo.ORIGINAL_DOC_SCORE);
+  }
+
+}

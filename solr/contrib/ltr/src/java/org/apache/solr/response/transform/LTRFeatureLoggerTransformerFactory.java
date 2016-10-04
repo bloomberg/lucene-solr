@@ -27,7 +27,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.ltr.log.FeatureLogger;
+import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.model.LoggingModel;
 import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;

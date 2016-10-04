@@ -32,7 +32,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.macro.MacroExpander;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.ranking.DocInfo;
+import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
