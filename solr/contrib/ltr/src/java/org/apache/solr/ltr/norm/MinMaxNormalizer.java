@@ -18,6 +18,24 @@ package org.apache.solr.ltr.norm;
 
 import java.util.LinkedHashMap;
 
+/**
+ * A {@link Normalizer} to scales a feature value using a (min,max) range.
+ * <p>
+ * Example configuration:
+ * <table summary="">
+ * <tr><td>"norm" : {</td></tr>
+ * <tr><td></td><td>"class" :  </td><td>"org.apache.solr.ltr.norm.MinMaxNormalizer",</td></tr>
+ * <tr><td></td><td>"params" : </td><td>{ "min":"0", "max":"50" }</td></tr>
+ * <tr><td>}</td></tr>
+ * </table>
+ * <p>
+ * Example normalizations:
+ * <ul>
+ * <li>-5 will be normalized to -0.1
+ * <li>55 will be normalized to  1.1
+ * <li>+5 will be normalized to +0.1
+ * </ul>
+ */
 public class MinMaxNormalizer extends Normalizer {
 
   private float min = Float.NEGATIVE_INFINITY;

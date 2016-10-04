@@ -24,9 +24,9 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * A normalizer normalizes the value of a feature. Once that the feature values
- * will be computed, the normalizer will be applied and the resulting values
- * will be received by the model.
+ * A normalizer normalizes the value of a feature. After the feature values
+ * have been computed, the {@link Normalizer#normalize(float)} methods will
+ * be called and the resulting values will be used by the model.
  */
 public abstract class Normalizer {
 

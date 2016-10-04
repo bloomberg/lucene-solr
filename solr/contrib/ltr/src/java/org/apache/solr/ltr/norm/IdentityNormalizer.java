@@ -18,6 +18,11 @@ package org.apache.solr.ltr.norm;
 
 import java.util.LinkedHashMap;
 
+/**
+ * A {@link Normalizer} that normalizes a feature value to itself. This is the
+ * default normalizer class, if no normalizer is configured then the
+ * IdentityNormalizer will be used.
+ */
 public class IdentityNormalizer extends Normalizer {
 
   public static final IdentityNormalizer INSTANCE = new IdentityNormalizer();
