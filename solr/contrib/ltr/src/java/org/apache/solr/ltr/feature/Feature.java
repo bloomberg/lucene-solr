@@ -190,7 +190,7 @@ public abstract class Feature extends Query {
     }
 
     public float getDefaultValue() {
-      return Feature.this.defaultValue;
+      return Feature.this.getDefaultValue();
     }
 
     @Override
