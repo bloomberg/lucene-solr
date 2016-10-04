@@ -24,6 +24,8 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
+import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;

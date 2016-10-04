@@ -29,17 +29,13 @@ public class RankSVMModel extends LTRScoringModel {
 
   protected Float[] featureToWeight;
 
-  /** name of the attribute containing the weight of the SVM model **/
-  public static final String WEIGHTS_PARAM = "weights";
-
-  public static RankSVMModel create(String name, List<Feature> features,
-      List<Normalizer> norms,
-      String featureStoreName, List<Feature> allFeatures,
-      Map<String,Object> params) throws ModelException {
-    final RankSVMModel model = new RankSVMModel(name, features,
-        norms, featureStoreName, allFeatures, params);
-    model.validate();
-    return model;
+  public void setWeights(Object weights) {
+    final Map<String,Double> modelWeights = (Map<String,Double>) weights;
+    for (int ii = 0; ii < features.size(); ++ii) {
+      final String key = features.get(ii).getName();
+      final Double val = modelWeights.get(key);
+      featureToWeight[ii] = (val == null ? null : new Float(val.floatValue()));
+    }
   }
 
   public RankSVMModel(String name, List<Feature> features,
@@ -47,27 +43,12 @@ public class RankSVMModel extends LTRScoringModel {
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) {
     super(name, features, norms, featureStoreName, allFeatures, params);
-
-    final Map<String,Double> modelWeights = (params == null ? null
-        : (Map<String,Double>) params.get(WEIGHTS_PARAM));
-
     featureToWeight = new Float[features.size()];
-
-    if (modelWeights != null) {
-      for (int i = 0; i < features.size(); ++i) {
-        final String key = features.get(i).getName();
-        final Double val = modelWeights.get(key);
-        featureToWeight[i] = (val == null ? null : new Float(val.floatValue()));
-      }
-    }
   }
 
   @Override
   public void validate() throws ModelException {
-    if (features.isEmpty()) {
-      // unusual but not an error
-      return;
-    }
+    super.validate();
 
     final ArrayList<String> missingWeightFeatureNames = new ArrayList<String>();
     for (int i = 0; i < features.size(); ++i) {

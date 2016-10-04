@@ -27,6 +27,8 @@ import org.junit.Test;
 @SuppressCodecs({"Lucene3x", "Lucene41", "Lucene40", "Appending"})
 public class TestFieldValueFeature extends TestRerankBase {
 
+  private static final float FIELD_VALUE_FEATURE_DEFAULT_VAL = 0.0f;
+
   @BeforeClass
   public static void before() throws Exception {
     setuptest("solrconfig-ltr.xml", "schema-ltr.xml");
@@ -47,7 +49,17 @@ public class TestFieldValueFeature extends TestRerankBase {
         "w1 w2 w3 w4 w5 w8", "popularity", "7"));
     assertU(adoc("id", "8", "title", "w1 w1 w1 w2 w2 w8", "description",
         "w1 w1 w1 w2 w2", "popularity", "8"));
+
+    // a document without the popularity field
+    assertU(adoc("id", "42", "title", "NO popularity", "description", "NO popularity"));
+
     assertU(commit());
+
+    loadFeature("popularity", FieldValueFeature.class.getCanonicalName(),
+            "{\"field\":\"popularity\"}");
+
+    loadModel("popularity-model", RankSVMModel.class.getCanonicalName(),
+            new String[] {"popularity"}, "{\"weights\":{\"popularity\":1.0}}");
   }
 
   @AfterClass
@@ -57,20 +69,13 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   @Test
   public void testRanking() throws Exception {
-    loadFeature("popularity", FieldValueFeature.class.getCanonicalName(),
-        "{\"field\":\"popularity\"}");
-
-    loadModel("popularity-model", RankSVMModel.class.getCanonicalName(),
-        new String[] {"popularity"}, "{\"weights\":{\"popularity\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:w1");
     query.add("fl", "*, score");
     query.add("rows", "4");
 
-    String res;
-    // res = restTestHarness.query("/query" + query.toQueryString());
-    // System.out.println(res);
+    //String res;
     // Normal term match
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
@@ -80,7 +85,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     // Normal term match
 
     query.add("rq", "{!ltr model=popularity-model reRankDocs=4}");
-    res = restTestHarness.query("/query" + query.toQueryString());
+    //res = restTestHarness.query("/query" + query.toQueryString());
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
@@ -93,12 +98,82 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("rows", "8");
     query.remove("rq");
     query.add("rq", "{!ltr model=popularity-model reRankDocs=8}");
-    res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
+    //res = restTestHarness.query("/query" + query.toQueryString());
+    //System.out.println(res);
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='5'");
   }
+
+
+  @Test
+  public void testIfADocumentDoesntHaveAFieldDefaultValueIsReturned() throws Exception {
+    SolrQuery query = new SolrQuery();
+    query.setQuery("id:42");
+    query.add("fl", "*, score");
+    query.add("rows", "4");
+
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='42'");
+    query = new SolrQuery();
+    query.setQuery("id:42");
+    query.add("rq", "{!ltr model=popularity-model reRankDocs=4}");
+    query.add("fl", "[fv]");
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+    assertJQ("/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'[fv]':'popularity:"+FIELD_VALUE_FEATURE_DEFAULT_VAL+"'}");
+
+  }
+
+
+  @Test
+  public void testIfADocumentDoesntHaveAFieldASetDefaultValueIsReturned() throws Exception {
+
+    final String fstore = "testIfADocumentDoesntHaveAFieldASetDefaultValueIsReturned";
+
+    loadFeature("popularity42", FieldValueFeature.class.getCanonicalName(), fstore,
+            "{\"field\":\"popularity\",\"defaultValue\":\"42.0\"}");
+
+    SolrQuery query = new SolrQuery();
+    query.setQuery("id:42");
+    query.add("fl", "*, score");
+    query.add("rows", "4");
+
+    loadModel("popularity-model42", RankSVMModel.class.getCanonicalName(),
+            new String[] {"popularity42"}, fstore, "{\"weights\":{\"popularity42\":1.0}}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='42'");
+    query = new SolrQuery();
+    query.setQuery("id:42");
+    query.add("rq", "{!ltr model=popularity-model42 reRankDocs=4}");
+    query.add("fl", "[fv]");
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+    assertJQ("/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'[fv]':'popularity42:42.0'}");
+
+  }
+
+  @Test
+  public void testThatIfaFieldDoesNotExistDefaultValueIsReturned() throws Exception {
+    // using a different fstore to avoid a clash with the other tests
+    final String fstore = "testThatIfaFieldDoesNotExistDefaultValueIsReturned";
+    loadFeature("not-existing-field", FieldValueFeature.class.getCanonicalName(), fstore,
+            "{\"field\":\"cowabunga\"}");
+
+    loadModel("not-existing-field-model", RankSVMModel.class.getCanonicalName(),
+            new String[] {"not-existing-field"}, fstore, "{\"weights\":{\"not-existing-field\":1.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("id:42");
+    query.add("rq", "{!ltr model=not-existing-field-model reRankDocs=4}");
+    query.add("fl", "[fv]");
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+    assertJQ("/query" + query.toQueryString(),
+            "/response/docs/[0]/=={'[fv]':'not-existing-field:"+FIELD_VALUE_FEATURE_DEFAULT_VAL+"'}");
+
+  }
+
 
 }

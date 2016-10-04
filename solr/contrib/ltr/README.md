@@ -257,7 +257,7 @@ libSVM model format to the format specified above.
         "trees": [
             {
                 "weight" : 1,
-                "tree": {
+                "root": {
                     "feature": "userTextTitleMatch",
                     "threshold": 0.5,
                     "left" : {
@@ -277,7 +277,7 @@ libSVM model format to the format specified above.
             },
             {
                 "weight" : 2,
-                "tree": {
+                "root": {
                     "value" : -10
                 }
             }

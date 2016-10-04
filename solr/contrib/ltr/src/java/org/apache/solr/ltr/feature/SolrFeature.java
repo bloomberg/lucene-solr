@@ -39,7 +39,9 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrIndexSearcher.ProcessedFilter;
 import org.apache.solr.search.SyntaxError;
-
+/**
+ * This feature allows to reuse a Solr query as a feature, the value of the feature will be the score of the given query for the current document.
+ **/
 public class SolrFeature extends Feature {
 
   private String df;

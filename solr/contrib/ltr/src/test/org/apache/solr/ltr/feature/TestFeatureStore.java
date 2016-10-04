@@ -20,7 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.ltr.TestRerankBase;
-import org.apache.solr.ltr.rest.ManagedFeatureStore;
+import org.apache.solr.ltr.store.FeatureStore;
+import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -59,7 +60,7 @@ public class TestFeatureStore extends TestRerankBase {
       assertNotNull(f);
 
     }
-    assertEquals(5, fs.size());
+    assertEquals(5, fs.getFeatures().size());
 
   }
 

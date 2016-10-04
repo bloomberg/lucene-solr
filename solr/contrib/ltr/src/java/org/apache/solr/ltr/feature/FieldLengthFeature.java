@@ -28,7 +28,13 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.SmallFloat;
 import org.apache.solr.request.SolrQueryRequest;
-
+/**
+ * This feature returns the length of a field (in terms) for the current document.
+ *
+ * Note: since this feature relies on norms values that are stored in a single byte
+ * the value of the feature could have a lightly different value.
+ * (see also {@link org.apache.lucene.search.similarities.ClassicSimilarity})
+ **/
 public class FieldLengthFeature extends Feature {
 
   private String field;
@@ -97,8 +103,7 @@ public class FieldLengthFeature extends Feature {
         return new ValueFeatureScorer(this, 0f, 
             DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
       }
-      return new FieldLengthFeatureScorer(this, norms, 
-          DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
+      return new FieldLengthFeatureScorer(this, norms);
     }
 
     public class FieldLengthFeatureScorer extends FeatureScorer {
@@ -106,8 +111,8 @@ public class FieldLengthFeature extends Feature {
       NumericDocValues norms = null;
 
       public FieldLengthFeatureScorer(FeatureWeight weight,
-          NumericDocValues norms, DocIdSetIterator itr) throws IOException {
-        super(weight, itr);
+          NumericDocValues norms) throws IOException {
+        super(weight, norms);
         this.norms = norms;
 
         // In the constructor, docId is -1, so using 0 as default lookup
@@ -122,7 +127,7 @@ public class FieldLengthFeature extends Feature {
       @Override
       public float score() throws IOException {
 
-        final long l = norms.get(itr.docID());
+        final long l = norms.longValue();
         final float numTerms = decodeNorm(l);
         return numTerms;
       }

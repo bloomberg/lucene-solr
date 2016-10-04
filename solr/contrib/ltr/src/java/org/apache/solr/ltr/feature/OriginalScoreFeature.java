@@ -26,9 +26,11 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.ltr.ranking.DocInfo;
+import org.apache.solr.ltr.DocInfo;
 import org.apache.solr.request.SolrQueryRequest;
-
+/**
+ * This feature returns the original score that the document had before performing the reranking
+ **/
 public class OriginalScoreFeature extends Feature {
 
   public OriginalScoreFeature(String name, Map<String,Object> params) {

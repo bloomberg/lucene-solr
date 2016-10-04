@@ -27,16 +27,14 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.ltr.feature.FeatureStore;
-import org.apache.solr.ltr.feature.OriginalScoreFeature;
-import org.apache.solr.ltr.log.FeatureLogger;
+import org.apache.solr.ltr.FeatureLogger;
+import org.apache.solr.ltr.ModelQuery;
+import org.apache.solr.ltr.ModelQuery.FeatureInfo;
+import org.apache.solr.ltr.ModelQuery.ModelWeight;
+import org.apache.solr.ltr.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.model.LoggingModel;
-import org.apache.solr.ltr.ranking.ModelQuery;
-import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
-import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
-import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
-import org.apache.solr.ltr.rest.ManagedFeatureStore;
-import org.apache.solr.ltr.util.CommonLTRParams;
+import org.apache.solr.ltr.store.FeatureStore;
+import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.transform.DocTransformer;
@@ -72,6 +70,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
 
+  /** key of the ModelQuery in the request context **/
+  public static final String MODEL_QUERY = "model";
+
+  /**
+   * if the log feature query param is off features will not be logged.
+   **/
+  public static final String LOG_FEATURES_QUERY_PARAM = "fvCache";
+
   public void setLoggingModelName(String loggingModelName) {
     this.loggingModelName = loggingModelName;
   }
@@ -87,7 +93,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       SolrQueryRequest req) {
 
     // Hint to enable feature vector cache since we are requesting features
-    req.getContext().put(CommonLTRParams.LOG_FEATURES_QUERY_PARAM, true);
+    req.getContext().put(LOG_FEATURES_QUERY_PARAM, true);
     req.getContext().put(FV_STORE, params.get(FV_STORE));
     req.getContext().put(FV_FORMAT, params.get(FV_FORMAT));
     req.getContext().put(FV_RESPONSE_WRITER, params.get(FV_RESPONSE_WRITER));
@@ -144,7 +150,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       leafContexts = searcher.getTopReaderContext().leaves();
 
       // Setup ModelQuery
-      reRankModel = (ModelQuery) req.getContext().get(CommonLTRParams.MODEL);
+      reRankModel = (ModelQuery) req.getContext().get(MODEL_QUERY);
       resultsReranked = (reRankModel != null);
       String featureStoreName = (String)req.getContext().get(FV_STORE);
       if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getScoringModel().getFeatureStoreName())))) {

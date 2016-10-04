@@ -791,8 +791,6 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
     final int iters = atLeast(100);
 
-    NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
-
     for (int iter=0;iter<iters;iter++) {
 
       /*
@@ -835,8 +833,11 @@ public class TestGeo3DPoint extends LuceneTestCase {
         System.err.println("  hitCount: " + hits.cardinality());
       }
       
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+
       for(int docID=0;docID<r.maxDoc();docID++) {
-        int id = (int) docIDToID.get(docID);
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
         GeoPoint point = points[id];
         GeoPoint unquantizedPoint = unquantizedPoints[id];
         if (point != null && unquantizedPoint != null) {
@@ -1480,7 +1481,9 @@ public class TestGeo3DPoint extends LuceneTestCase {
     b.append("target is in leaf " + leafReader + " of full reader " + reader + "\n");
 
     DocIdSetBuilder hits = new DocIdSetBuilder(leafReader.maxDoc());
-    ExplainingVisitor visitor = new ExplainingVisitor(shape, targetDocPoint, scaledDocPoint, new PointInShapeIntersectVisitor(hits, shape, bounds), docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
+    ExplainingVisitor visitor = new ExplainingVisitor(shape, targetDocPoint, scaledDocPoint,
+      new PointInShapeIntersectVisitor(hits, shape, bounds),
+      docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
 
     // Do first phase, where we just figure out the "path" that leads to the target docID:
     leafReader.getPointValues().intersect(fieldName, visitor);

@@ -24,20 +24,19 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.ltr.log.FeatureLogger;
+import org.apache.solr.ltr.LTRRescorer;
+import org.apache.solr.ltr.LTRThreadModule;
+import org.apache.solr.ltr.ModelQuery;
 import org.apache.solr.ltr.model.LTRScoringModel;
-import org.apache.solr.ltr.ranking.LTRThreadModule;
-import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.rest.ManagedFeatureStore;
-import org.apache.solr.ltr.rest.ManagedModelStore;
-import org.apache.solr.ltr.util.CommonLTRParams;
-import org.apache.solr.ltr.util.LTRUtils;
+import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
+import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory;
 import org.apache.solr.rest.ManagedResource;
@@ -46,7 +45,6 @@ import org.apache.solr.rest.RestManager;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.ltr.LTRQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +57,7 @@ import org.slf4j.LoggerFactory;
  */
 public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String NAME = "ltr";
+  private static Query defaultQuery = new MatchAllDocsQuery();
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -71,10 +70,34 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
   private ManagedFeatureStore fr = null;
   private ManagedModelStore mr = null;
 
+  /** query parser plugin: the name of the attribute for setting the model **/
+  public static final String MODEL = "model";
+
+  /** query parser plugin: default number of documents to rerank **/
+  public static final int DEFAULT_RERANK_DOCS = 200;
+
+  /**
+   * query parser plugin:the param that will select how the number of document
+   * to rerank
+   **/
+  public static final String RERANK_DOCS = "reRankDocs";
+
+  private static int getInt(Object thObj, int defValue, String paramName) throws NumberFormatException{
+    if (thObj != null) {
+      try{
+        return Integer.parseInt(thObj.toString());
+      }catch(NumberFormatException nfe){
+        String errorStr = nfe.toString() + ":" + paramName + " not an integer";
+        throw new NumberFormatException(errorStr);
+      }
+    }
+    return defValue;
+  }
+
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
-    int maxThreads  = LTRUtils.getInt(args.get("LTRMaxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "LTRMaxThreads");
-    int maxQueryThreads = LTRUtils.getInt(args.get("LTRMaxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
+    int maxThreads  = getInt(args.get("LTRMaxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "LTRMaxThreads");
+    int maxQueryThreads = getInt(args.get("LTRMaxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
     LTRThreadModule.setThreads(maxThreads, maxQueryThreads);
     LTRThreadModule.initSemaphore();
   }
@@ -131,7 +154,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
         mr = (ManagedModelStore)res;
     }
     if (mr != null && fr != null){
-        mr.init(fr);
+        mr.setManagedFeatureStore(fr);
         // now we can safely load the models
         mr.loadStoredModels();
 
@@ -151,7 +174,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
     @Override
     public Query parse() throws SyntaxError {
       // ReRanking Model
-      final String modelName = localParams.get(CommonLTRParams.MODEL);
+      final String modelName = localParams.get(LTRQParserPlugin.MODEL);
       if ((modelName == null) || modelName.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Must provide model in the request");
@@ -160,11 +183,11 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       final LTRScoringModel meta = mr.getModel(modelName);
       if (meta == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
-            "cannot find " + CommonLTRParams.MODEL + " " + modelName);
+            "cannot find " + LTRQParserPlugin.MODEL + " " + modelName);
       }
 
       final String modelFeatureStoreName = meta.getFeatureStoreName();
-      final Boolean extractFeatures = (Boolean) req.getContext().get(CommonLTRParams.LOG_FEATURES_QUERY_PARAM);
+      final Boolean extractFeatures = (Boolean) req.getContext().get(LTRFeatureLoggerTransformerFactory.LOG_FEATURES_QUERY_PARAM);
       final String fvStoreName = (String) req.getContext().get(LTRFeatureLoggerTransformerFactory.FV_STORE);
       // Check if features are requested and if the model feature store and feature-transform feature store are the same
       final boolean featuresRequestedFromSameStore = (extractFeatures != null && (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ) ? extractFeatures.booleanValue():false;
@@ -178,10 +201,9 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       if (featuresRequestedFromSameStore) {
         reRankModel.setFeatureLogger( LTRFeatureLoggerTransformerFactory.getFeatureLogger(req) );
       }
-      req.getContext().put(CommonLTRParams.MODEL, reRankModel);
+      req.getContext().put(LTRFeatureLoggerTransformerFactory.MODEL_QUERY, reRankModel);
 
-      int reRankDocs = localParams.getInt(CommonLTRParams.RERANK_DOCS,
-          CommonLTRParams.DEFAULT_RERANK_DOCS);
+      int reRankDocs = localParams.getInt(RERANK_DOCS, DEFAULT_RERANK_DOCS);
       reRankDocs = Math.max(1, reRankDocs);
 
       // External features
@@ -190,4 +212,47 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       return new LTRQuery(reRankModel, reRankDocs);
     }
   }
+
+  private class LTRQuery extends AbstractReRankQuery {
+    private final ModelQuery reRankModel;
+
+    public LTRQuery(ModelQuery reRankModel, int reRankDocs) {
+      super(defaultQuery, reRankDocs, new LTRRescorer(reRankModel));
+      this.reRankModel = reRankModel;
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * classHash() + (mainQuery.hashCode() + reRankModel.hashCode() + reRankDocs);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return sameClassAs(o) &&  equalsTo(getClass().cast(o));
+    }
+
+    private boolean equalsTo(LTRQuery other) {    
+      return (mainQuery.equals(other.mainQuery)
+          && reRankModel.equals(other.reRankModel) && (reRankDocs == other.reRankDocs));
+    }
+
+    @Override
+    public RankQuery wrap(Query _mainQuery) {
+      super.wrap(_mainQuery);    
+      reRankModel.setOriginalQuery(_mainQuery);
+      return this;
+    }
+
+    @Override
+    public String toString(String field) {
+      return "{!ltr mainQuery='" + mainQuery.toString() + "' reRankModel='"
+          + reRankModel.toString() + "' reRankDocs=" + reRankDocs + "}";
+    }
+    
+    @Override
+    protected Query rewrite(Query rewrittenMainQuery) throws IOException {
+      return new LTRQuery(reRankModel, reRankDocs).wrap(rewrittenMainQuery);
+    }
+  }
+
 }
