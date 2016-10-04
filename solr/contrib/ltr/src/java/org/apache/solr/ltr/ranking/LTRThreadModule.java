@@ -28,13 +28,13 @@ import java.util.concurrent.TimeUnit;
 
 public class LTRThreadModule {
   ThreadMXBean tmxb = ManagementFactory.getThreadMXBean();
-  public static Semaphore ltrSemaphore = null; 
-  private static int maxThreads = 0;
-  private static int maxQueryThreads = 0;
+  private Semaphore ltrSemaphore = null; 
+  private int maxThreads;
+  private int maxQueryThreads;
   public static final int DEFAULT_MAX_THREADS = 0; // do not do threading if 'LTRMaxThreads' is not specified in the config file
   public static final int DEFAULT_MAX_QUERYTHREADS = 0; // do not do threading if 'LTRMaxQueryThreads' is not specified in the config file
 
-   public static final Executor createWeightScoreExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+   private final Executor createWeightScoreExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
           0,
           Integer.MAX_VALUE,
           10, TimeUnit.SECONDS, // terminate idle threads after 10 sec
@@ -42,30 +42,43 @@ public class LTRThreadModule {
           new DefaultSolrThreadFactory("ltrExecutor")
     );
    
-   public static void setThreads(int maxThreads, int maxQueryThreads){
-     if (maxThreads < 0){
-       throw new NumberFormatException("LTRMaxThreads cannot be less than 0");
-     }
-     if (maxQueryThreads < 0){
-       throw new NumberFormatException("LTRMaxQueryThreads cannot be less than 0");
-     }
-     if (maxThreads < maxQueryThreads){
-       throw new NumberFormatException("LTRMaxQueryThreads cannot be greater than LTRMaxThreads");
-     }
-     LTRThreadModule.maxThreads = maxThreads;
-     LTRThreadModule.maxQueryThreads = maxQueryThreads;
+   public LTRThreadModule(int maxThreads, int maxQueryThreads){
+      this.maxThreads = maxThreads;
+      this.maxQueryThreads = maxQueryThreads;
+      if (maxThreads < 0){
+        throw new NumberFormatException("LTRMaxThreads cannot be less than 0");
+      }
+      if (maxQueryThreads < 0){
+        throw new NumberFormatException("LTRMaxQueryThreads cannot be less than 0");
+      }
+      if (maxThreads < maxQueryThreads){
+        throw new NumberFormatException("LTRMaxQueryThreads cannot be greater than LTRMaxThreads");
+      }
+      if  (this.maxThreads > 1 ){
+        ltrSemaphore = new Semaphore(maxThreads);
+      }
    }
    
-   public static int getMaxThreads(){
+   
+   public int getMaxThreads(){
       return maxThreads;
    }
    
-   public static int getMaxQueryThreads(){
+   public int getMaxQueryThreads(){
      return maxQueryThreads;
    }
-   public static void initSemaphore(){
-     if  (LTRThreadModule.getMaxThreads() > 1 ){
-       LTRThreadModule.ltrSemaphore = new Semaphore(LTRThreadModule.getMaxThreads());
+   
+   public Semaphore getLTRSemaphore(){
+     return ltrSemaphore;
+   }
+   
+   public Executor getCreateWeightScoreExecutor(){
+     return createWeightScoreExecutor;
+   }
+   
+   public void initSemaphore(){
+     if  (this.maxThreads > 1 ){
+       ltrSemaphore = new Semaphore(maxThreads);
      }
    }
 }
