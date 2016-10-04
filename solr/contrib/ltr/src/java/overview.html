@@ -66,11 +66,26 @@ generation to the {@link org.apache.solr.ltr.model.LTRScoringModel}, by calling 
 {@link org.apache.solr.ltr.model.LTRScoringModel#score(float[] modelFeatureValuesNormalized) score(float[] modelFeatureValuesNormalized)}.
 </p>
 <p>
-Finally, a {@link org.apache.solr.ltr.feature.Feature} will produce a particular value for each document, so
-it is modeled as a {@link org.apache.lucene.search.Query}. The package {@link org.apache.solr.ltr.feature} contains several examples
+A {@link org.apache.solr.ltr.feature.Feature} will produce a particular value for each document, so
+it is modeled as a {@link org.apache.lucene.search.Query}. The package
+{@link org.apache.solr.ltr.feature} contains several examples
 of features. One benefit of extending the Query object is that we can reuse
 Query as a feature, see for example {@link org.apache.solr.ltr.feature.SolrFeature}.
-Features for a document can also be returned in the response by using {@link org.apache.solr.response.transform.DocTransformer DocTrasformer} provided by {@link org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory}.
+Features for a document can also be returned in the response by
+using {@link org.apache.solr.response.transform.DocTransformer DocTrasformer}
+provided by {@link org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory}.
+</p>
+<p>
+{@link org.apache.solr.ltr.store} contains all the logic to store all the features and the models
+added by a user. Models are registered into a unique {@link org.apache.solr.ltr.ModelStore ModelStore},
+and each model specifies a particular {@link org.apache.solr.ltr.store.FeatureStore FeatureStore} that
+will contain a particular subset of features.
+<p>
+</p>
+A user can manage features and models through a REST API, provided by the
+{@link org.apache.solr.rest.ManagedResource Managed Resources}
+{@link org.apache.solr.ltr.store.rest.ManagedFeatureStore ManagedFeatureStore}
+and {@link org.apache.solr.ltr.store.rest.ManagedFeatureStore ManagedModelStore}.
 </p>
 </body>
 </html>
