@@ -67,7 +67,7 @@ public abstract class FeatureLogger<FV_TYPE> {
     }
     // FIXME: Confirm this hashing works
     return searcher.cacheInsert(QUERY_FV_CACHE_NAME,
-        modelQuery.hashCode() + (31 * docid),featureVector) != null;
+        fvCacheKey(modelQuery, docid), featureVector) != null;
   }
 
   /**
@@ -112,6 +112,10 @@ public abstract class FeatureLogger<FV_TYPE> {
 
   public abstract FV_TYPE makeFeatureVector(FeatureInfo[] featuresInfo);
 
+  private static int fvCacheKey(ModelQuery modelQuery, int docid) {
+    return  modelQuery.hashCode() + (31 * docid);
+  }
+
   /**
    * populate the document with its feature vector
    *
@@ -122,11 +126,9 @@ public abstract class FeatureLogger<FV_TYPE> {
   
   public FV_TYPE getFeatureVector(int docid, ModelQuery reRankModel,
       SolrIndexSearcher searcher) {
-    final SolrCache fvCache = searcher
-        .getCache(QUERY_FV_CACHE_NAME);
-    return fvCache == null ? null : (FV_TYPE) fvCache.get(reRankModel
-        .hashCode() + (31 * docid));
+    return (FV_TYPE) searcher.cacheLookup(QUERY_FV_CACHE_NAME, fvCacheKey(reRankModel, docid));
   }
+
 
   public static class MapFeatureLogger extends FeatureLogger<Map<String,Float>> {
 
