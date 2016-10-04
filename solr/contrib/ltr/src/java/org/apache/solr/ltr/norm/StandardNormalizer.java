@@ -18,6 +18,24 @@ package org.apache.solr.ltr.norm;
 
 import java.util.LinkedHashMap;
 
+/**
+ * A Normalizer to scale a feature value around an average-and-standard-deviation distribution.
+ * <p>
+ * Example configuration:
+ * <table summary="">
+ * <tr><td>"norm" : {</td></tr>
+ * <tr><td></td><td>"class" :  </td><td>"org.apache.solr.ltr.norm.StandardNormalizer",</td></tr>
+ * <tr><td></td><td>"params" : </td><td>{ "avg":"42", "std":"6" }</td></tr>
+ * <tr><td>}</td></tr>
+ * </table>
+ * <p>
+ * Example normalizations:
+ * <ul>
+ * <li>39 will be normalized to -0.5
+ * <li>42 will be normalized to  0
+ * <li>45 will be normalized to +0.5
+ * </ul>
+ */
 public class StandardNormalizer extends Normalizer {
 
   private float avg = 0f;
