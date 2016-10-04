@@ -37,7 +37,7 @@ feature engineering and feature extraction.
 <p>
 A Learning to Rank model is plugged into the ranking through the {@link org.apache.solr.search.LTRQParserPlugin},
 a {@link org.apache.solr.search.QParserPlugin}. The plugin will
-read from the request the model (instance of {@link org.apache.solr.ltr.ranking.ModelQuery})
+read from the request the model (instance of {@link org.apache.solr.ltr.ModelQuery})
 used to perform the request plus other
 parameters. The plugin will generate a {@link org.apache.solr.search.ltr.LTRQuery}:
 a particular {@link org.apache.solr.search.RankQuery}
@@ -45,13 +45,13 @@ that will encapsulate the given model and use it to
 rescore and rerank the document (by using an {@link org.apache.solr.search.ltr.LTRCollector}).
 </p>
 <p>
-A model will be applied on each document through a {@link org.apache.solr.ltr.ranking.ModelQuery}, a
+A model will be applied on each document through a {@link org.apache.solr.ltr.ModelQuery}, a
 subclass of {@link org.apache.lucene.search.Query}. As a normal query,
 the learned model will produce a new score
 for each document reranked.
 </p>
 <p>
-A {@link org.apache.solr.ltr.ranking.ModelQuery} is created by providing an instance of
+A {@link org.apache.solr.ltr.ModelQuery} is created by providing an instance of
 {@link org.apache.solr.ltr.model.LTRScoringModel}. An instance of
 {@link org.apache.solr.ltr.model.LTRScoringModel}
 defines how to combine the features in order to create a new
@@ -60,7 +60,7 @@ into the framework  by extending {@link org.apache.solr.ltr.model.LTRScoringMode
 (see for example {@link org.apache.solr.ltr.model.LambdaMARTModel} and {@link org.apache.solr.ltr.model.RankSVMModel}).
 </p>
 <p>
-The {@link org.apache.solr.ltr.ranking.ModelQuery} will take care of computing the values of
+The {@link org.apache.solr.ltr.ModelQuery} will take care of computing the values of
 all the features (see {@link org.apache.solr.ltr.feature.Feature}) and then will delegate the final score
 generation to the {@link org.apache.solr.ltr.model.LTRScoringModel}, by calling the method
 {@link org.apache.solr.ltr.model.LTRScoringModel#score(float[] modelFeatureValuesNormalized) score(float[] modelFeatureValuesNormalized)}.

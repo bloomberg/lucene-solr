@@ -21,8 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.ltr.ranking.ModelQuery;
-import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
+import org.apache.solr.ltr.ModelQuery.FeatureInfo;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
