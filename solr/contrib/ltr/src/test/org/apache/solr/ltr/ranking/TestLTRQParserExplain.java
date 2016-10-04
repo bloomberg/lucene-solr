@@ -131,7 +131,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
   @Test
   public void lambdaMARTScoreExplainMissingEfiFeatureShouldReturnDefaultScore() throws Exception {
     loadFeatures("external_features_for_sparse_processing.json");
-    loadModels("lambdamart_model_external_binary_features.json");
+    loadModels("lambdamartmodel_external_binary_features.json");
 
     SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
