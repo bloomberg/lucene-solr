@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.ranking;
+package org.apache.solr.ltr;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -47,7 +47,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.Feature.FeatureWeight;
 import org.apache.solr.ltr.feature.Feature.FeatureWeight.FeatureScorer;
-import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;

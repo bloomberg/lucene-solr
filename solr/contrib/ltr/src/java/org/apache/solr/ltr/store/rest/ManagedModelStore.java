@@ -16,16 +16,11 @@
  */
 package org.apache.solr.ltr.store.rest;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -37,12 +32,10 @@ import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.ModelStore;
-import org.apache.solr.ltr.util.CommonLTRParams;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,13 +57,21 @@ public class ManagedModelStore extends ManagedResource implements
    **/
   private static final String MODELS_JSON_FIELD = "models";
 
-  /** name of the attribute containing the normalizer type **/
-  public static final String CLASS_KEY = "class";
-  /** name of the attribute containing the normalizer params **/
-  public static final String PARAMS_KEY = "params";
- 
-  ModelStore store;
-  private ManagedFeatureStore featureStores;
+  /** name of the attribute containing a class **/
+  private static final String CLASS_KEY = "class";
+  /** name of the attribute containing the features **/
+  private static final String FEATURES_KEY = "features";
+  /** name of the attribute containing a name **/
+  private static final String NAME_KEY = "name";
+  /** name of the attribute containing a normalizer **/
+  private static final String NORM_KEY = "norm";
+  /** name of the attribute containing parameters **/
+  private static final String PARAMS_KEY = "params";
+  /** name of the attribute containing a store **/
+  private static final String STORE_KEY = "store";
+
+  private ModelStore store;
+  private ManagedFeatureStore managedFeatureStore;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -82,9 +83,13 @@ public class ManagedModelStore extends ManagedResource implements
 
   }
 
-  public void init(ManagedFeatureStore featureStores) {
+  public void setManagedFeatureStore(ManagedFeatureStore managedFeatureStore) {
     log.info("INIT model store");
-    this.featureStores = featureStores;
+    this.managedFeatureStore = managedFeatureStore;
+  }
+
+  public ManagedFeatureStore getManagedFeatureStore() {
+    return managedFeatureStore;
   }
 
   private Object managedData;
@@ -110,7 +115,7 @@ public class ManagedModelStore extends ManagedResource implements
       final List<Map<String,Object>> up = (List<Map<String,Object>>) managedData;
       for (final Map<String,Object> u : up) {
         try {
-          final LTRScoringModel algo = makeLTRScoringModel(u);
+          final LTRScoringModel algo = fromLTRScoringModelMap(solrResourceLoader, u, managedFeatureStore);
           addModel(algo);
         } catch (final ModelException e) {
           throw new SolrException(ErrorCode.BAD_REQUEST, e);
@@ -119,101 +124,9 @@ public class ManagedModelStore extends ManagedResource implements
     }
   }
 
-  @SuppressWarnings("unchecked")
-  public LTRScoringModel makeLTRScoringModel(String json)
-      throws ModelException {
-    Object parsedJson = null;
-    try {
-      parsedJson = ObjectBuilder.fromJSON(json);
-    } catch (final IOException ioExc) {
-      throw new ModelException("ObjectBuilder failed parsing json", ioExc);
-    }
-    return makeLTRScoringModel((Map<String,Object>) parsedJson);
-  }
-  
-  private void checkFeatureValidity(LTRScoringModel meta) throws ModelException {
-    final List<Feature> featureList = meta.getFeatures();
-    final String modelName = meta.getName();
-    if (featureList.isEmpty()) {
-      throw new ModelException("no features declared for model "
-          + modelName);
-    }
-
-    final Set<String> featureNames = new HashSet<>();
-    for (final Feature feature : featureList) {
-      final String fname = feature.getName();
-      if (!featureNames.add(fname)) {
-        throw new ModelException("duplicated feature " + fname + " in model "
-            + modelName);
-      }
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  public LTRScoringModel makeLTRScoringModel(Map<String,Object> map)
-      throws ModelException {
-    final String name = (String) map.get(CommonLTRParams.MODEL_NAME);
-    String featureStoreName = (String) map.get(CommonLTRParams.MODEL_FEATURE_STORE);
-    final FeatureStore fstore = featureStores.getFeatureStore(featureStoreName);
-    featureStoreName = fstore.getName();  // if featureStoreName was null before this gets actual name
-    if (!map.containsKey(MODEL_FEATURE_LIST)) {
-      // check if the model has a list of features to be used for computing the
-      // ranking score
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-          "Missing mandatory field features");
-    }
-    final List<Object> featureList = (List<Object>) map
-        .get(MODEL_FEATURE_LIST);
-    final List<Feature> features = new ArrayList<>();
-    final List<Normalizer> norms = new ArrayList<>();
-    for (final Object modelFeature : featureList) {
-      final Map<String,Object> modelFeatureMap =
-          (Map<String,Object>) modelFeature;
-
-      final String featureName = (String) modelFeatureMap.get(CommonLTRParams.FEATURE_NAME);
-      final Feature feature = (featureName == null ? null : fstore.get(featureName));
-      if (feature == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "feature " + featureName + " not found in store " + fstore.getName());
-      }
-
-      final Object normObj = modelFeatureMap.get(CommonLTRParams.FEATURE_NORM);
-      final Normalizer norm = (normObj == null ? IdentityNormalizer.INSTANCE :
-        fromNormalizerMap(solrResourceLoader, (Map<String,Object>) normObj));
-
-      features.add(feature);
-      norms.add(norm);
-    }
-    
-    @SuppressWarnings("unchecked")
-    final Map<String,Object> params = (Map<String,Object>) map.get(CommonLTRParams.MODEL_PARAMS);
-
-    final String type = (String) map.get(CommonLTRParams.MODEL_CLASS);
-    LTRScoringModel meta = null;
-    try {
-      // create an instance of the model
-      meta = solrResourceLoader.newInstance(
-          type,
-          LTRScoringModel.class,
-          new String[0], // no sub packages
-          new Class[] { String.class, List.class, List.class, String.class, List.class, Map.class },
-          new Object[] { name, features, norms, featureStoreName, fstore.getFeatures(), params });
-      meta.validate();
-    } catch (final Exception e) {
-      throw new ModelException("Model type does not exist " + type, e);
-    }
-
-    checkFeatureValidity(meta);
-    
-    return meta;
-  }
-
-
-
   public synchronized void addModel(LTRScoringModel meta) throws ModelException {
     try {
       log.info("adding model {}", meta.getName());
-      checkFeatureValidity(meta);
       store.addModel(meta);
     } catch (final ModelException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
@@ -227,7 +140,7 @@ public class ManagedModelStore extends ManagedResource implements
       final List<Map<String,Object>> up = (List<Map<String,Object>>) updates;
       for (final Map<String,Object> u : up) {
         try {
-          final LTRScoringModel algo = makeLTRScoringModel(u);
+          final LTRScoringModel algo = fromLTRScoringModelMap(solrResourceLoader, u, managedFeatureStore);
           addModel(algo);
         } catch (final ModelException e) {
           throw new SolrException(ErrorCode.BAD_REQUEST, e);
@@ -238,14 +151,14 @@ public class ManagedModelStore extends ManagedResource implements
     if (updates instanceof Map) {
       final Map<String,Object> map = (Map<String,Object>) updates;
       try {
-        final LTRScoringModel algo = makeLTRScoringModel(map);
+        final LTRScoringModel algo = fromLTRScoringModelMap(solrResourceLoader, map, managedFeatureStore);
         addModel(algo);
       } catch (final ModelException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);
       }
     }
 
-    return modelAsManagedResources(store);
+    return modelsAsManagedResources(store.getModels());
   }
 
   @Override
@@ -270,7 +183,7 @@ public class ManagedModelStore extends ManagedResource implements
 
     final SolrQueryResponse response = endpoint.getSolrResponse();
     response.add(MODELS_JSON_FIELD,
-        modelAsManagedResources(store));
+        modelsAsManagedResources(store.getModels()));
   }
 
   public LTRScoringModel getModel(String modelName) {
@@ -279,16 +192,12 @@ public class ManagedModelStore extends ManagedResource implements
     return store.getModel(modelName);
   }
 
-  public ModelStore getModelStore() {
-    return store;
-  }
-
   @Override
   public String toString() {
     return "ManagedModelStore [store=" + store + ", featureStores="
-        + featureStores + "]";
+        + managedFeatureStore + "]";
   }
-  
+
   /**
    * Returns the available models as a list of Maps objects. After an update the
    * managed resources needs to return the resources in this format in order to
@@ -299,35 +208,85 @@ public class ManagedModelStore extends ManagedResource implements
    *
    * @return the available models as a list of Maps objects
    */
-  private static List<Object> modelAsManagedResources(ModelStore store) {
-    final List<Object> list = new ArrayList<>(store.size());
-    for (final LTRScoringModel modelmeta : store.getModels()) {
-      final Map<String,Object> modelMap = new HashMap<>(5, 1.0f);
-      modelMap.put((String)CommonLTRParams.MODEL_NAME, modelmeta.getName());
-      modelMap.put((String)CommonLTRParams.MODEL_CLASS, modelmeta.getClass().getCanonicalName());
-      modelMap.put((String)CommonLTRParams.MODEL_FEATURE_STORE, modelmeta.getFeatureStoreName());
-      final List<Map<String,Object>> features = new ArrayList<>(modelmeta.numFeatures());
-      final List<Feature> featureList = modelmeta.getFeatures();
-      final List<Normalizer> normList = modelmeta.getNorms();
-      if (normList.size() != featureList.size()) {
-        throw new ModelException("Every feature must have a normalizer");
-      }
-      for (int idx = 0; idx <  featureList.size(); ++idx) {
-        final Feature feature = featureList.get(idx);
-        final Normalizer norm = normList.get(idx);
-        final Map<String,Object> map = new HashMap<String,Object>(2, 1.0f);
-        map.put("name", feature.getName());
-        map.put("norm", toNormalizerMap(norm));
-        features.add(map);
-      }
-      modelMap.put("features", features);
-      modelMap.put("params", modelmeta.getParams());
-
-      list.add(modelMap);
+  private static List<Object> modelsAsManagedResources(List<LTRScoringModel> models) {
+    final List<Object> list = new ArrayList<>(models.size());
+    for (final LTRScoringModel model : models) {
+      list.add(toLTRScoringModelMap(model));
     }
     return list;
   }
-  
+
+  @SuppressWarnings("unchecked")
+  public static LTRScoringModel fromLTRScoringModelMap(SolrResourceLoader solrResourceLoader,
+      Map<String,Object> modelMap, ManagedFeatureStore managedFeatureStore) {
+
+    final FeatureStore featureStore =
+        managedFeatureStore.getFeatureStore((String) modelMap.get(STORE_KEY));
+
+    final List<Feature> features = new ArrayList<>();
+    final List<Normalizer> norms = new ArrayList<>();
+
+    final List<Object> featureList = (List<Object>) modelMap.get(FEATURES_KEY);
+    if (featureList != null) {
+      for (final Object feature : featureList) {
+        final Map<String,Object> featureMap = (Map<String,Object>) feature;
+        features.add(lookupFeatureFromFeatureMap(featureMap, featureStore));
+        norms.add(createNormalizerFromFeatureMap(solrResourceLoader, featureMap));
+      }
+    }
+
+    return LTRScoringModel.getInstance(solrResourceLoader,
+        (String) modelMap.get(CLASS_KEY), // modelClassName
+        (String) modelMap.get(NAME_KEY), // modelName
+        features,
+        norms,
+        featureStore.getName(),
+        featureStore.getFeatures(),
+        (Map<String,Object>) modelMap.get(PARAMS_KEY));
+  }
+
+  private static LinkedHashMap<String,Object> toLTRScoringModelMap(LTRScoringModel model) {
+    final LinkedHashMap<String,Object> modelMap = new LinkedHashMap<>(5, 1.0f);
+
+    modelMap.put(NAME_KEY, model.getName());
+    modelMap.put(CLASS_KEY, model.getClass().getCanonicalName());
+    modelMap.put(STORE_KEY, model.getFeatureStoreName());
+
+    final List<Map<String,Object>> features = new ArrayList<>();
+    final List<Feature> featuresList = model.getFeatures();
+    final List<Normalizer> normsList = model.getNorms();
+    for (int ii=0; ii<featuresList.size(); ++ii) {
+      features.add(toFeatureMap(featuresList.get(ii), normsList.get(ii)));
+    }
+    modelMap.put(FEATURES_KEY, features);
+
+    modelMap.put(PARAMS_KEY, model.getParams());
+
+    return modelMap;
+  }
+
+  private static Feature lookupFeatureFromFeatureMap(Map<String,Object> featureMap,
+      FeatureStore featureStore) {
+    final String featureName = (String)featureMap.get(NAME_KEY);
+    return (featureName == null ? null
+        : featureStore.get(featureName));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Normalizer createNormalizerFromFeatureMap(SolrResourceLoader solrResourceLoader,
+      Map<String,Object> featureMap) {
+    final Map<String,Object> normMap = (Map<String,Object>)featureMap.get(NORM_KEY);
+    return  (normMap == null ? IdentityNormalizer.INSTANCE
+        : fromNormalizerMap(solrResourceLoader, normMap));
+  }
+
+  private static LinkedHashMap<String,Object> toFeatureMap(Feature feature, Normalizer norm) {
+    final LinkedHashMap<String,Object> map = new LinkedHashMap<String,Object>(2, 1.0f);
+    map.put(NAME_KEY,  feature.getName());
+    map.put(NORM_KEY, toNormalizerMap(norm));
+    return map;
+  }
+
   private static Normalizer fromNormalizerMap(SolrResourceLoader solrResourceLoader,
       Map<String,Object> normMap) {
     final String className = (String) normMap.get(CLASS_KEY);

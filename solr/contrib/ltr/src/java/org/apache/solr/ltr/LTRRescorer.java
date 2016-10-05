@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.ltr;
+package org.apache.solr.ltr;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -29,10 +29,8 @@ import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.ltr.log.FeatureLogger;
-import org.apache.solr.ltr.ranking.ModelQuery;
-import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
-import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight.ModelScorer;
+import org.apache.solr.ltr.ModelQuery.ModelWeight;
+import org.apache.solr.ltr.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.search.SolrIndexSearcher;
 
 

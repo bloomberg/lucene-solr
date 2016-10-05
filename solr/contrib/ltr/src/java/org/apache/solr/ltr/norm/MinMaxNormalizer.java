@@ -19,7 +19,7 @@ package org.apache.solr.ltr.norm;
 import java.util.LinkedHashMap;
 
 /**
- * A {@link Normalizer} to scales a feature value using a (min,max) range.
+ * A Normalizer to scale a feature value using a (min,max) range.
  * <p>
  * Example configuration:
  * <table summary="">

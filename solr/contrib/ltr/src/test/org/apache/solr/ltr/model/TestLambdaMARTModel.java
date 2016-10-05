@@ -20,7 +20,6 @@ package org.apache.solr.ltr.model;
 
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.ModelException;
 import org.junit.AfterClass;
@@ -45,7 +44,7 @@ public class TestLambdaMARTModel extends TestRerankBase {
 
     loadFeatures("lambdamart_features.json"); // currently needed to force
     // scoring on all docs
-    loadModels("lambdamart_model.json");
+    loadModels("lambdamartmodel.json");
   }
 
   @AfterClass
@@ -130,9 +129,9 @@ public class TestLambdaMARTModel extends TestRerankBase {
   @Test
   public void lambdaMartTestNoParams() throws Exception {
     final ModelException expectedException = 
-        new ModelException("LambdaMARTModel doesn't contain any params");
+        new ModelException("no trees declared for model lambdamartmodel_no_params");
     try {
-        createModelFromFiles("lambdamart_model_no_params.json",
+        createModelFromFiles("lambdamartmodel_no_params.json",
               "lambdamart_features.json");
         fail("lambdaMartTestNoParams failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
@@ -145,9 +144,9 @@ public class TestLambdaMARTModel extends TestRerankBase {
   @Test
   public void lambdaMartTestEmptyParams() throws Exception {
     final ModelException expectedException = 
-        new ModelException("LambdaMARTModel doesn't contain any params");
+        new ModelException("no trees declared for model lambdamartmodel_no_trees");
     try {
-        createModelFromFiles("lambdamart_model_no_trees.json",
+        createModelFromFiles("lambdamartmodel_no_trees.json",
             "lambdamart_features.json");
         fail("lambdaMartTestEmptyParams failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
@@ -161,7 +160,7 @@ public class TestLambdaMARTModel extends TestRerankBase {
     final ModelException expectedException = 
         new ModelException("LambdaMARTModel tree doesn't contain a weight");
     try {
-        createModelFromFiles("lambdamart_model_no_weight.json",
+        createModelFromFiles("lambdamartmodel_no_weight.json",
             "lambdamart_features.json");
         fail("lambdaMartTestNoWeight failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
@@ -175,7 +174,7 @@ public class TestLambdaMARTModel extends TestRerankBase {
     final ModelException expectedException = 
         new ModelException("LambdaMARTModel tree doesn't contain a tree");
     try {
-        createModelFromFiles("lambdamart_model_no_tree.json",
+        createModelFromFiles("lambdamartmodel_no_tree.json",
             "lambdamart_features.json");
         fail("lambdaMartTestTreesParamDoesNotContatinTree failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
@@ -186,14 +185,13 @@ public class TestLambdaMARTModel extends TestRerankBase {
 
   @Test
   public void lambdaMartTestNoFeaturesSpecified() throws Exception {
-    final SolrException expectedException = 
-        new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Missing mandatory field features");
+    final ModelException expectedException = 
+        new ModelException("no features declared for model lambdamartmodel_no_features");
     try {
-        createModelFromFiles("lambdamart_model_no_features.json",
+        createModelFromFiles("lambdamartmodel_no_features.json",
             "lambdamart_features.json");
         fail("lambdaMartTestNoFeaturesSpecified failed to throw exception: "+expectedException);
-    } catch (SolrException actualException) {
+    } catch (ModelException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
     }
   }
@@ -203,7 +201,7 @@ public class TestLambdaMARTModel extends TestRerankBase {
     final ModelException expectedException = 
         new ModelException("LambdaMARTModel tree node is missing right");
     try {
-        createModelFromFiles("lambdamart_model_no_right.json",
+        createModelFromFiles("lambdamartmodel_no_right.json",
             "lambdamart_features.json");
         fail("lambdaMartTestNoRight failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
@@ -217,7 +215,7 @@ public class TestLambdaMARTModel extends TestRerankBase {
     final ModelException expectedException = 
         new ModelException("LambdaMARTModel tree node is missing left");
     try {
-        createModelFromFiles("lambdamart_model_no_left.json",
+        createModelFromFiles("lambdamartmodel_no_left.json",
             "lambdamart_features.json");
         fail("lambdaMartTestNoLeft failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
@@ -231,7 +229,7 @@ public class TestLambdaMARTModel extends TestRerankBase {
     final ModelException expectedException = 
         new ModelException("LambdaMARTModel tree node is missing threshold");
     try {
-        createModelFromFiles("lambdamart_model_no_threshold.json",
+        createModelFromFiles("lambdamartmodel_no_threshold.json",
             "lambdamart_features.json");
         fail("lambdaMartTestNoThreshold failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
@@ -243,14 +241,13 @@ public class TestLambdaMARTModel extends TestRerankBase {
   @Test
   public void lambdaMartTestMissingTreeFeature() throws Exception {
     final ModelException expectedException = 
-        new ModelException("LambdaMARTModel tree node is missing feature");
+        new ModelException("LambdaMARTModel tree node is leaf with left=-100.0 and right=75.0");
     try {
-        createModelFromFiles("lambdamart_model_no_feature.json",
+        createModelFromFiles("lambdamartmodel_no_feature.json",
               "lambdamart_features.json");
         fail("lambdaMartTestMissingTreeFeature failed to throw exception: "+expectedException);
-    } catch (Exception actualException) {
-      Throwable rootError = getRootCause(actualException);
-      assertEquals(expectedException.toString(), rootError.toString());
+    } catch (ModelException actualException) {
+      assertEquals(expectedException.toString(), actualException.toString());
     }
   }
 }

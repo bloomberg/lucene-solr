@@ -7,7 +7,7 @@
   "otherParams":              "fl=id,score,[features efi.user_query='$USERQUERY']",
   "userQueriesFile":          "user_queries.txt",
   "trainingFile":             "ClickData",
-  "featuresFile":             "../example/techproducts-features.json",
+  "featuresFile":             "techproducts-features.json",
   "trainingLibraryLocation":  "liblinear/train",
   "solrModelFile":            "solrModel.json",
   "solrModelName":            "ExampleModel"

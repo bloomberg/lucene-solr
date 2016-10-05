@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.ranking;
+package org.apache.solr.ltr;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,12 +40,13 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.TestRerankBase;
+import org.apache.solr.ltr.LTRThreadModule;
+import org.apache.solr.ltr.ModelQuery;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.ValueFeature;
+import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.ModelException;
-import org.apache.solr.ltr.model.RankSVMModel;
+import org.apache.solr.ltr.model.TestRankSVMModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.junit.AfterClass;
@@ -54,7 +55,6 @@ import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x", "Lucene41", "Lucene40", "Appending"})
 public class TestSelectiveWeightCreation extends TestRerankBase {
-  final private static SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = newSearcher(r, false, false);
     return searcher;
@@ -175,7 +175,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     }
 
     // when features are NOT requested in the response, only the modelFeature weights should be created
-    RankSVMModel meta1 = RankSVMModel.create("test",
+    final LTRScoringModel meta1 = TestRankSVMModel.createRankSVMModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
@@ -191,7 +191,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals(validFeatures, features.size());
     
     // when features are requested in the response, weights should be created for all features
-    RankSVMModel meta2 = RankSVMModel.create("test",
+    final LTRScoringModel meta2 = TestRankSVMModel.createRankSVMModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,

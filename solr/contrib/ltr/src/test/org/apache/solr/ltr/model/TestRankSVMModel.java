@@ -38,6 +38,17 @@ import org.junit.Test;
 
 public class TestRankSVMModel extends TestRerankBase {
 
+  public static LTRScoringModel createRankSVMModel(String name, List<Feature> features,
+      List<Normalizer> norms,
+      String featureStoreName, List<Feature> allFeatures,
+      Map<String,Object> params) throws ModelException {
+    final LTRScoringModel model = LTRScoringModel.getInstance(solrResourceLoader,
+        RankSVMModel.class.getCanonicalName(),
+        name,
+        features, norms, featureStoreName, allFeatures, params);
+    return model;
+  }
+
   static ManagedModelStore store = null;
   static FeatureStore fstore = null;
 
@@ -63,7 +74,7 @@ public class TestRankSVMModel extends TestRerankBase {
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     params.put("weights", weights);
-    final LTRScoringModel meta = RankSVMModel.create("test1",
+    final LTRScoringModel meta = createRankSVMModel("test1",
         features, norms, "test", fstore.getFeatures(),
         params);
 
@@ -82,7 +93,7 @@ public class TestRankSVMModel extends TestRerankBase {
       final List<Normalizer> norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-      final LTRScoringModel meta = RankSVMModel.create("test2",
+      final LTRScoringModel meta = createRankSVMModel("test2",
           features, norms, "test", fstore.getFeatures(), null);
       fail("unexpectedly got here instead of catching "+expectedException);
     } catch (ModelException actualException) {
@@ -107,7 +118,7 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel meta = RankSVMModel.create("test3",
+      final LTRScoringModel meta = createRankSVMModel("test3",
           features, norms, "test", fstore.getFeatures(),
               params);
       store.addModel(meta);
@@ -122,9 +133,8 @@ public class TestRankSVMModel extends TestRerankBase {
 
   @Test
   public void duplicateFeatureTest() {
-    final SolrException expectedException = 
-        new SolrException(ErrorCode.BAD_REQUEST,
-            ModelException.class.getCanonicalName()+": duplicated feature constant1 in model test4");
+    final ModelException expectedException = 
+        new ModelException("duplicated feature constant1 in model test4");
     try {
       final List<Feature> features = getFeatures(new String[] 
           {"constant1", "constant1"});
@@ -137,12 +147,12 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel meta = RankSVMModel.create("test4",
+      final LTRScoringModel meta = createRankSVMModel("test4",
           features, norms, "test", fstore.getFeatures(),
               params);
       store.addModel(meta);
       fail("unexpectedly got here instead of catching "+expectedException);
-    } catch (SolrException actualException) {
+    } catch (ModelException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
     }
 
@@ -164,7 +174,7 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel meta = RankSVMModel.create("test5",
+      final LTRScoringModel meta = createRankSVMModel("test5",
           features, norms, "test", fstore.getFeatures(),
               params);
       fail("unexpectedly got here instead of catching "+expectedException);
@@ -175,9 +185,8 @@ public class TestRankSVMModel extends TestRerankBase {
 
   @Test
   public void emptyFeaturesTest() {
-    final SolrException expectedException = 
-        new SolrException(ErrorCode.BAD_REQUEST,
-            ModelException.class.getCanonicalName()+": no features declared for model test6");
+    final ModelException expectedException =
+        new ModelException("no features declared for model test6");
     try {
       final List<Feature> features = getFeatures(new String[] {});
       final List<Normalizer> norms = 
@@ -189,13 +198,14 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel meta = RankSVMModel.create("test6",
+      final LTRScoringModel meta = createRankSVMModel("test6",
           features, norms, "test", fstore.getFeatures(),
           params);
       store.addModel(meta);
       fail("unexpectedly got here instead of catching "+expectedException);
-    } catch (SolrException actualException) {
+    } catch (ModelException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
     }
   }
+
 }

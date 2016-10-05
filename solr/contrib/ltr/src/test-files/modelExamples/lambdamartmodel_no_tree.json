@@ -8,7 +8,7 @@
     "params":{
         "trees": [
             {
-                "weight" : 2
+                "weight" : "2f"
             }
         ]
     }

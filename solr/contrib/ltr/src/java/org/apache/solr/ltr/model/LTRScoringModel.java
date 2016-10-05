@@ -18,15 +18,18 @@ package org.apache.solr.ltr.model;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
+import org.apache.solr.util.SolrPluginUtils;
 
 /**
  * Contains all the data needed for loading a model.
@@ -40,6 +43,30 @@ public abstract class LTRScoringModel {
   private final List<Feature> allFeatures;
   private final Map<String,Object> params;
   private final List<Normalizer> norms;
+
+  public static LTRScoringModel getInstance(SolrResourceLoader solrResourceLoader,
+      String className, String name, List<Feature> features,
+      List<Normalizer> norms,
+      String featureStoreName, List<Feature> allFeatures,
+      Map<String,Object> params) throws ModelException {
+    final LTRScoringModel model;
+    try {
+      // create an instance of the model
+      model = solrResourceLoader.newInstance(
+          className,
+          LTRScoringModel.class,
+          new String[0], // no sub packages
+          new Class[] { String.class, List.class, List.class, String.class, List.class, Map.class },
+          new Object[] { name, features, norms, featureStoreName, allFeatures, params });
+      if (params != null) {
+        SolrPluginUtils.invokeSetters(model, params.entrySet());
+      }
+    } catch (final Exception e) {
+      throw new ModelException("Model type does not exist " + className, e);
+    }
+    model.validate();
+    return model;
+  }
 
   public LTRScoringModel(String name, List<Feature> features,
       List<Normalizer> norms,
@@ -58,6 +85,19 @@ public abstract class LTRScoringModel {
    * {@link ModelException} if they do not make sense.
    */
   public void validate() throws ModelException {
+    if (features.isEmpty()) {
+      throw new ModelException("no features declared for model "+name);
+    }
+    final HashSet<String> featureNames = new HashSet<>();
+    for (final Feature feature : features) {
+      final String featureName = feature.getName();
+      if (!featureNames.add(featureName)) {
+        throw new ModelException("duplicated feature "+featureName+" in model "+name);
+      }
+    }
+    if (features.size() != norms.size()) {
+      throw new ModelException("counted "+features.size()+" features and "+norms.size()+" norms in model "+name);
+    }
   }
 
   /**
@@ -79,10 +119,6 @@ public abstract class LTRScoringModel {
    */
   public List<Feature> getFeatures() {
     return Collections.unmodifiableList(features);
-  }
-
-  public int numFeatures() {
-    return features.size();
   }
 
   public Map<String,Object> getParams() {

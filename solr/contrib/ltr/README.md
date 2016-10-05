@@ -68,11 +68,11 @@ BONUS: Train an actual machine learning model
 
 1. Download and install [liblinear](https://www.csie.ntu.edu.tw/~cjlin/liblinear/)
 
-2. Change `contrib/ltr/scripts/config.json` "trainingLibraryLocation" to point to the train directory where you installed liblinear.
+2. Change `contrib/ltr/example/config.json` "trainingLibraryLocation" to point to the train directory where you installed liblinear.
 
 3. Extract features, train a reranking model, and deploy it to Solr.
 
-  `cd  contrib/ltr/scripts`
+  `cd  contrib/ltr/example`
 
   `python ltr_generateModel.py -c config.json`
 
@@ -257,7 +257,7 @@ libSVM model format to the format specified above.
         "trees": [
             {
                 "weight" : 1,
-                "tree": {
+                "root": {
                     "feature": "userTextTitleMatch",
                     "threshold": 0.5,
                     "left" : {
@@ -277,7 +277,7 @@ libSVM model format to the format specified above.
             },
             {
                 "weight" : 2,
-                "tree": {
+                "root": {
                     "value" : -10
                 }
             }
@@ -372,7 +372,7 @@ CrowdFlower. These platforms allow you to show human workers documents associate
 tell you what the correct ranking should be.
 
 At this point you'll need to collect feature vectors for each query document pair. You can use the information
-from the Extract features section above to do this. An example script has been included in scripts/ltr_generateModel.py.
+from the Extract features section above to do this. An example script has been included in example/ltr_generateModel.py.
 
 # Explanation of the core reranking logic
 An LTR model is plugged into the ranking through the [LTRQParserPlugin](/solr/contrib/ltr/src/java/org/apache/solr/ltr/ranking/LTRQParserPlugin.java). The plugin will

@@ -25,7 +25,9 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.request.SolrQueryRequest;
-
+/**
+ * This feature allows to return a constant given value for the current document.
+ **/
 public class ValueFeature extends Feature {
   /** name of the attribute containing the value of this feature **/
   private static final String VALUE_FIELD = "value";

@@ -28,7 +28,13 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.SmallFloat;
 import org.apache.solr.request.SolrQueryRequest;
-
+/**
+ * This feature returns the length of a field (in terms) for the current document.
+ *
+ * Note: since this feature relies on norms values that are stored in a single byte
+ * the value of the feature could have a lightly different value.
+ * (see also {@link org.apache.lucene.search.similarities.ClassicSimilarity})
+ **/
 public class FieldLengthFeature extends Feature {
 
   private String field;

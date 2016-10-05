@@ -14,15 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.log;
+package org.apache.solr.ltr;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.ltr.ranking.ModelQuery;
-import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
+import org.apache.solr.ltr.ModelQuery.FeatureInfo;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
@@ -67,7 +66,7 @@ public abstract class FeatureLogger<FV_TYPE> {
     }
     // FIXME: Confirm this hashing works
     return searcher.cacheInsert(QUERY_FV_CACHE_NAME,
-        modelQuery.hashCode() + (31 * docid),featureVector) != null;
+        fvCacheKey(modelQuery, docid), featureVector) != null;
   }
 
   /**
@@ -83,7 +82,7 @@ public abstract class FeatureLogger<FV_TYPE> {
    *
    * @return a feature logger for the format specified.
    */
-  public static FeatureLogger<?> getFeatureLogger(String stringFormat, String featureFormat) {
+  public static FeatureLogger<?> createFeatureLogger(String stringFormat, String featureFormat) {
     final FeatureFormat f;
     if (featureFormat == null || featureFormat.isEmpty() ||
         featureFormat.equals("sparse")) {
@@ -112,6 +111,10 @@ public abstract class FeatureLogger<FV_TYPE> {
 
   public abstract FV_TYPE makeFeatureVector(FeatureInfo[] featuresInfo);
 
+  private static int fvCacheKey(ModelQuery modelQuery, int docid) {
+    return  modelQuery.hashCode() + (31 * docid);
+  }
+
   /**
    * populate the document with its feature vector
    *
@@ -122,11 +125,9 @@ public abstract class FeatureLogger<FV_TYPE> {
   
   public FV_TYPE getFeatureVector(int docid, ModelQuery reRankModel,
       SolrIndexSearcher searcher) {
-    final SolrCache fvCache = searcher
-        .getCache(QUERY_FV_CACHE_NAME);
-    return fvCache == null ? null : (FV_TYPE) fvCache.get(reRankModel
-        .hashCode() + (31 * docid));
+    return (FV_TYPE) searcher.cacheLookup(QUERY_FV_CACHE_NAME, fvCacheKey(reRankModel, docid));
   }
+
 
   public static class MapFeatureLogger extends FeatureLogger<Map<String,Float>> {
 

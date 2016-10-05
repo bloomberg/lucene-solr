@@ -24,27 +24,27 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.ltr.LTRRescorer;
+import org.apache.solr.ltr.LTRThreadModule;
+import org.apache.solr.ltr.ModelQuery;
+import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.ltr.model.LTRScoringModel;
-import org.apache.solr.ltr.ranking.LTRThreadModule;
-import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
-import org.apache.solr.ltr.util.LTRUtils;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.ltr.LTRQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
  */
 public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String NAME = "ltr";
+  private static Query defaultQuery = new MatchAllDocsQuery();
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -82,17 +83,29 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
    **/
   public static final String RERANK_DOCS = "reRankDocs";
 
+  private static int getInt(Object thObj, int defValue, String paramName) throws NumberFormatException{
+    if (thObj != null) {
+      try{
+        return Integer.parseInt(thObj.toString());
+      }catch(NumberFormatException nfe){
+        String errorStr = nfe.toString() + ":" + paramName + " not an integer";
+        throw new NumberFormatException(errorStr);
+      }
+    }
+    return defValue;
+  }
+
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
-    int maxThreads  = LTRUtils.getInt(args.get("LTRMaxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "LTRMaxThreads");
-    int maxQueryThreads = LTRUtils.getInt(args.get("LTRMaxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
+    int maxThreads  = getInt(args.get("LTRMaxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "LTRMaxThreads");
+    int maxQueryThreads = getInt(args.get("LTRMaxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
     threadManager = new LTRThreadModule(maxThreads, maxQueryThreads);
   }
   
   @Override
   public QParser createParser(String qstr, SolrParams localParams,
       SolrParams params, SolrQueryRequest req) {
-    req.getContext().put(LTRFeatureLoggerTransformerFactory.THREAD_MGR, threadManager); // so that the same thread manager can be used in LTRFeatureLoggerTransformerFactory
+    SolrQueryRequestContextUtils.setThreadManager(req, threadManager);
     return new LTRQParser(qstr, localParams, params, req);
   }
   
@@ -146,7 +159,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
         mr = (ManagedModelStore)res;
     }
     if (mr != null && fr != null){
-        mr.init(fr);
+        mr.setManagedFeatureStore(fr);
         // now we can safely load the models
         mr.loadStoredModels();
 
@@ -179,10 +192,10 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       }
 
       final String modelFeatureStoreName = meta.getFeatureStoreName();
-      final Boolean extractFeatures = (Boolean) req.getContext().get(LTRFeatureLoggerTransformerFactory.LOG_FEATURES_QUERY_PARAM);
-      final String fvStoreName = (String) req.getContext().get(LTRFeatureLoggerTransformerFactory.FV_STORE);
+      final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
+      final String fvStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       // Check if features are requested and if the model feature store and feature-transform feature store are the same
-      final boolean featuresRequestedFromSameStore = (extractFeatures != null && (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ) ? extractFeatures.booleanValue():false;
+      final boolean featuresRequestedFromSameStore = (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ? extractFeatures:false;
       
       final ModelQuery reRankModel = new ModelQuery(meta, 
           extractEFIParams(localParams), 
@@ -191,9 +204,9 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       // Enable the feature vector caching if we are extracting features, and the features
       // we requested are the same ones we are reranking with 
       if (featuresRequestedFromSameStore) {
-        reRankModel.setFeatureLogger( LTRFeatureLoggerTransformerFactory.getFeatureLogger(req) );
+        reRankModel.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
       }
-      req.getContext().put(LTRFeatureLoggerTransformerFactory.MODEL_QUERY, reRankModel);
+      SolrQueryRequestContextUtils.setModelQuery(req, reRankModel);
 
       int reRankDocs = localParams.getInt(RERANK_DOCS, DEFAULT_RERANK_DOCS);
       reRankDocs = Math.max(1, reRankDocs);
@@ -204,4 +217,47 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       return new LTRQuery(reRankModel, reRankDocs);
     }
   }
+
+  private class LTRQuery extends AbstractReRankQuery {
+    private final ModelQuery reRankModel;
+
+    public LTRQuery(ModelQuery reRankModel, int reRankDocs) {
+      super(defaultQuery, reRankDocs, new LTRRescorer(reRankModel));
+      this.reRankModel = reRankModel;
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * classHash() + (mainQuery.hashCode() + reRankModel.hashCode() + reRankDocs);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return sameClassAs(o) &&  equalsTo(getClass().cast(o));
+    }
+
+    private boolean equalsTo(LTRQuery other) {    
+      return (mainQuery.equals(other.mainQuery)
+          && reRankModel.equals(other.reRankModel) && (reRankDocs == other.reRankDocs));
+    }
+
+    @Override
+    public RankQuery wrap(Query _mainQuery) {
+      super.wrap(_mainQuery);    
+      reRankModel.setOriginalQuery(_mainQuery);
+      return this;
+    }
+
+    @Override
+    public String toString(String field) {
+      return "{!ltr mainQuery='" + mainQuery.toString() + "' reRankModel='"
+          + reRankModel.toString() + "' reRankDocs=" + reRankDocs + "}";
+    }
+    
+    @Override
+    protected Query rewrite(Query rewrittenMainQuery) throws IOException {
+      return new LTRQuery(reRankModel, reRankDocs).wrap(rewrittenMainQuery);
+    }
+  }
+
 }
