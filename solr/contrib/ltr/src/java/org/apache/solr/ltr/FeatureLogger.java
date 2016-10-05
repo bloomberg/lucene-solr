@@ -82,7 +82,7 @@ public abstract class FeatureLogger<FV_TYPE> {
    *
    * @return a feature logger for the format specified.
    */
-  public static FeatureLogger<?> getFeatureLogger(String stringFormat, String featureFormat) {
+  public static FeatureLogger<?> createFeatureLogger(String stringFormat, String featureFormat) {
     final FeatureFormat f;
     if (featureFormat == null || featureFormat.isEmpty() ||
         featureFormat.equals("sparse")) {
