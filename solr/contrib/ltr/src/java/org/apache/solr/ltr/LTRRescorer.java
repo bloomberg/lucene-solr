@@ -153,7 +153,7 @@ public class LTRRescorer extends Rescorer {
 
     ModelScorer scorer = null;
     int hitUpto = 0;
-    final FeatureLogger<?> featureLogger = reRankModel.getFeatureLogger();
+    final FeatureLogger<?> featureLogger = reRankModel.createFeatureLogger();
 
     // FIXME
     // All of this heap code is only for logging. Wrap all this code in

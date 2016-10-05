@@ -41,7 +41,7 @@ public class SolrQueryRequestContextUtils {
     req.getContext().put(FEATURE_LOGGER, featureLogger);
   }
 
-  public static FeatureLogger<?> getFeatureLogger(SolrQueryRequest req) {
+  public static FeatureLogger<?> createFeatureLogger(SolrQueryRequest req) {
     return (FeatureLogger<?>) req.getContext().get(FEATURE_LOGGER);
   }
 

@@ -100,7 +100,7 @@ public class ModelQuery extends Query {
     this.fl = fl;
   }
 
-  public FeatureLogger getFeatureLogger() {
+  public FeatureLogger createFeatureLogger() {
     return fl;
   }
 
