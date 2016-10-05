@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.search.Weight;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -110,7 +109,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private ModelQuery reRankModel;
     private ModelWeight modelWeight;
     private FeatureLogger<?> featureLogger;
-    private boolean resultsReranked;
+    private boolean docsWereNotReranked;
 
     /**
      * @param name
@@ -149,9 +148,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       // Setup ModelQuery
       reRankModel = SolrQueryRequestContextUtils.getModelQuery(req);
-      resultsReranked = (reRankModel != null);
+      docsWereNotReranked = (reRankModel == null);
       String featureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
-      if (!resultsReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getScoringModel().getFeatureStoreName())))) {
+      if (docsWereNotReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getScoringModel().getFeatureStoreName())))) {
         // if store is set in the trasformer we should overwrite the logger
 
         final ManagedFeatureStore fr = (ManagedFeatureStore) req.getCore().getRestManager()
@@ -184,18 +183,17 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       featureLogger = reRankModel.getFeatureLogger();
 
-      Weight w;
+      ModelWeight w;
       try {
         w = reRankModel.createWeight(searcher, true, 1f);
       } catch (final IOException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e);
       }
-      if ((w == null) || !(w instanceof ModelWeight)) {
+      if (w == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "error logging the features, model weight is null");
       }
-      modelWeight = (ModelWeight) w;
-
+      modelWeight = w;
     }
 
     @Override
@@ -208,11 +206,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         final LeafReaderContext atomicContext = leafContexts.get(n);
         final int deBasedDoc = docid - atomicContext.docBase;
         final ModelScorer r = modelWeight.scorer(atomicContext);
-        if (((r == null) || (r.iterator().advance(deBasedDoc) != docid))
-            && (fv == null)) {
+        if ((r == null) || (r.iterator().advance(deBasedDoc) != docid)) {
           doc.addField(name, featureLogger.makeFeatureVector(new FeatureInfo[0]));
         } else {
-          if (!resultsReranked) {
+          if (docsWereNotReranked) {
             // If results have not been reranked, the score passed in is the original query's
             // score, which some features can use instead of recalculating it
             r.getDocInfo().setOriginalDocScore(new Float(score));
