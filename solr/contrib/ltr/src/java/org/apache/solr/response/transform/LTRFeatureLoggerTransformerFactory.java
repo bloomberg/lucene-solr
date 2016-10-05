@@ -17,9 +17,12 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.Explanation;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -29,8 +32,10 @@ import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.ModelQuery;
 import org.apache.solr.ltr.ModelQuery.ModelWeight;
+import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
-import org.apache.solr.ltr.model.LoggingModel;
+import org.apache.solr.ltr.model.LTRScoringModel;
+import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -206,6 +211,32 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       }
 
       doc.addField(name, fv);
+    }
+
+  }
+
+  private static class LoggingModel extends LTRScoringModel {
+
+    public LoggingModel(String name, String featureStoreName, List<Feature> allFeatures){
+      this(name, Collections.emptyList(), Collections.emptyList(),
+          featureStoreName, allFeatures, Collections.emptyMap());
+    }
+
+    protected LoggingModel(String name, List<Feature> features, 
+        List<Normalizer> norms, String featureStoreName,
+        List<Feature> allFeatures, Map<String,Object> params) {
+      super(name, features, norms, featureStoreName, allFeatures, params);
+    }
+
+    @Override
+    public float score(float[] modelFeatureValuesNormalized) {
+      return 0;
+    }
+
+    @Override
+    public Explanation explain(LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
+      return Explanation.match(finalScore, toString()
+          + " logging model, used only for logging the features");
     }
 
   }
