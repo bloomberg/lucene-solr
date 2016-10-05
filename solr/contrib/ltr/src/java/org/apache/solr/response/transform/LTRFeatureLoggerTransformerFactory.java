@@ -174,12 +174,12 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         }
       }
 
-      if (reRankModel.createFeatureLogger() == null){
-        reRankModel.setFeatureLogger( SolrQueryRequestContextUtils.createFeatureLogger(req) );
+      if (reRankModel.getFeatureLogger() == null){
+        reRankModel.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
       }
       reRankModel.setRequest(req);
 
-      featureLogger = reRankModel.createFeatureLogger();
+      featureLogger = reRankModel.getFeatureLogger();
 
       try {
         modelWeight = reRankModel.createWeight(searcher, true, 1f);
