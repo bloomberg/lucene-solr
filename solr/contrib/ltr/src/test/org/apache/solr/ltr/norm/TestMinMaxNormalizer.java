@@ -86,7 +86,8 @@ public class TestMinMaxNormalizer {
     params.put("min", "10.0f");
     params.put("max", "10.0f");
     final ModelException expectedException = 
-        new ModelException("MinMax Normalizer delta must not be zero");
+        new ModelException("MinMax Normalizer delta must not be zero "
+            + "| delta = 0.0");
     try {
         implTestMinMax(params,
               10.0f,

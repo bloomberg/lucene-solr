@@ -17,7 +17,7 @@
 package org.apache.solr.ltr.norm;
 
 import java.util.LinkedHashMap;
-import org.apache.solr.ltr.model.ModelException;
+import org.apache.solr.ltr.norm.NormalizerException;
 
 /**
  * A Normalizer to scale a feature value around an average-and-standard-deviation distribution.
@@ -72,10 +72,12 @@ public class StandardNormalizer extends Normalizer {
   }
   
   @Override
-  protected void validate() throws ModelException {
+  protected void validate() throws NormalizerException {
     super.validate();
     if (std <= 0f)
-      throw new ModelException("Standard Normalizer standard deviation must be positive");
+      throw 
+      new NormalizerException("Standard Normalizer standard deviation must "
+            + "be positive | std = " + std);
   }
 
   @Override

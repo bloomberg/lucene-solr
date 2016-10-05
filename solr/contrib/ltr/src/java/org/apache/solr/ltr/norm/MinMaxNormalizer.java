@@ -79,7 +79,9 @@ public class MinMaxNormalizer extends Normalizer {
   protected void validate() throws ModelException {
     super.validate();
     if (delta == 0f)
-      throw new ModelException("MinMax Normalizer delta must not be zero");
+      throw 
+      new ModelException("MinMax Normalizer delta must not be zero " +
+      "| delta = " + delta);
   }
 
   @Override
