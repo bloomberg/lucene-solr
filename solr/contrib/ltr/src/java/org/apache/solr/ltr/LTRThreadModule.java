@@ -31,8 +31,8 @@ public class LTRThreadModule {
   private Semaphore ltrSemaphore = null; 
   private int maxThreads;
   private int maxQueryThreads;
-  public static final int DEFAULT_MAX_THREADS = 0; // do not do threading if 'LTRMaxThreads' is not specified in the config file
-  public static final int DEFAULT_MAX_QUERYTHREADS = 0; // do not do threading if 'LTRMaxQueryThreads' is not specified in the config file
+  public static final int DEFAULT_MAX_THREADS = 0; // do not do threading if 'maxThreads' is not specified in the config file
+  public static final int DEFAULT_MAX_QUERYTHREADS = 0; // do not do threading if 'maxQueryThreads' is not specified in the config file
 
    private final Executor createWeightScoreExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
           0,
@@ -46,13 +46,13 @@ public class LTRThreadModule {
       this.maxThreads = maxThreads;
       this.maxQueryThreads = maxQueryThreads;
       if (maxThreads < 0){
-        throw new NumberFormatException("LTRMaxThreads cannot be less than 0");
+        throw new NumberFormatException("maxThreads cannot be less than 0");
       }
       if (maxQueryThreads < 0){
-        throw new NumberFormatException("LTRMaxQueryThreads cannot be less than 0");
+        throw new NumberFormatException("maxQueryThreads cannot be less than 0");
       }
       if (maxThreads < maxQueryThreads){
-        throw new NumberFormatException("LTRMaxQueryThreads cannot be greater than LTRMaxThreads");
+        throw new NumberFormatException("maxQueryThreads cannot be greater than maxThreads");
       }
       if  (this.maxThreads > 1 ){
         ltrSemaphore = new Semaphore(maxThreads);

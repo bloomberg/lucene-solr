@@ -65,15 +65,15 @@ public class TestParallelWeightCreation extends TestRerankBase{
     }catch(NumberFormatException nfe){
       msg1 = nfe.getMessage();;
     }
-    assertTrue(msg1.equals("LTRMaxQueryThreads cannot be less than 0"));
+    assertTrue(msg1.equals("maxQueryThreads cannot be less than 0"));
     
-    // set LTRMaxThreads to 1 and LTRMaxQueryThreads to 2 and verify that an exception is thrown
+    // set maxThreads to 1 and maxQueryThreads to 2 and verify that an exception is thrown
     String msg2 = null;
     try{
       new LTRThreadModule(1,2);
     }catch(NumberFormatException nfe){
       msg2 = nfe.getMessage();
     }
-    assertTrue(msg2.equals("LTRMaxQueryThreads cannot be greater than LTRMaxThreads"));
+    assertTrue(msg2.equals("maxQueryThreads cannot be greater than maxThreads"));
   }
 }

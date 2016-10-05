@@ -97,8 +97,8 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
-    int maxThreads  = getInt(args.get("LTRMaxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "LTRMaxThreads");
-    int maxQueryThreads = getInt(args.get("LTRMaxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
+    int maxThreads  = getInt(args.get("maxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "maxThreads");
+    int maxQueryThreads = getInt(args.get("maxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "maxQueryThreads");
     threadManager = new LTRThreadModule(maxThreads, maxQueryThreads);
   }
   
