@@ -25,6 +25,34 @@ import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
 
+/**
+ * A scoring model that computes scores using a linear Support Vector Machine (SVM) algorithm.
+ * <p>
+ * Example configuration:
+ * <pre>{
+   "class" : "org.apache.solr.ltr.model.RankSVMModel",
+   "name" : "myModelName",
+   "features" : [
+       { "name" : "userTextTitleMatch" },
+       { "name" : "originalScore" },
+       { "name" : "isBook" }
+   ],
+   "params" : {
+       "weights" : {
+           "userTextTitleMatch" : 1.0,
+           "originalScore" : 0.5,
+           "isBook" : 0.1
+       }
+   }
+}</pre>
+ * <p>
+ * Background reading:
+ * <ul>
+ * <li> <a href="http://www.cs.cornell.edu/people/tj/publications/joachims_02c.pdf">
+ * Thorsten Joachims. Optimizing Search Engines Using Clickthrough Data.
+ * Proceedings of the ACM Conference on Knowledge Discovery and Data Mining (KDD), ACM, 2002.</a>
+ * </ul>
+ */
 public class RankSVMModel extends LTRScoringModel {
 
   protected Float[] featureToWeight;
