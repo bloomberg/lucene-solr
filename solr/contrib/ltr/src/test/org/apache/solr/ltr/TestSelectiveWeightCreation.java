@@ -175,11 +175,11 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     }
 
     // when features are NOT requested in the response, only the modelFeature weights should be created
-    final LTRScoringModel meta1 = TestRankSVMModel.createRankSVMModel("test",
+    final LTRScoringModel ltrScoringModel1 = TestRankSVMModel.createRankSVMModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
-        hits.scoreDocs[0].doc, new ModelQuery(meta1, false)); // features not requested in response
+        hits.scoreDocs[0].doc, new ModelQuery(ltrScoringModel1, false)); // features not requested in response
     
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
     int validFeatures = 0;
@@ -191,11 +191,11 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertEquals(validFeatures, features.size());
     
     // when features are requested in the response, weights should be created for all features
-    final LTRScoringModel meta2 = TestRankSVMModel.createRankSVMModel("test",
+    final LTRScoringModel ltrScoringModel2 = TestRankSVMModel.createRankSVMModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
     modelWeight = performQuery(hits, searcher,
-        hits.scoreDocs[0].doc, new ModelQuery(meta2, true)); // features requested in response
+        hits.scoreDocs[0].doc, new ModelQuery(ltrScoringModel2, true)); // features requested in response
 
     assertEquals(features.size(), modelWeight.modelFeatureValuesNormalized.length);
     assertEquals(allFeatures.size(), modelWeight.extractedFeatureWeights.length);
@@ -221,10 +221,9 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     query.setQuery("*:*");
     query.add("fl", "*,score");
     query.add("rows", "4");
-  
     query.add("rq", "{!ltr reRankDocs=4 model=externalmodel efi.user_query=w3}");
     query.add("fl", "fv:[fv]");
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='4'");
@@ -235,7 +234,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     query.add("fl", "*,score");
     query.add("rq", "{!ltr reRankDocs=4 model=externalmodel efi.user_query=w3}");
     query.add("fl", "fv:[fv store=fstore4 efi.myPop=3]");
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.999");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='popularity:3.0;originalScore:1.0'"); // extract all features from fstore4
@@ -246,7 +245,6 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     query.add("fl", "*,score");
     query.add("rq", "{!ltr reRankDocs=4 model=externalmodelstore efi.user_query=w3 efi.myconf=0.8}");
     query.add("fl", "fv:[fv store=fstore4 efi.myPop=3]");
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'"); // score using fstore2 used by externalmodelstore
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.7992");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='popularity:3.0;originalScore:1.0'"); // extract all features from fstore4

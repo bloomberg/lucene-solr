@@ -49,8 +49,7 @@ public class TestRankingFeature extends TestQueryFeature {
 
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4}");
     query.set("debugQuery", "on");
-    String res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
+
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==64.0");
@@ -64,9 +63,6 @@ public class TestRankingFeature extends TestQueryFeature {
     query.remove("rq");
     query.add("rq", "{!ltr model=unpopularityS-model reRankDocs=4}");
 
-    query.set("debugQuery", "on");
-    res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==1.0");

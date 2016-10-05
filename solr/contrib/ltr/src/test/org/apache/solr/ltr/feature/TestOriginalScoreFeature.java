@@ -64,9 +64,6 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     query.add("rows", "4");
     query.add("wt", "json");
 
-    // String res = restTestHarness.query("/query" + query.toQueryString());
-    // System.out.println(res);
-
     // Normal term match
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
@@ -88,9 +85,6 @@ public class TestOriginalScoreFeature extends TestRerankBase {
 
     query.add("fl", "[fv]");
     query.add("rq", "{!ltr model=originalScore reRankDocs=4}");
-
-    // res = restTestHarness.query("/query" + query.toQueryString());
-    // System.out.println(res);
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
@@ -136,13 +130,13 @@ public class TestOriginalScoreFeature extends TestRerankBase {
         .get("response")).get("docs")).get(2)).get("score")).toString();
     final String doc3Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(3)).get("score")).toString();
-    System.out.println(doc0Score);
+
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/fv=='origScore:" + doc0Score + ";c2:2.0'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='8'");
-    System.out.println(res);
+
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[1]/fv=='origScore:" + doc1Score + ";c2:2.0'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");

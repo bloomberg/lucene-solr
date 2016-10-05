@@ -44,8 +44,6 @@ public class TestModelManagerPersistence extends TestRerankBase {
 
     loadFeature("feature", ValueFeature.class.getCanonicalName(), "test",
         "{\"value\":2}");
-    System.out.println(restTestHarness
-        .query(ManagedFeatureStore.REST_END_POINT + "/test"));
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/test",
         "/features/[0]/name=='feature'");
     restTestHarness.reload();

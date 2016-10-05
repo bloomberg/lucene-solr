@@ -34,11 +34,9 @@ public class TestUserTermScoreWithQ extends TestQueryFeature {
     query.add("rows", "4");
     query.add("rq", "{!ltr model=Term-modelQ reRankDocs=4}");
     query.set("debugQuery", "on");
-    final String res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
+
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
-    // aftertest();
   }
 }

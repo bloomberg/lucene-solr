@@ -105,9 +105,6 @@ public class TestFieldLengthFeature extends TestRerankBase {
     query.add("fl", "*, score");
     query.add("rows", "4");
 
-    String res;
-    // res = restTestHarness.query("/query" + query.toQueryString());
-    // System.out.println(res);
     // Normal term match
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
@@ -117,7 +114,6 @@ public class TestFieldLengthFeature extends TestRerankBase {
     // Normal term match
 
     query.add("rq", "{!ltr model=title-model reRankDocs=4}");
-    res = restTestHarness.query("/query" + query.toQueryString());
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
@@ -130,8 +126,7 @@ public class TestFieldLengthFeature extends TestRerankBase {
     query.add("rows", "8");
     query.remove("rq");
     query.add("rq", "{!ltr model=title-model reRankDocs=8}");
-    res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='2'");
@@ -148,8 +143,6 @@ public class TestFieldLengthFeature extends TestRerankBase {
     query.remove("rows");
     query.add("rows", "4");
     query.add("rq", "{!ltr model=description-model reRankDocs=4}");
-    res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='7'");

@@ -22,13 +22,12 @@ import java.util.LinkedHashMap;
  * A Normalizer to scale a feature value using a (min,max) range.
  * <p>
  * Example configuration:
- * <table summary="">
- * <tr><td>"norm" : {</td></tr>
- * <tr><td></td><td>"class" :  </td><td>"org.apache.solr.ltr.norm.MinMaxNormalizer",</td></tr>
- * <tr><td></td><td>"params" : </td><td>{ "min":"0", "max":"50" }</td></tr>
- * <tr><td>}</td></tr>
- * </table>
- * <p>
+<pre>
+"norm" : {
+    "class" : "org.apache.solr.ltr.norm.MinMaxNormalizer",
+    "params" : { "min":"0", "max":"50" }
+}
+</pre>
  * Example normalizations:
  * <ul>
  * <li>-5 will be normalized to -0.1

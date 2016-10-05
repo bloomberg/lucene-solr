@@ -310,10 +310,10 @@ public class TestRerankBase extends RestTestBase {
     fs.applyUpdatesToManagedData(parsedFeatureJson);
     ms.setManagedFeatureStore(fs); // can we skip this and just use fs directly below?
 
-    final LTRScoringModel meta = ManagedModelStore.fromLTRScoringModelMap(
+    final LTRScoringModel ltrScoringModel = ManagedModelStore.fromLTRScoringModelMap(
         solrResourceLoader, mapFromJson(modelJson), ms.getManagedFeatureStore());
-    ms.addModel(meta);
-    return meta;
+    ms.addModel(ltrScoringModel);
+    return ltrScoringModel;
   }
 
   @SuppressWarnings("unchecked")
@@ -378,7 +378,6 @@ public class TestRerankBase extends RestTestBase {
   }
 
   protected static void bulkIndex() throws Exception {
-    System.out.println("-----------index ---------------------");
     assertU(adoc("title", "bloomberg different bla", "description",
         "bloomberg", "id", "6", "popularity", "1"));
     assertU(adoc("title", "bloomberg bloomberg ", "description", "bloomberg",

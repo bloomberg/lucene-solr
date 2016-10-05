@@ -98,8 +98,6 @@ public class TestLambdaMARTModel extends TestRerankBase {
     query.setParam("debugQuery", "on");
     String qryResult = JQ("/query" + query.toQueryString());
 
-    System.out.println(qryResult);
-
     qryResult = qryResult.replaceAll("\n", " ");
     // FIXME containsString doesn't exist.
     // assertThat(qryResult, containsString("\"debug\":{"));
@@ -122,8 +120,6 @@ public class TestLambdaMARTModel extends TestRerankBase {
     // assertThat(qryResult, containsString(" Go Left "));
     // assertThat(qryResult,
     // containsString("'this_feature_doesnt_exist' does not exist in FV"));
-
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
   }
 
   @Test

@@ -83,9 +83,6 @@ public class TestModelManager extends TestRerankBase {
     // relies on these ManagedResources being activated in the
     // schema-rest.xml used by this test
     assertJQ("/schema/managed", "/responseHeader/status==0");
-    System.out.println(restTestHarness.query("/schema/managed"));
-
-    System.out.println("after: \n" + restTestHarness.query("/schema/managed"));
 
     final String valueFeatureClassName = ValueFeature.class.getCanonicalName();
 

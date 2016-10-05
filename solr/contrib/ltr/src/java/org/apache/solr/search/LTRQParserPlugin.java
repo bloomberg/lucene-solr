@@ -185,26 +185,26 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
             "Must provide model in the request");
       }
      
-      final LTRScoringModel meta = mr.getModel(modelName);
-      if (meta == null) {
+      final LTRScoringModel ltrScoringModel = mr.getModel(modelName);
+      if (ltrScoringModel == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "cannot find " + LTRQParserPlugin.MODEL + " " + modelName);
       }
 
-      final String modelFeatureStoreName = meta.getFeatureStoreName();
+      final String modelFeatureStoreName = ltrScoringModel.getFeatureStoreName();
       final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
       final String fvStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       // Check if features are requested and if the model feature store and feature-transform feature store are the same
       final boolean featuresRequestedFromSameStore = (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ? extractFeatures:false;
       
-      final ModelQuery reRankModel = new ModelQuery(meta, 
+      final ModelQuery reRankModel = new ModelQuery(ltrScoringModel, 
           extractEFIParams(localParams), 
           featuresRequestedFromSameStore, getThreadMgr());
 
       // Enable the feature vector caching if we are extracting features, and the features
       // we requested are the same ones we are reranking with 
       if (featuresRequestedFromSameStore) {
-        reRankModel.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
+        reRankModel.setFeatureLogger( SolrQueryRequestContextUtils.createFeatureLogger(req) );
       }
       SolrQueryRequestContextUtils.setModelQuery(req, reRankModel);
 

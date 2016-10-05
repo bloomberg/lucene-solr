@@ -27,6 +27,56 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.util.SolrPluginUtils;
 
+/**
+ * A scoring model that computes scores based on the LambdaMART algorithm.
+ * <p>
+ * Example configuration:
+<pre>{
+   "class" : "org.apache.solr.ltr.model.LambdaMARTModel",
+   "name" : "lambdamartmodel",
+   "features":[
+       { "name" : "userTextTitleMatch"},
+       { "name" : "originalScore"}
+   ],
+   "params" : {
+       "trees" : [
+           {
+               "weight" : 1,
+               "root": {
+                   "feature" : "userTextTitleMatch",
+                   "threshold" : 0.5,
+                   "left" : {
+                       "value" : -100
+                   },
+                   "right" : {
+                       "feature" : "originalScore",
+                       "threshold" : 10.0,
+                       "left" : {
+                           "value" : 50
+                       },
+                       "right" : {
+                           "value" : 75
+                       }
+                   }
+               }
+           },
+           {
+               "weight" : 2,
+               "root" : {
+                   "value" : -10
+               }
+           }
+       ]
+   }
+}</pre>
+ * <p>
+ * Background reading:
+ * <ul>
+ * <li> <a href="http://research.microsoft.com/pubs/132652/MSR-TR-2010-82.pdf">
+ * Christopher J.C. Burges. From RankNet to LambdaRank to LambdaMART: An Overview.
+ * Microsoft Research Technical Report MSR-TR-2010-82.</a>
+ * </ul>
+ */
 public class LambdaMARTModel extends LTRScoringModel {
 
   private final HashMap<String,Integer> fname2index;

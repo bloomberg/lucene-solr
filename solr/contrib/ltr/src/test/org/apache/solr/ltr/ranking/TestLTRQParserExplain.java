@@ -51,12 +51,10 @@ public class TestLTRQParserExplain extends TestRerankBase {
     query.add("rows", "2");
     query.add("rq", "{!ltr reRankDocs=2 model=svm2}");
     query.add("fl", "*,score");
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    
     assertJQ(
         "/query" + query.toQueryString(),
         "/debug/explain/9=='\n13.5 = RankSVMModel(name=svm2,featureWeights=[constant1=1.5,constant2=3.5,pop=1.0]) model applied to features, sum of:\n  1.5 = prod of:\n    1.5 = weight on feature\n    1.0 = ValueFeature [name=constant1, params={value=1}]\n  7.0 = prod of:\n    3.5 = weight on feature\n    2.0 = ValueFeature [name=constant2, params={value=2}]\n  5.0 = prod of:\n    1.0 = weight on feature\n    5.0 = FieldValueFeature [name=pop, params={field=popularity}]\n'");
-    query.add("wt", "xml");
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
   }
 
   @Test
@@ -70,10 +68,6 @@ public class TestLTRQParserExplain extends TestRerankBase {
     query.add("rows", "4");
     query.add("rq", "{!ltr reRankDocs=4 model=6029760550880411648}");
     query.add("fl", "*,score");
-    query.add("wt", "xml");
-
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
-    query.remove("wt");
     query.add("wt", "json");
     final String expectedExplainNormalizer = "normalized using MinMaxNormalizer(min=0.0,max=10.0)";
     final String expectedExplain = "\n3.5116758 = RankSVMModel(name=6029760550880411648,featureWeights=["
@@ -111,7 +105,6 @@ public class TestLTRQParserExplain extends TestRerankBase {
       + "sampleConstant=1.0,"
       + "search_number_of_nights=2.0])";
 
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
     query.remove("wt");
     query.add("wt", "json");
     assertJQ(
@@ -139,14 +132,11 @@ public class TestLTRQParserExplain extends TestRerankBase {
     query.add("rows", "4");
     query.add("rq", "{!ltr reRankDocs=4 model=external_model_binary_feature efi.user_device_tablet=1}");
     query.add("fl", "*,score");
-    query.add("wt", "xml");
 
     final String tree1 = "(weight=1.0,root=(feature=user_device_smartphone,threshold=0.5,left=0.0,right=50.0))";
     final String tree2 = "(weight=1.0,root=(feature=user_device_tablet,threshold=0.5,left=0.0,right=65.0))";
     final String trees = "["+tree1+","+tree2+"]";
 
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
-    query.remove("wt");
     query.add("wt", "json");
     assertJQ(
         "/query" + query.toQueryString(),

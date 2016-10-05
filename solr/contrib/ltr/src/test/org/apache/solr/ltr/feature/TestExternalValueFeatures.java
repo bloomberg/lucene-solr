@@ -58,16 +58,13 @@ public class TestExternalValueFeatures extends TestRerankBase {
     query.add("fl", "*,score,features:[fv]");
     query.add("rows", "3");
     query.add("fl", "[fv]");
-    query
-        .add("rq", "{!ltr reRankDocs=3 model=external_model_binary_feature efi.user_device_tablet=1}");
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+    query.add("rq", "{!ltr reRankDocs=3 model=external_model_binary_feature efi.user_device_tablet=1}");
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/features=='user_device_tablet:1.0'");
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/score==65.0");
-
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
   }
 
   @Test
@@ -86,8 +83,6 @@ public class TestExternalValueFeatures extends TestRerankBase {
         "/response/docs/[0]/features==''");
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/score==0.0");
-
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
   }
   
 }

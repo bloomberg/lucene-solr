@@ -35,10 +35,8 @@ public class TestUserTermScorerQuery extends TestQueryFeature {
     query.add("rows", "4");
     query.add("rq",
         "{!ltr model=Term-matchedTitleDFExt reRankDocs=4 efi.user_query=w8}");
-    final String res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
+
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
-    // aftertest();
   }
 }

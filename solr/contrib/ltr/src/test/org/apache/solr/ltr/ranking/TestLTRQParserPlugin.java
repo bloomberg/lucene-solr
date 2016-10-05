@@ -111,8 +111,6 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rows", "3");
     query.add("debugQuery", "on");
     query.add("rq", "{!ltr reRankDocs=3 model=6029760550880411648}");
-    final String res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==0");
   }
 

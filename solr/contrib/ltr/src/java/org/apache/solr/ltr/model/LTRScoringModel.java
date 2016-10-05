@@ -32,9 +32,47 @@ import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * Contains all the data needed for loading a model.
+ * A scoring model computes scores that can be used to rerank documents.
+ * <p>
+ * A scoring model consists of
+ * <ul>
+ * <li> a list of features ({@link Feature}) and
+ * <li> a list of normalizers ({@link Normalizer}) plus
+ * <li> parameters or configuration to represent the scoring algorithm.
+ * </ul>
+ * <p>
+ * Example configuration (snippet):
+ * <pre>{
+   "class" : "...",
+   "name" : "myModelName",
+   "features" : [
+       {
+         "name" : "isBook"
+       },
+       {
+         "name" : "originalScore",
+         "norm": {
+             "class" : "org.apache.solr.ltr.norm.StandardNormalizer",
+             "params" : { "avg":"100", "std":"10" }
+         }
+       },
+       {
+         "name" : "price",
+         "norm": {
+             "class" : "org.apache.solr.ltr.norm.MinMaxNormalizer",
+             "params" : { "min":"0", "max":"1000" }
+         }
+       }
+   ],
+   "params" : {
+       ...
+   }
+}</pre>
+ * <p>
+ * {@link LTRScoringModel} is an abstract class and concrete classes must
+ * implement the {@link #score(float[])} and
+ * {@link #explain(LeafReaderContext, int, float, List)} methods.
  */
-
 public abstract class LTRScoringModel {
 
   protected final String name;

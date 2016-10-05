@@ -72,8 +72,6 @@ public class TestFilterSolrFeature extends TestRerankBase {
     query.add("rq",
         "{!ltr model=Term-modelFQ reRankDocs=5 efi.user_query='w5'}");
 
-    final String res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==5");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==3.6");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==1.6");
@@ -99,7 +97,7 @@ public class TestFilterSolrFeature extends TestRerankBase {
   
     query.add("rq", "{!ltr reRankDocs=4 model=fqmodel efi.user_query=w2}");
     query.add("fl", "fv:[fv]");
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
+
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");

@@ -39,7 +39,6 @@ public class TestEdisMaxSolrFeature extends TestQueryFeature {
     query.add("rq", "{!ltr model=EdisMax-model reRankDocs=4}");
     query.set("debugQuery", "on");
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
   }
 }

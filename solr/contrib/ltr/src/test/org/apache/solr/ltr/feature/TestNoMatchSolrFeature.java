@@ -98,14 +98,12 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     yesMatchFeatureQuery.add("rows", "4");
     String res = restTestHarness.query("/query"
         + yesMatchFeatureQuery.toQueryString());
-    System.out.println(res);
+
     final Map<String,Object> jsonParse = (Map<String,Object>) ObjectBuilder
         .fromJSON(res);
     final Double doc0Score = (Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score");
 
-    res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score=="
@@ -138,14 +136,11 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     yesMatchFeatureQuery.add("rows", "4");
     String res = restTestHarness.query("/query"
         + yesMatchFeatureQuery.toQueryString());
-    System.out.println(res);
+
     final Map<String,Object> jsonParse = (Map<String,Object>) ObjectBuilder
         .fromJSON(res);
     final Double doc0Score = (Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(0)).get("score");
-
-    res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
     assertJQ("/query" + query.toQueryString(),
@@ -168,9 +163,6 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     query.add("fv", "true");
     query.add("rq", "{!ltr model=nomatchmodel3 reRankDocs=4}");
 
-    final String res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
-
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv==''");
   }
@@ -191,9 +183,6 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
     query.add("fl", "*, score,fv:[fv]");
     query.add("rows", "4");
     query.add("rq", "{!ltr model=nomatchmodel4 reRankDocs=4}");
-
-    final String res = restTestHarness.query("/query" + query.toQueryString());
-    System.out.println(res);
 
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/score==0.0");

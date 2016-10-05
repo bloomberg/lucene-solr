@@ -22,12 +22,12 @@ import java.util.LinkedHashMap;
  * A Normalizer to scale a feature value around an average-and-standard-deviation distribution.
  * <p>
  * Example configuration:
- * <table summary="">
- * <tr><td>"norm" : {</td></tr>
- * <tr><td></td><td>"class" :  </td><td>"org.apache.solr.ltr.norm.StandardNormalizer",</td></tr>
- * <tr><td></td><td>"params" : </td><td>{ "avg":"42", "std":"6" }</td></tr>
- * <tr><td>}</td></tr>
- * </table>
+<pre>
+"norm" : {
+    "class" : "org.apache.solr.ltr.norm.StandardNormalizer",
+    "params" : { "avg":"42", "std":"6" }
+}
+</pre>
  * <p>
  * Example normalizations:
  * <ul>

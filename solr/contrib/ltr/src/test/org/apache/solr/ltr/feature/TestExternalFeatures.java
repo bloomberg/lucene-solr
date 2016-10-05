@@ -81,8 +81,6 @@ public class TestExternalFeatures extends TestRerankBase {
     query.remove("fl");
     query.add("fl", "id,[fv efi.user_query=w2]");
 
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
-
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='2'");
@@ -99,8 +97,6 @@ public class TestExternalFeatures extends TestRerankBase {
 
     // Features are query title matches, which remove stopwords, leaving blank query, so no matches
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv==''");
-
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
   }
 
   @Test
