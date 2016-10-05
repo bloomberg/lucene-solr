@@ -67,11 +67,26 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
+  private String defaultFvStore;
+  private String defaultFvwt;
+  private String defaultFvFormat;
 
   private LTRThreadModule threadManager = null;
 
   public void setLoggingModelName(String loggingModelName) {
     this.loggingModelName = loggingModelName;
+  }
+
+  public void setStore(String defaultFvStore) {
+    this.defaultFvStore = defaultFvStore;
+  }
+
+  public void setFvwt(String defaultFvwt) {
+    this.defaultFvwt = defaultFvwt;
+  }
+
+  public void setFormat(String defaultFvFormat) {
+    this.defaultFvFormat = defaultFvFormat;
   }
 
   @Override
@@ -89,13 +104,13 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     SolrQueryRequestContextUtils.setIsExtractingFeatures(req);
 
     // Communicate which feature store we are requesting features for
-    SolrQueryRequestContextUtils.setFvStoreName(req, params.get(FV_STORE));
+    SolrQueryRequestContextUtils.setFvStoreName(req, params.get(FV_STORE, defaultFvStore));
 
     // Create and supply the feature logger to be used
     SolrQueryRequestContextUtils.setFeatureLogger(req,
         FeatureLogger.createFeatureLogger(
-            params.get(FV_RESPONSE_WRITER),
-            params.get(FV_FORMAT)));
+            params.get(FV_RESPONSE_WRITER, defaultFvwt),
+            params.get(FV_FORMAT, defaultFvFormat)));
 
     return new FeatureTransformer(name, params, req);
   }
