@@ -81,7 +81,7 @@ public class MinMaxNormalizer extends Normalizer {
     if (delta == 0f)
       throw 
       new ModelException("MinMax Normalizer delta must not be zero " +
-      "| delta = " + delta);
+      "| min = " + min + ",max = " + max + ",delta = " + delta);
   }
 
   @Override

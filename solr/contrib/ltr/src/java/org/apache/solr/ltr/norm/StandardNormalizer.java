@@ -77,7 +77,7 @@ public class StandardNormalizer extends Normalizer {
     if (std <= 0f)
       throw 
       new NormalizerException("Standard Normalizer standard deviation must "
-            + "be positive | std = " + std);
+            + "be positive | avg = " + avg + ",std = " + std);
   }
 
   @Override

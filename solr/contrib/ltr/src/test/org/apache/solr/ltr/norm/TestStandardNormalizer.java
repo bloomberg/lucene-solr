@@ -57,7 +57,7 @@ public class TestStandardNormalizer {
     params.put("std", "0f");
     final NormalizerException expectedException = 
         new NormalizerException("Standard Normalizer standard deviation must be positive "
-            + "| std = 0.0");
+            + "| avg = 0.0,std = 0.0");
     try {
         implTestStandard(params,
               0.0f,
@@ -74,7 +74,7 @@ public class TestStandardNormalizer {
     params.put("std", "-1f");
     final NormalizerException expectedException = 
         new NormalizerException("Standard Normalizer standard deviation must be positive "
-            + "| std = -1.0");
+            + "| avg = 0.0,std = -1.0");
     try {
         implTestStandard(params,
               0.0f,
@@ -92,7 +92,7 @@ public class TestStandardNormalizer {
     params.put("std", "0f");
     final NormalizerException expectedException = 
         new NormalizerException("Standard Normalizer standard deviation must be positive "
-            + "| std = 0.0");
+            + "| avg = 1.0,std = 0.0");
     try {
         implTestStandard(params,
               1f,
