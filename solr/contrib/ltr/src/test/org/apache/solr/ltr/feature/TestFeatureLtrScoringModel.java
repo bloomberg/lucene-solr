@@ -26,7 +26,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestFeatureMetadata extends TestRerankBase {
+public class TestFeatureLtrScoringModel extends TestRerankBase {
 
   static ManagedFeatureStore store = null;
 
