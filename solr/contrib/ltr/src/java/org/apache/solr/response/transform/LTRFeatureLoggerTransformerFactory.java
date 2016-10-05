@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.FeatureLogger;
+import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.ModelQuery;
 import org.apache.solr.ltr.ModelQuery.ModelWeight;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
@@ -197,7 +198,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       Object fv = featureLogger.getFeatureVector(docid, reRankModel, searcher);
       if (fv == null) { // FV for this document was not in the cache
         fv = featureLogger.makeFeatureVector(
-            modelWeight.somethingFeaturesInfo(
+            LTRRescorer.extractFeaturesInfo(
+                modelWeight,
                 docid,
                 (docsWereNotReranked ? new Float(score) : null),
                 leafContexts));

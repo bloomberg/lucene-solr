@@ -241,4 +241,26 @@ public class LTRRescorer extends Rescorer {
     return modelWeight.explain(context, deBasedDoc);
   }
 
+  public static ModelQuery.FeatureInfo[] extractFeaturesInfo(ModelWeight modelWeight,
+      int docid,
+      Float originalDocScore,
+      List<LeafReaderContext> leafContexts)
+      throws IOException {
+    final int n = ReaderUtil.subIndex(docid, leafContexts);
+    final LeafReaderContext atomicContext = leafContexts.get(n);
+    final int deBasedDoc = docid - atomicContext.docBase;
+    final ModelScorer r = modelWeight.scorer(atomicContext);
+    if ( (r == null) || (r.iterator().advance(deBasedDoc) != docid) ) {
+      return new FeatureInfo[0];
+    } else {
+      if (originalDocScore != null) {
+        // If results have not been reranked, the score passed in is the original query's
+        // score, which some features can use instead of recalculating it
+        r.getDocInfo().setOriginalDocScore(originalDocScore);
+      }
+      r.score();
+      return modelWeight.getFeaturesInfo();
+    }
+  }
+
 }
