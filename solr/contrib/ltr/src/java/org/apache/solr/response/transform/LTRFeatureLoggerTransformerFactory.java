@@ -85,7 +85,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       SolrQueryRequest req) {
 
     // Hint to enable feature vector cache since we are requesting features
-    SolrQueryRequestContextUtils.setUseFvCache(req);
+    SolrQueryRequestContextUtils.setIsExtractingFeatures(req);
 
     // Communicate which feature store we are requesting features for
     SolrQueryRequestContextUtils.setFvStoreName(req, params.get(FV_STORE));

@@ -187,7 +187,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       }
 
       final String modelFeatureStoreName = meta.getFeatureStoreName();
-      final boolean extractFeatures = SolrQueryRequestContextUtils.useFvCache(req);
+      final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
       final String fvStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       // Check if features are requested and if the model feature store and feature-transform feature store are the same
       final boolean featuresRequestedFromSameStore = (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ? extractFeatures:false;

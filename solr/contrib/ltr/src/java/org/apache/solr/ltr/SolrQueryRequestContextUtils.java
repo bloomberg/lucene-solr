@@ -29,8 +29,8 @@ public class SolrQueryRequestContextUtils {
   /** key of the model query in the request context **/
   private static final String MODEL_QUERY = LTR_PREFIX + "model_query";
 
-  /** key of the useFvCache flag in the request context **/
-  private static final String USE_FV_CACHE = LTR_PREFIX + "fvCache";
+  /** key of the isExtractingFeatures flag in the request context **/
+  private static final String IS_EXTRACTING_FEATURES = LTR_PREFIX + "isExtractingFeatures";
 
   /** key of the feature vector store name in the request context **/
   private static final String STORE = LTR_PREFIX + "store";
@@ -55,18 +55,18 @@ public class SolrQueryRequestContextUtils {
     return (ModelQuery) req.getContext().get(MODEL_QUERY);
   }
 
-  /** useFvCache flag accessors **/
+  /** isExtractingFeatures flag accessors **/
 
-  public static void setUseFvCache(SolrQueryRequest req) {
-    req.getContext().put(USE_FV_CACHE, Boolean.TRUE);
+  public static void setIsExtractingFeatures(SolrQueryRequest req) {
+    req.getContext().put(IS_EXTRACTING_FEATURES, Boolean.TRUE);
   }
 
-  public static void clearUseFvCache(SolrQueryRequest req) {
-    req.getContext().put(USE_FV_CACHE, Boolean.FALSE);
+  public static void clearIsExtractingFeatures(SolrQueryRequest req) {
+    req.getContext().put(IS_EXTRACTING_FEATURES, Boolean.FALSE);
   }
 
-  public static boolean useFvCache(SolrQueryRequest req) {
-    return Boolean.TRUE.equals(req.getContext().get(USE_FV_CACHE));
+  public static boolean isExtractingFeatures(SolrQueryRequest req) {
+    return Boolean.TRUE.equals(req.getContext().get(IS_EXTRACTING_FEATURES));
   }
 
   /** feature vector store name accessors **/
