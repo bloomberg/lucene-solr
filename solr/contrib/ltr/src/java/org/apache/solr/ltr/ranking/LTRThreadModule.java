@@ -75,10 +75,4 @@ public class LTRThreadModule {
    public Executor getCreateWeightScoreExecutor(){
      return createWeightScoreExecutor;
    }
-   
-   public void initSemaphore(){
-     if  (this.maxThreads > 1 ){
-       ltrSemaphore = new Semaphore(maxThreads);
-     }
-   }
 }

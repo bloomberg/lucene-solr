@@ -88,10 +88,11 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
     int maxQueryThreads = LTRUtils.getInt(args.get("LTRMaxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "LTRMaxQueryThreads");
     threadManager = new LTRThreadModule(maxThreads, maxQueryThreads);
   }
-
+  
   @Override
   public QParser createParser(String qstr, SolrParams localParams,
       SolrParams params, SolrQueryRequest req) {
+    req.getContext().put(LTRFeatureLoggerTransformerFactory.THREAD_MGR, threadManager); // so that the same thread manager can be used in LTRFeatureLoggerTransformerFactory
     return new LTRQParser(qstr, localParams, params, req);
   }
   

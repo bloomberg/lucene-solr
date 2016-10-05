@@ -29,6 +29,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.log.FeatureLogger;
 import org.apache.solr.ltr.model.LoggingModel;
+import org.apache.solr.ltr.ranking.LTRThreadModule;
 import org.apache.solr.ltr.ranking.ModelQuery;
 import org.apache.solr.ltr.ranking.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.ranking.ModelQuery.ModelWeight;
@@ -72,6 +73,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   /** key of the ModelQuery in the request context **/
   public static final String MODEL_QUERY = "model";
+  public static final String THREAD_MGR = "threadManager";
 
   /**
    * if the log feature query param is off features will not be logged.
@@ -161,14 +163,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
         final FeatureStore store = fr.getFeatureStore(featureStoreName);
         featureStoreName = store.getName(); // if featureStoreName was null before this gets actual name
-
+        
         try {
           final LoggingModel lm = new LoggingModel(loggingModelName,
               featureStoreName, store.getFeatures());
 
           reRankModel = new ModelQuery(lm, 
               LTRQParserPlugin.extractEFIParams(params), 
-              true); // request feature weights to be created for all features
+              true, (LTRThreadModule)req.getContext().get(THREAD_MGR)); // request feature weights to be created for all features
 
           // Local transformer efi if provided
           reRankModel.setOriginalQuery(context.getQuery());

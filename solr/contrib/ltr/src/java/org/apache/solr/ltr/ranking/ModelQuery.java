@@ -210,7 +210,7 @@ public class ModelQuery extends Query {
     final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
     List<FeatureWeight > featureWeights = new ArrayList<>(features.size());
     
-    if(ltrThreadMgr.getMaxThreads() <= 1 || ltrThreadMgr.getMaxQueryThreads() <= 1){
+    if(ltrThreadMgr == null || ltrThreadMgr.getMaxThreads() <= 1 || ltrThreadMgr.getMaxQueryThreads() <= 1){
        createWeights(searcher, needsScores, boost, featureWeights, features);
     }
     else{

@@ -145,12 +145,14 @@ public class TestModelQuery extends LuceneTestCase {
     final HashMap<String,String[]> externalFeatureInfo = new HashMap<>();
     externalFeatureInfo.put("queryIntent", new String[] {"company"});
     externalFeatureInfo.put("user_query", new String[] {"abc"});
-    final ModelQuery m1 = new ModelQuery(algorithm1, externalFeatureInfo, false);
+    final ModelQuery m1 = new ModelQuery(algorithm1, externalFeatureInfo, false, null);
 
     final HashMap<String,String[]> externalFeatureInfo2 = new HashMap<>();
     externalFeatureInfo2.put("user_query", new String[] {"abc"});
     externalFeatureInfo2.put("queryIntent", new String[] {"company"});
-    final ModelQuery m2 = new ModelQuery(algorithm1, externalFeatureInfo2, false);
+    int maxThreads = 10, maxQueryThreads = 10;
+    LTRThreadModule threadManager = new LTRThreadModule(maxThreads, maxQueryThreads);
+    final ModelQuery m2 = new ModelQuery(algorithm1, externalFeatureInfo2, false, threadManager);
 
 
     // Models with same algorithm and efis, just in different order should be the same
