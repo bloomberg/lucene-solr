@@ -63,14 +63,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   // used inside fl to specify the feature store to use for the feature extraction
   private static final String FV_STORE = "store";
 
-  public static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
+  private static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
-
-  /**
-   * if the log feature query param is off features will not be logged.
-   **/
-  public static final String LOG_FEATURES_QUERY_PARAM = "fvCache";
 
   public void setLoggingModelName(String loggingModelName) {
     this.loggingModelName = loggingModelName;
