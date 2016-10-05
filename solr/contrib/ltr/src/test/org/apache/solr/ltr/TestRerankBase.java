@@ -310,10 +310,10 @@ public class TestRerankBase extends RestTestBase {
     fs.applyUpdatesToManagedData(parsedFeatureJson);
     ms.setManagedFeatureStore(fs); // can we skip this and just use fs directly below?
 
-    final LTRScoringModel meta = ManagedModelStore.fromLTRScoringModelMap(
+    final LTRScoringModel ltrScoringModel = ManagedModelStore.fromLTRScoringModelMap(
         solrResourceLoader, mapFromJson(modelJson), ms.getManagedFeatureStore());
-    ms.addModel(meta);
-    return meta;
+    ms.addModel(ltrScoringModel);
+    return ltrScoringModel;
   }
 
   @SuppressWarnings("unchecked")

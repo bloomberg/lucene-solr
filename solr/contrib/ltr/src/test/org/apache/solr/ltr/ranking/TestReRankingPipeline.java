@@ -150,10 +150,10 @@ public class TestReRankingPipeline extends LuceneTestCase {
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
         2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
-    final LTRScoringModel meta = TestRankSVMModel.createRankSVMModel("test",
+    final LTRScoringModel ltrScoringModel = TestRankSVMModel.createRankSVMModel("test",
         features, norms, "test", allFeatures, null);
 
-    final LTRRescorer rescorer = new LTRRescorer(new ModelQuery(meta));
+    final LTRRescorer rescorer = new LTRRescorer(new ModelQuery(ltrScoringModel));
     hits = rescorer.rescore(searcher, hits, 2);
 
     // rerank using the field final-score
@@ -230,10 +230,10 @@ public class TestReRankingPipeline extends LuceneTestCase {
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
         2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
-    final LTRScoringModel meta = TestRankSVMModel.createRankSVMModel("test",
+    final LTRScoringModel ltrScoringModel = TestRankSVMModel.createRankSVMModel("test",
         features, norms, "test", allFeatures, null);
 
-    final LTRRescorer rescorer = new LTRRescorer(new ModelQuery(meta));
+    final LTRRescorer rescorer = new LTRRescorer(new ModelQuery(ltrScoringModel));
 
     // rerank @ 0 should not change the order
     hits = rescorer.rescore(searcher, hits, 0);
@@ -248,8 +248,8 @@ public class TestReRankingPipeline extends LuceneTestCase {
     for (int topN = 1; topN <= 5; topN++) {
       log.info("rerank {} documents ", topN);
       hits = searcher.search(bqBuilder.build(), 10);
-      // meta = new MockModel();
-      // rescorer = new LTRRescorer(new ModelQuery(meta));
+      // ltrScoringModel = new MockModel();
+      // rescorer = new LTRRescorer(new ModelQuery(ltrScoringModel));
       final ScoreDoc[] slice = new ScoreDoc[topN];
       System.arraycopy(hits.scoreDocs, 0, slice, 0, topN);
       hits = new TopDocs(hits.totalHits, slice, hits.getMaxScore());
@@ -281,9 +281,9 @@ public class TestReRankingPipeline extends LuceneTestCase {
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0},
         "final-score");
-    MockModel meta = new MockModel("test",
+    MockModel ltrScoringModel = new MockModel("test",
         features, norms, "test", allFeatures, null);
-    ModelQuery query = new ModelQuery(meta);
+    ModelQuery query = new ModelQuery(ltrScoringModel);
     ModelWeight wgt = query.createWeight(null, true, 1f);
     ModelScorer modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(new Float(1f));
@@ -297,9 +297,9 @@ public class TestReRankingPipeline extends LuceneTestCase {
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     allFeatures = makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8,
         9}, "final-score");
-    meta = new MockModel("test", features, norms,
+    ltrScoringModel = new MockModel("test", features, norms,
         "test", allFeatures, null);
-    query = new ModelQuery(meta);
+    query = new ModelQuery(ltrScoringModel);
     wgt = query.createWeight(null, true, 1f);
     modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(new Float(1f));

@@ -124,10 +124,10 @@ public class ManagedModelStore extends ManagedResource implements
     }
   }
 
-  public synchronized void addModel(LTRScoringModel meta) throws ModelException {
+  public synchronized void addModel(LTRScoringModel ltrScoringModel) throws ModelException {
     try {
-      log.info("adding model {}", meta.getName());
-      store.addModel(meta);
+      log.info("adding model {}", ltrScoringModel.getName());
+      store.addModel(ltrScoringModel);
     } catch (final ModelException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }

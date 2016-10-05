@@ -221,12 +221,12 @@ public class TestModelQuery extends LuceneTestCase {
     List<Normalizer> norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    LTRScoringModel meta = TestRankSVMModel.createRankSVMModel("test",
+    LTRScoringModel ltrScoringModel = TestRankSVMModel.createRankSVMModel("test",
         features, norms, "test", allFeatures,
         makeFeatureWeights(features));
 
     ModelQuery.ModelWeight modelWeight = performQuery(hits, searcher,
-        hits.scoreDocs[0].doc, new ModelQuery(meta));
+        hits.scoreDocs[0].doc, new ModelQuery(ltrScoringModel));
     assertEquals(3, modelWeight.modelFeatureValuesNormalized.length);
 
     for (int i = 0; i < 3; i++) {
@@ -248,11 +248,11 @@ public class TestModelQuery extends LuceneTestCase {
     norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    meta = TestRankSVMModel.createRankSVMModel("test",
+    ltrScoringModel = TestRankSVMModel.createRankSVMModel("test",
         features, norms, "test", allFeatures, makeFeatureWeights(features));
 
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
-        new ModelQuery(meta));
+        new ModelQuery(ltrScoringModel));
     assertEquals(mixPositions.length,
         modelWeight.modelFeatureWeights.length);
     
@@ -268,11 +268,11 @@ public class TestModelQuery extends LuceneTestCase {
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     try {
-      meta = TestRankSVMModel.createRankSVMModel("test",
+      ltrScoringModel = TestRankSVMModel.createRankSVMModel("test",
           features, norms, "test", allFeatures, makeFeatureWeights(features));
       fail("unexpectedly got here instead of catching "+expectedModelException);
       modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc,
-          new ModelQuery(meta));
+          new ModelQuery(ltrScoringModel));
       assertEquals(0, modelWeight.modelFeatureWeights.length);
     } catch (ModelException actualModelException) {
       assertEquals(expectedModelException.toString(), actualModelException.toString());

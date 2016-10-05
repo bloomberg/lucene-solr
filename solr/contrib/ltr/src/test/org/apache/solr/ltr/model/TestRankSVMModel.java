@@ -74,13 +74,13 @@ public class TestRankSVMModel extends TestRerankBase {
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
     params.put("weights", weights);
-    final LTRScoringModel meta = createRankSVMModel("test1",
+    final LTRScoringModel ltrScoringModel = createRankSVMModel("test1",
         features, norms, "test", fstore.getFeatures(),
         params);
 
-    store.addModel(meta);
+    store.addModel(ltrScoringModel);
     final LTRScoringModel m = store.getModel("test1");
-    assertEquals(meta, m);
+    assertEquals(ltrScoringModel, m);
   }
 
   @Test
@@ -93,7 +93,7 @@ public class TestRankSVMModel extends TestRerankBase {
       final List<Normalizer> norms = 
         new ArrayList<Normalizer>(
             Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-      final LTRScoringModel meta = createRankSVMModel("test2",
+      final LTRScoringModel ltrScoringModel = createRankSVMModel("test2",
           features, norms, "test", fstore.getFeatures(), null);
       fail("unexpectedly got here instead of catching "+expectedException);
     } catch (ModelException actualException) {
@@ -118,13 +118,13 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel meta = createRankSVMModel("test3",
+      final LTRScoringModel ltrScoringModel = createRankSVMModel("test3",
           features, norms, "test", fstore.getFeatures(),
               params);
-      store.addModel(meta);
+      store.addModel(ltrScoringModel);
       final LTRScoringModel m = store.getModel("test3");
-      assertEquals(meta, m);
-      store.addModel(meta);
+      assertEquals(ltrScoringModel, m);
+      store.addModel(ltrScoringModel);
       fail("unexpectedly got here instead of catching "+expectedException);
     } catch (SolrException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
@@ -147,10 +147,10 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel meta = createRankSVMModel("test4",
+      final LTRScoringModel ltrScoringModel = createRankSVMModel("test4",
           features, norms, "test", fstore.getFeatures(),
               params);
-      store.addModel(meta);
+      store.addModel(ltrScoringModel);
       fail("unexpectedly got here instead of catching "+expectedException);
     } catch (ModelException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
@@ -174,7 +174,7 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel meta = createRankSVMModel("test5",
+      final LTRScoringModel ltrScoringModel = createRankSVMModel("test5",
           features, norms, "test", fstore.getFeatures(),
               params);
       fail("unexpectedly got here instead of catching "+expectedException);
@@ -198,10 +198,10 @@ public class TestRankSVMModel extends TestRerankBase {
 
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("weights", weights);
-      final LTRScoringModel meta = createRankSVMModel("test6",
+      final LTRScoringModel ltrScoringModel = createRankSVMModel("test6",
           features, norms, "test", fstore.getFeatures(),
           params);
-      store.addModel(meta);
+      store.addModel(ltrScoringModel);
       fail("unexpectedly got here instead of catching "+expectedException);
     } catch (ModelException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
