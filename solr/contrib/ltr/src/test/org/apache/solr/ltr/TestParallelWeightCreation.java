@@ -22,7 +22,6 @@ import org.apache.solr.ltr.LTRThreadModule;
 import org.junit.Test;
 
 public class TestParallelWeightCreation extends TestRerankBase{
-  final private static SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
   
   @Test
   public void testModelQueryParallelWeightCreationResultOrder() throws Exception {
@@ -51,8 +50,6 @@ public class TestParallelWeightCreation extends TestRerankBase{
     query.add("rows", "4");
     
     query.add("rq", "{!ltr reRankDocs=4 model=externalmodel efi.user_query=w3}");
-    
-    System.out.println(restTestHarness.query("/query" + query.toQueryString()));
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='4'");
