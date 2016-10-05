@@ -183,17 +183,15 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       featureLogger = reRankModel.getFeatureLogger();
 
-      ModelWeight w;
       try {
-        w = reRankModel.createWeight(searcher, true, 1f);
+        modelWeight = reRankModel.createWeight(searcher, true, 1f);
       } catch (final IOException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e);
       }
-      if (w == null) {
+      if (modelWeight == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
             "error logging the features, model weight is null");
       }
-      modelWeight = w;
     }
 
     @Override
