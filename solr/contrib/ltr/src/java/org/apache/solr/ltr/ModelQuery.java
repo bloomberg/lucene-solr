@@ -90,11 +90,12 @@ public class ModelQuery extends Query {
     this.ltrScoringModel = ltrScoringModel;
     this.efi = externalFeatureInfo;
     this.extractAllFeatures = extractAllFeatures;
-    if (threadMgr != null){
+    if (threadMgr != null && threadMgr.getMaxQueryThreads() > 1){
        ltrThreadMgr = threadMgr;
        querySemaphore = new Semaphore(ltrThreadMgr.getMaxQueryThreads());
     }
     else{
+      ltrThreadMgr = new LTRThreadModule(LTRThreadModule.DEFAULT_MAX_THREADS, LTRThreadModule.DEFAULT_MAX_QUERYTHREADS);
       querySemaphore = null;
     }
   }
@@ -209,7 +210,7 @@ public class ModelQuery extends Query {
     final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
     List<FeatureWeight > featureWeights = new ArrayList<>(features.size());
     
-    if(ltrThreadMgr == null || ltrThreadMgr.getMaxThreads() <= 1 || ltrThreadMgr.getMaxQueryThreads() <= 1){
+    if(ltrThreadMgr.getMaxThreads() <= 1 || ltrThreadMgr.getMaxQueryThreads() <= 1){
        createWeights(searcher, needsScores, boost, featureWeights, features);
     }
     else{
