@@ -251,7 +251,7 @@ public class LTRRescorer extends Rescorer {
     final int deBasedDoc = docid - atomicContext.docBase;
     final ModelScorer r = modelWeight.scorer(atomicContext);
     if ( (r == null) || (r.iterator().advance(deBasedDoc) != docid) ) {
-      return new FeatureInfo[0];
+      return new ModelQuery.FeatureInfo[0];
     } else {
       if (originalDocScore != null) {
         // If results have not been reranked, the score passed in is the original query's
