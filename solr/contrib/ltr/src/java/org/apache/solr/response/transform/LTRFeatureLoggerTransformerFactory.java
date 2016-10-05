@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.ReaderUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -28,9 +27,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.ModelQuery;
-import org.apache.solr.ltr.ModelQuery.FeatureInfo;
 import org.apache.solr.ltr.ModelQuery.ModelWeight;
-import org.apache.solr.ltr.ModelQuery.ModelWeight.ModelScorer;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.ltr.model.LoggingModel;
 import org.apache.solr.ltr.store.FeatureStore;
@@ -151,7 +148,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       docsWereNotReranked = (reRankModel == null);
       String featureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       if (docsWereNotReranked || (featureStoreName != null && (!featureStoreName.equals(reRankModel.getScoringModel().getFeatureStoreName())))) {
-        // if store is set in the trasformer we should overwrite the logger
+        // if store is set in the transformer we should overwrite the logger
 
         final ManagedFeatureStore fr = (ManagedFeatureStore) req.getCore().getRestManager()
             .getManagedResource(ManagedFeatureStore.REST_END_POINT);
@@ -197,29 +194,16 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     @Override
     public void transform(SolrDocument doc, int docid, float score)
         throws IOException {
-      final Object fv = featureLogger.getFeatureVector(docid, reRankModel,
-          searcher);
+      Object fv = featureLogger.getFeatureVector(docid, reRankModel, searcher);
       if (fv == null) { // FV for this document was not in the cache
-        final int n = ReaderUtil.subIndex(docid, leafContexts);
-        final LeafReaderContext atomicContext = leafContexts.get(n);
-        final int deBasedDoc = docid - atomicContext.docBase;
-        final ModelScorer r = modelWeight.scorer(atomicContext);
-        if ((r == null) || (r.iterator().advance(deBasedDoc) != docid)) {
-          doc.addField(name, featureLogger.makeFeatureVector(new FeatureInfo[0]));
-        } else {
-          if (docsWereNotReranked) {
-            // If results have not been reranked, the score passed in is the original query's
-            // score, which some features can use instead of recalculating it
-            r.getDocInfo().setOriginalDocScore(new Float(score));
-          }
-          r.score();
-          doc.addField(name,
-              featureLogger.makeFeatureVector(modelWeight.getFeaturesInfo()));
-        }
-      } else {
-        doc.addField(name, fv);
+        fv = featureLogger.makeFeatureVector(
+            modelWeight.somethingFeaturesInfo(
+                docid,
+                (docsWereNotReranked ? new Float(score) : null),
+                leafContexts));
       }
 
+      doc.addField(name, fv);
     }
 
   }

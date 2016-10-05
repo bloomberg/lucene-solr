@@ -34,6 +34,7 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
@@ -463,6 +464,27 @@ public class ModelQuery extends Query {
       ModelScorer mscorer = new ModelScorer(this, featureScorers);
       return mscorer;
 
+    }
+
+    public FeatureInfo[] somethingFeaturesInfo(int docid,
+        Float originalDocScore,
+        List<LeafReaderContext> leafContexts)
+        throws IOException {
+      final int n = ReaderUtil.subIndex(docid, leafContexts);
+      final LeafReaderContext atomicContext = leafContexts.get(n);
+      final int deBasedDoc = docid - atomicContext.docBase;
+      final ModelScorer r = scorer(atomicContext);
+      if ( (r == null) || (r.iterator().advance(deBasedDoc) != docid) ) {
+        return new FeatureInfo[0];
+      } else {
+        if (originalDocScore != null) {
+          // If results have not been reranked, the score passed in is the original query's
+          // score, which some features can use instead of recalculating it
+          r.getDocInfo().setOriginalDocScore(originalDocScore);
+        }
+        r.score();
+        return getFeaturesInfo();
+      }
     }
 
     public class ModelScorer extends Scorer {
