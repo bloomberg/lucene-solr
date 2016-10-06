@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.search;
+package org.apache.solr.ltr;
 
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -27,11 +27,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x", "Lucene41", "Lucene40", "Appending"})
-public class TestLTRWithSort extends TestRerankBase {
+public class TestLTRWithFacet extends TestRerankBase {
 
   @BeforeClass
   public static void before() throws Exception {
     setuptest("solrconfig-ltr.xml", "schema-ltr.xml");
+
     assertU(adoc("id", "1", "title", "a1", "description", "E", "popularity",
         "1"));
     assertU(adoc("id", "2", "title", "a1 b1", "description",
@@ -52,7 +53,7 @@ public class TestLTRWithSort extends TestRerankBase {
   }
   
   @Test
-  public void testRankingSolrSort() throws Exception {
+  public void testRankingSolrFacet() throws Exception {
     // before();
     loadFeature("powpularityS", SolrFeature.class.getCanonicalName(),
         "{\"q\":\"{!func}pow(popularity,2)\"}");
@@ -64,35 +65,35 @@ public class TestLTRWithSort extends TestRerankBase {
     query.setQuery("title:a1");
     query.add("fl", "*, score");
     query.add("rows", "4");
+    query.add("facet", "true");
+    query.add("facet.field", "description");
 
-    // Normal term match
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='4'");
-    
-    //Add sort
-    query.add("sort", "description desc");
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='5'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='8'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='7'");
+    // Normal term match
+    assertJQ("/query" + query.toQueryString(), ""
+        + "/facet_counts/facet_fields/description=="
+        + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
 
     query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4}");
     query.set("debugQuery", "on");
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==64.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==49.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='5'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==25.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='4'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==16.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==9.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='2'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==4.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/score==1.0");
 
+    assertJQ("/query" + query.toQueryString(), ""
+        + "/facet_counts/facet_fields/description=="
+        + "['b', 4, 'e', 2, 'c', 1, 'd', 1]");
     // aftertest();
 
   }
