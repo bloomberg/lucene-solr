@@ -15,69 +15,139 @@
  * limitations under the License.
  */
 package org.apache.solr.ltr;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.ltr.feature.Feature.FeatureWeight;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-public class LTRThreadModule {
-  ThreadMXBean tmxb = ManagementFactory.getThreadMXBean();
-  final private Semaphore ltrSemaphore;
-  final private int maxThreads;
-  final private int maxQueryThreads;
-  public static final int DEFAULT_MAX_THREADS = 0; // do not do threading if 'maxThreads' is not specified in the config file
-  public static final int DEFAULT_MAX_QUERYTHREADS = 0; // do not do threading if 'maxQueryThreads' is not specified in the config file
+final public class LTRThreadModule implements NamedListInitializedPlugin {
 
-   private final Executor createWeightScoreExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          0,
-          Integer.MAX_VALUE,
-          10, TimeUnit.SECONDS, // terminate idle threads after 10 sec
-          new SynchronousQueue<Runnable>(),  // directly hand off tasks
-          new DefaultSolrThreadFactory("ltrExecutor")
-    );
-   
-   public LTRThreadModule(int maxThreads, int maxQueryThreads){
-      this.maxThreads = maxThreads;
-      this.maxQueryThreads = maxQueryThreads;
-      validate();
-      if  (this.maxThreads > 1 ){
-        ltrSemaphore = new Semaphore(maxThreads);
-      } else {
-        ltrSemaphore = null;
+  private static String CONFIG_PREFIX = "threadModule.";
+
+  public static NamedList extractThreadModuleParams(NamedList args) {
+
+    // gather the thread module args from amongst the general args
+    final NamedList extractedArgs = new NamedList();
+    for (Iterator<Map.Entry<String,Object>> it = args.iterator();
+        it.hasNext(); ) {
+      final Map.Entry<String,Object> entry = it.next();
+      final String key = entry.getKey();
+      if (key.startsWith(CONFIG_PREFIX)) {
+        extractedArgs.add(key.substring(CONFIG_PREFIX.length()), entry.getValue());
       }
-   }
-   
-   private void validate() {
-     if (maxThreads < 0){
-       throw new IllegalArgumentException("maxThreads cannot be less than 0");
-     }
-     if (maxQueryThreads < 0){
-       throw new IllegalArgumentException("maxQueryThreads cannot be less than 0");
-     }
-     if (maxThreads < maxQueryThreads){
-       throw new IllegalArgumentException("maxQueryThreads cannot be greater than maxThreads");
-     }
+    }
+
+    // remove consumed keys only once iteration is complete
+    // since NamedList iterator does not support 'remove'
+    for (Object key : extractedArgs.asShallowMap().keySet()) {
+      args.remove(CONFIG_PREFIX+key);
+    }
+
+    return extractedArgs;
   }
-   
-   public int getMaxThreads(){
-      return maxThreads;
-   }
-   
-   public int getMaxQueryThreads(){
-     return maxQueryThreads;
-   }
-   
-   public Semaphore getLTRSemaphore(){
-     return ltrSemaphore;
-   }
-   
-   public Executor getCreateWeightScoreExecutor(){
-     return createWeightScoreExecutor;
-   }
+
+  // settings
+  private int maxThreads = 1;
+  private int maxQueryThreads = 1;
+  private int maxPoolSize = Integer.MAX_VALUE;
+  private long keepAliveTimeSeconds = 10;
+  private String threadNamePrefix = "ltrExecutor";
+
+  ThreadMXBean tmxb = ManagementFactory.getThreadMXBean();
+
+  // implementation
+  private Semaphore ltrSemaphore;
+  private Executor createWeightScoreExecutor;
+
+  private final void initCreateWeightScoreExecutor() {
+  }
+
+  public LTRThreadModule() {
+  }
+
+  // For test use only.
+  LTRThreadModule(int maxThreads, int maxQueryThreads) {
+    this.maxThreads = maxThreads;
+    this.maxQueryThreads = maxQueryThreads;
+    init(null);
+  }
+
+  @Override
+  public void init(NamedList args) {
+    if (args != null) {
+      SolrPluginUtils.invokeSetters(this, args);
+    }
+    validate();
+    if  (this.maxThreads > 1 ){
+      ltrSemaphore = new Semaphore(maxThreads);
+    } else {
+      ltrSemaphore = null;
+    }
+    createWeightScoreExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
+        0,
+        maxPoolSize,
+        keepAliveTimeSeconds, TimeUnit.SECONDS, // terminate idle threads after 10 sec
+        new SynchronousQueue<Runnable>(),  // directly hand off tasks
+        new DefaultSolrThreadFactory(threadNamePrefix)
+        );
+  }
+
+  public void validate() {
+    if (maxThreads <= 0){
+      throw new IllegalArgumentException("maxThreads cannot be less than 0");
+    }
+    if (maxQueryThreads <= 0){
+      throw new IllegalArgumentException("maxQueryThreads cannot be less than 0");
+    }
+    if (maxThreads < maxQueryThreads){
+      throw new IllegalArgumentException("maxQueryThreads cannot be greater than maxThreads");
+    }
+  }
+
+  public void setMaxThreads(int maxThreads) {
+    this.maxThreads = maxThreads;
+  }
+
+  public void setMaxQueryThreads(int maxQueryThreads) {
+    this.maxQueryThreads = maxQueryThreads;
+  }
+
+  public void setMaxPoolSize(int maxPoolSize) {
+    this.maxPoolSize = maxPoolSize;
+  }
+
+  public void setThreadNamePrefix(String threadNamePrefix) {
+    this.threadNamePrefix = threadNamePrefix;
+  }
+
+  public Semaphore createQuerySemaphore() {
+    return new Semaphore(maxQueryThreads);
+  }
+
+  public void acquireLTRSemaphore() throws InterruptedException {
+    ltrSemaphore.acquire();
+  }
+
+  public void releaseLTRSemaphore() throws InterruptedException {
+    ltrSemaphore.release();
+  }
+
+  public void execute(RunnableFuture<FeatureWeight> runnableFuture) {
+    createWeightScoreExecutor.execute(runnableFuture);
+  }
+
 }

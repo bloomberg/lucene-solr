@@ -69,6 +69,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
   private ManagedFeatureStore fr = null;
   private ManagedModelStore mr = null;
+
   private LTRThreadModule threadManager = null;
 
   /** query parser plugin: the name of the attribute for setting the model **/
@@ -83,32 +84,27 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
    **/
   public static final String RERANK_DOCS = "reRankDocs";
 
-  private int maxThreads  = LTRThreadModule.DEFAULT_MAX_THREADS;
-  private int maxQueryThreads = LTRThreadModule.DEFAULT_MAX_QUERYTHREADS;
-
-  public void setMaxThreads(int maxThreads) {
-    this.maxThreads = maxThreads;
-  }
-
-  public void setMaxQueryThreads(int maxQueryThreads) {
-    this.maxQueryThreads = maxQueryThreads;
-  }
-
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
+    super.init(args);
+
+    final NamedList threadManagerArgs = LTRThreadModule.extractThreadModuleParams(args);
+    // if and only if there are thread module params then we want a thread module!
+    if (threadManagerArgs.size() > 0) {
+      // create and initialize the new instance
+      threadManager = new LTRThreadModule();
+      threadManager.init(threadManagerArgs);
+    } else {
+      threadManager = null;
+    }
+
     SolrPluginUtils.invokeSetters(this, args);
-    threadManager = new LTRThreadModule(maxThreads, maxQueryThreads);
   }
   
   @Override
   public QParser createParser(String qstr, SolrParams localParams,
       SolrParams params, SolrQueryRequest req) {
-    SolrQueryRequestContextUtils.setThreadManager(req, threadManager);
     return new LTRQParser(qstr, localParams, params, req);
-  }
-  
-  public LTRThreadModule getThreadMgr(){
-    return threadManager;
   }
   
   /**
@@ -185,7 +181,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       
       final LTRScoringQuery scoringQuery = new LTRScoringQuery(ltrScoringModel, 
           extractEFIParams(localParams), 
-          featuresRequestedFromSameStore, getThreadMgr());
+          featuresRequestedFromSameStore, threadManager);
 
       // Enable the feature vector caching if we are extracting features, and the features
       // we requested are the same ones we are reranking with 

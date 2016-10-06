@@ -858,8 +858,8 @@
 
  <!-- Query parser used to rerank top docs with a provided model -->
   <queryParser name="ltr" class="org.apache.solr.search.LTRQParserPlugin" >
-  <int name="maxThreads">10</int> <!-- Maximum threads to use for all queries -->
-  <int name="maxQueryThreads">10</int> <!-- Maximum threads to use for a single query-->
+    <int name="threadModule.maxThreads">10</int> <!-- Maximum threads to use for all queries -->
+    <int name="threadModule.maxQueryThreads">10</int> <!-- Maximum threads to use for a single query-->
   </queryParser>
 
   <!--  Transformer that will encode the document features in the response. For each document the transformer

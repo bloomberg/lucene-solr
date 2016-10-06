@@ -391,12 +391,12 @@ About half the time for ranking is spent in the creation of weights for each fea
 <config>
   <!-- Query parser used to rerank top docs with a provided model -->
   <queryParser name="ltr" class="org.apache.solr.search.LTRQParserPlugin">
-     <int name="maxThreads">10</int> <!-- Maximum threads to use for all queries -->
-     <int name="maxQueryThreads">5</int> <!-- Maximum threads to use for a single query-->
+     <int name="threadModule.maxThreads">10</int> <!-- Maximum threads to use for all queries -->
+     <int name="threadModule.maxQueryThreads">5</int> <!-- Maximum threads to use for a single query-->
   </queryParser>
 </config>
 
 ```
   
-The maxThreads option limits the total number of threads to be used across all query instances at any given time. maxQueryThreads limits the number of threads used to process a single query. In the above example, 10 threads will be used to services all queries and a maximum of 5 threads to service a single query. If the solr instances is expected to receive no more than one query at a time, it is best to set both these numbers to the same value. If multiple queries need to serviced simultaneously, the numbers can be adjusted based on the expected response times. If the value of  maxQueryThreads is higher, the reponse time for a single query will be improved upto a point. If multiple queries are services simultaneously, the maxThreads imposes a contention between the queries if (maxQueryThreads*total parallel queries > maxThreads). 
+The threadModule.maxThreads option limits the total number of threads to be used across all query instances at any given time. threadModule.maxQueryThreads limits the number of threads used to process a single query. In the above example, 10 threads will be used to services all queries and a maximum of 5 threads to service a single query. If the solr instances is expected to receive no more than one query at a time, it is best to set both these numbers to the same value. If multiple queries need to serviced simultaneously, the numbers can be adjusted based on the expected response times. If the value of  threadModule.maxQueryThreads is higher, the reponse time for a single query will be improved upto a point. If multiple queries are services simultaneously, the threadModule.maxThreads imposes a contention between the queries if (threadModule.maxQueryThreads*total parallel queries > threadModule.maxThreads). 
 
