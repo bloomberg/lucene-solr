@@ -16,9 +16,6 @@
  */
 package org.apache.solr.ltr.feature;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.TestManagedFeatureStore;
