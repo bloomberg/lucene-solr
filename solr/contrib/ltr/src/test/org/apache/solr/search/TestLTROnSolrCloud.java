@@ -88,7 +88,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     query.setRequestHandler("/query");
     query.setFields("*,score");
     query.setParam("rows", "8");
-        
+
     QueryResponse queryResponse =
         solrCluster.getSolrClient().query(COLLECTION,query);
     assertEquals(8, queryResponse.getResults().getNumFound());
@@ -104,8 +104,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
         solrCluster.getSolrClient().query(COLLECTION,query);
     assertEquals(8, queryResponse.getResults().getNumFound());
     assertEquals("8", queryResponse.getResults().get(0).get("id").toString());
-    assertEquals("powpularityS:64.0;c3:" +
-                    "2.0",
+    assertEquals("powpularityS:64.0;c3:2.0",
         queryResponse.getResults().get(0).get("features").toString());
     assertEquals("7", queryResponse.getResults().get(1).get("id").toString());
     assertEquals("powpularityS:49.0;c3:2.0",
