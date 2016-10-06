@@ -224,10 +224,6 @@ public class SolrFeature extends Feature {
      */
     public DocIdSetIterator getDocIdSetIteratorFromQueries(List<Query> queries,
         LeafReaderContext context) throws IOException {
-      // FIXME: Only SolrIndexSearcher has getProcessedFilter(), but all weights
-      // are given an IndexSearcher instead.
-      // Ideally there should be some guarantee that we have a SolrIndexSearcher
-      // so we don't have to cast.
       final ProcessedFilter pf = ((SolrIndexSearcher) searcher)
           .getProcessedFilter(null, queries);
       final Bits liveDocs = context.reader().getLiveDocs();
@@ -300,7 +296,7 @@ public class SolrFeature extends Feature {
 
       @Override
       public long cost() {
-        return 0; // FIXME: Make this work?
+        return filterIterator.cost() + scorerFilter.cost();
       }
 
     }

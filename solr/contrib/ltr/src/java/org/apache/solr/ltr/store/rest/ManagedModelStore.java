@@ -203,8 +203,6 @@ public class ManagedModelStore extends ManagedResource implements
    * managed resources needs to return the resources in this format in order to
    * store in json somewhere (zookeeper, disk...)
    *
-   * TODO investigate if it is possible to replace the managed resources' json
-   * serializer/deserialiazer.
    *
    * @return the available models as a list of Maps objects
    */

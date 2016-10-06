@@ -17,8 +17,6 @@
 package org.apache.solr.ltr;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.LTRThreadModule;
 import org.junit.Test;
 
 public class TestParallelWeightCreation extends TestRerankBase{

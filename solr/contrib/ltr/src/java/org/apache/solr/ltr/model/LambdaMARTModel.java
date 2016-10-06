@@ -331,7 +331,6 @@ public class LambdaMARTModel extends LTRScoringModel {
   @Override
   public Explanation explain(LeafReaderContext context, int doc,
       float finalScore, List<Explanation> featureExplanations) {
-    // FIXME this still needs lots of work
     final float[] fv = new float[featureExplanations.size()];
     int index = 0;
     for (final Explanation featureExplain : featureExplanations) {

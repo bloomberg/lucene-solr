@@ -118,9 +118,6 @@ public class LTRRescorer extends Rescorer {
     final ModelWeight modelWeight = (ModelWeight) searcher
         .createNormalizedWeight(scoringQuery, true);
 
-    // FIXME: I dislike that we have no guarantee this is actually a
-    // SolrIndexReader.
-    // We should do something about that
     final SolrIndexSearcher solrIndexSearch = (SolrIndexSearcher) searcher;
     scoreFeatures(solrIndexSearch, firstPassTopDocs,topN, modelWeight, hits, leaves, reranked);
     // Must sort all documents that we reranked, and then select the top 
@@ -155,18 +152,6 @@ public class LTRRescorer extends Rescorer {
     int hitUpto = 0;
     final FeatureLogger<?> featureLogger = scoringQuery.getFeatureLogger();
 
-    // FIXME
-    // All of this heap code is only for logging. Wrap all this code in
-    // 1 outer if (fl != null) so we can skip heap stuff if the request doesn't
-    // call for a feature vector.
-    //
-    // that could be done but it would require a new vector of size $rerank,
-    // that in the end we would have to sort, while using the heap, also if
-    // we do not log, in the end we sort a smaller array of topN results (that
-    // is the heap array).
-    // The heap is just anticipating the sorting of the array, so I don't think
-    // it would
-    // save time.
     while (hitUpto < hits.length) {
       final ScoreDoc hit = hits[hitUpto];
       final int docID = hit.doc;

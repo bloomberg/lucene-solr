@@ -113,9 +113,10 @@ public class FieldValueFeature extends Feature {
             }
           }
         } catch (final IOException e) {
-          // TODO discuss about about feature failures:
-          // do we want to return a default value?
-          // do we want to fail?
+          throw new FeatureException(
+              e.toString() + ": " +
+              "Unable to extract feature for "
+              + name, e);
         }
         return getDefaultValue();
       }

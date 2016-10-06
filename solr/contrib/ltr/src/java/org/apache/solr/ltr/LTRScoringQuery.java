@@ -426,7 +426,6 @@ public class LTRScoringQuery extends Query {
         Explanation e = ltrScoringModel.getNormalizerExplanation(explanations[f.getIndex()], idx);
         featureExplanations.add(e);
       }
-      // TODO this calls twice the scorers, could be optimized.
       final ModelScorer bs = scorer(context);
       bs.iterator().advance(doc);
 

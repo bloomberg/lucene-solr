@@ -64,8 +64,6 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
   
   // params for setting custom external info that features can use, like query
   // intent
-  // TODO: Can we just pass the entire request all the way down to all
-  // models/features?
   static final String EXTERNAL_FEATURE_INFO = "efi.";
 
   private ManagedFeatureStore fr = null;

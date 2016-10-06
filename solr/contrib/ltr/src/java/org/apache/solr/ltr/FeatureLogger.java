@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.ltr.LTRScoringQuery.FeatureInfo;
-import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +63,7 @@ public abstract class FeatureLogger<FV_TYPE> {
     if (featureVector == null) {
       return false;
     }
-    // FIXME: Confirm this hashing works
+
     return searcher.cacheInsert(QUERY_FV_CACHE_NAME,
         fvCacheKey(modelQuery, docid), featureVector) != null;
   }
