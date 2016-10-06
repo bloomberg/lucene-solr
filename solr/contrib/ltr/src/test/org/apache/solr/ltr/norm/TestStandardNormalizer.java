@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.model.ModelException;
 import org.junit.Test;
 
 public class TestStandardNormalizer {

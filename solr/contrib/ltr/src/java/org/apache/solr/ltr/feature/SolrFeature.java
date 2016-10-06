@@ -104,8 +104,8 @@ public class SolrFeature extends Feature {
    
     if ((q == null || q.isEmpty()) &&
          ((fq == null) || fq.isEmpty()))
-      throw new FeatureException("Solr Feature: FQ or Q have not been provided "
-          + "for feature: " + name);
+      throw new FeatureException(getClass().getSimpleName()+
+          ": Q or FQ must be provided");
   }
 
   public class SolrFeatureWeight extends FeatureWeight {

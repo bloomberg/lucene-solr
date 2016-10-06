@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.norm;
 
 import java.util.LinkedHashMap;
-import org.apache.solr.ltr.model.ModelException;
 
 /**
  * A Normalizer to scale a feature value using a (min,max) range.
