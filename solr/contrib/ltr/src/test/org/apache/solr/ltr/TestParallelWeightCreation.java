@@ -62,8 +62,8 @@ public class TestParallelWeightCreation extends TestRerankBase{
     String msg1 = null;
     try{
       new LTRThreadModule(1,-1);
-    }catch(NumberFormatException nfe){
-      msg1 = nfe.getMessage();;
+    }catch(IllegalArgumentException iae){
+      msg1 = iae.getMessage();;
     }
     assertTrue(msg1.equals("maxQueryThreads cannot be less than 0"));
     
@@ -71,8 +71,8 @@ public class TestParallelWeightCreation extends TestRerankBase{
     String msg2 = null;
     try{
       new LTRThreadModule(1,2);
-    }catch(NumberFormatException nfe){
-      msg2 = nfe.getMessage();
+    }catch(IllegalArgumentException iae){
+      msg2 = iae.getMessage();
     }
     assertTrue(msg2.equals("maxQueryThreads cannot be greater than maxThreads"));
   }

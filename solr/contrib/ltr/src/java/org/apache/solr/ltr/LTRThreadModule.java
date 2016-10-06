@@ -45,15 +45,7 @@ public class LTRThreadModule {
    public LTRThreadModule(int maxThreads, int maxQueryThreads){
       this.maxThreads = maxThreads;
       this.maxQueryThreads = maxQueryThreads;
-      if (maxThreads < 0){
-        throw new NumberFormatException("maxThreads cannot be less than 0");
-      }
-      if (maxQueryThreads < 0){
-        throw new NumberFormatException("maxQueryThreads cannot be less than 0");
-      }
-      if (maxThreads < maxQueryThreads){
-        throw new NumberFormatException("maxQueryThreads cannot be greater than maxThreads");
-      }
+      validate();
       if  (this.maxThreads > 1 ){
         ltrSemaphore = new Semaphore(maxThreads);
       } else {
@@ -61,6 +53,17 @@ public class LTRThreadModule {
       }
    }
    
+   private void validate() {
+     if (maxThreads < 0){
+       throw new IllegalArgumentException("maxThreads cannot be less than 0");
+     }
+     if (maxQueryThreads < 0){
+       throw new IllegalArgumentException("maxQueryThreads cannot be less than 0");
+     }
+     if (maxThreads < maxQueryThreads){
+       throw new IllegalArgumentException("maxQueryThreads cannot be greater than maxThreads");
+     }
+  }
    
    public int getMaxThreads(){
       return maxThreads;

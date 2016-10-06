@@ -98,15 +98,6 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
     SolrPluginUtils.invokeSetters(this, args);
-    if (maxThreads < 0){
-      throw new IllegalArgumentException("<maxThreads> cannot be less than 0");
-    }
-    if (maxQueryThreads < 0){
-      throw new IllegalArgumentException("<maxQueryThreads> cannot be less than 0");
-    }
-    if (maxThreads < maxQueryThreads){
-      throw new IllegalArgumentException("<maxQueryThreads> cannot be greater than <maxThreads>");
-    }
     threadManager = new LTRThreadModule(maxThreads, maxQueryThreads);
   }
   
