@@ -34,9 +34,6 @@ public class SolrQueryRequestContextUtils {
 
   /** key of the feature vector store name in the request context **/
   private static final String STORE = LTR_PREFIX + "store";
-  
-  /** key for storing threadManager from LTRQParserPlugin in the request context **/
-  private static final String THREAD_MGR = LTR_PREFIX + "threadManager";
 
   /** feature logger accessors **/
 
@@ -80,14 +77,6 @@ public class SolrQueryRequestContextUtils {
 
   public static String getFvStoreName(SolrQueryRequest req) {
     return (String) req.getContext().get(STORE);
-  }
-  
-  public static void setThreadManager(SolrQueryRequest req, LTRThreadModule threadManager){
-    req.getContext().put(THREAD_MGR, threadManager);
-  }
-  
-  public static LTRThreadModule getThreadManager(SolrQueryRequest req){
-    return (LTRThreadModule)req.getContext().get(THREAD_MGR);
   }
 
 }
