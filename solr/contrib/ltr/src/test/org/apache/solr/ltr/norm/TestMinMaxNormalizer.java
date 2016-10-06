@@ -85,15 +85,15 @@ public class TestMinMaxNormalizer {
     final Map<String,Object> params = new HashMap<String,Object>();
     params.put("min", "10.0f");
     params.put("max", "10.0f");
-    final ModelException expectedException = 
-        new ModelException("MinMax Normalizer delta must not be zero "
+    final NormalizerException expectedException = 
+        new NormalizerException("MinMax Normalizer delta must not be zero "
             + "| min = 10.0,max = 10.0,delta = 0.0");
     try {
         implTestMinMax(params,
               10.0f,
               10.0f);
         fail("testMinMaxNormalizerMinEqualToMax failed to throw exception: "+expectedException);
-    } catch(ModelException actualException) {
+    } catch(NormalizerException actualException) {
         assertEquals(expectedException.toString(), actualException.toString());
     }
   }

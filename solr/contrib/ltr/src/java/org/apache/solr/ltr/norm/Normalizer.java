@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -53,7 +54,14 @@ public abstract class Normalizer {
     return f;
   }
   
-  protected void validate() throws ModelException {
+  /**
+   * On construction of a normalizer, this function confirms
+   * that the normalizer parameters are validated
+   * 
+   * @throws NormalizerException
+   *             Normalizer Exception
+   */
+  protected void validate() throws NormalizerException {
     
   }
 

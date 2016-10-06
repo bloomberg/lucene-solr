@@ -66,6 +66,13 @@ public abstract class Feature extends Query {
     this.params = params;
   }
   
+  /**
+   * On construction of a feature, this function confirms
+   * that the feature parameters are validated
+   * 
+   * @throws FeatureException
+   *             Feature Exception
+   */
   protected void validate() throws FeatureException {
     
   }
