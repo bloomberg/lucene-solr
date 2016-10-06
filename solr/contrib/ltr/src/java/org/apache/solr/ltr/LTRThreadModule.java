@@ -108,10 +108,10 @@ final public class LTRThreadModule implements NamedListInitializedPlugin {
 
   public void validate() {
     if (maxThreads <= 0){
-      throw new IllegalArgumentException("maxThreads cannot be less than 0");
+      throw new IllegalArgumentException("maxThreads cannot be less than 1");
     }
     if (maxQueryThreads <= 0){
-      throw new IllegalArgumentException("maxQueryThreads cannot be less than 0");
+      throw new IllegalArgumentException("maxQueryThreads cannot be less than 1");
     }
     if (maxThreads < maxQueryThreads){
       throw new IllegalArgumentException("maxQueryThreads cannot be greater than maxThreads");
@@ -135,7 +135,7 @@ final public class LTRThreadModule implements NamedListInitializedPlugin {
   }
 
   public Semaphore createQuerySemaphore() {
-    return new Semaphore(maxQueryThreads);
+    return (maxQueryThreads > 1 ? new Semaphore(maxQueryThreads) : null);
   }
 
   public void acquireLTRSemaphore() throws InterruptedException {

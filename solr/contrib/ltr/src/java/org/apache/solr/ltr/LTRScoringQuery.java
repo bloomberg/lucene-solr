@@ -208,7 +208,7 @@ public class LTRScoringQuery extends Query {
     final FeatureWeight[] modelFeaturesWeights = new FeatureWeight[modelFeatSize];
     List<FeatureWeight > featureWeights = new ArrayList<>(features.size());
     
-    if (ltrThreadMgr == null) {
+    if (querySemaphore == null) {
        createWeights(searcher, needsScores, boost, featureWeights, features);
     }
     else{

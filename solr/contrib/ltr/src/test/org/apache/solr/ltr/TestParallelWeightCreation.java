@@ -65,7 +65,7 @@ public class TestParallelWeightCreation extends TestRerankBase{
     }catch(IllegalArgumentException iae){
       msg1 = iae.getMessage();;
     }
-    assertTrue(msg1.equals("maxQueryThreads cannot be less than 0"));
+    assertTrue(msg1.equals("maxQueryThreads cannot be less than 1"));
     
     // set maxThreads to 1 and maxQueryThreads to 2 and verify that an exception is thrown
     String msg2 = null;
