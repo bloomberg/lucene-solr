@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.ranking;
+package org.apache.solr.search;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -59,7 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressCodecs("Lucene3x")
-public class TestReRankingPipeline extends LuceneTestCase {
+public class TestLTRReRankingPipeline extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   

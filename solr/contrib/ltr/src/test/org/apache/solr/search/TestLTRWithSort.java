@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ltr.ranking;
+package org.apache.solr.search;
 
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.client.solrj.SolrQuery;

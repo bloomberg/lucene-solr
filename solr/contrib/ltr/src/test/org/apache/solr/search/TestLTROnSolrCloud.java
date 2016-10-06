@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.ranking;
+package org.apache.solr.search;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
@@ -38,7 +38,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestSolrCloud  extends TestRerankBase {
+public class TestLTROnSolrCloud extends TestRerankBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -104,7 +104,8 @@ public class TestSolrCloud  extends TestRerankBase {
         solrCluster.getSolrClient().query(COLLECTION,query);
     assertEquals(8, queryResponse.getResults().getNumFound());
     assertEquals("8", queryResponse.getResults().get(0).get("id").toString());
-    assertEquals("powpularityS:64.0;c3:2.0",
+    assertEquals("powpularityS:64.0;c3:" +
+                    "2.0",
         queryResponse.getResults().get(0).get("features").toString());
     assertEquals("7", queryResponse.getResults().get(1).get("id").toString());
     assertEquals("powpularityS:49.0;c3:2.0",
