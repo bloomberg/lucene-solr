@@ -42,18 +42,18 @@ public class ModelStore {
 
   public boolean containsModel(String modelName) {
     return availableModels.containsKey(modelName);
-  } 
+  }
 
   public void clear() {
     availableModels.clear();
   }
-  
+
   public int size() {
     return availableModels.size();
   }
-  
+
   public List<LTRScoringModel> getModels() {
-    final List<LTRScoringModel> availableModelsValues = 
+    final List<LTRScoringModel> availableModelsValues =
         new ArrayList<LTRScoringModel>(availableModels.values());
     return Collections.unmodifiableList(availableModelsValues);
   }

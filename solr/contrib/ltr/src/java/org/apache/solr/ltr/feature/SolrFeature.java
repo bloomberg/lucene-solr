@@ -97,17 +97,18 @@ public class SolrFeature extends Feature {
       throws IOException {
     return new SolrFeatureWeight(searcher, request, originalQuery, efi);
   }
-  
+
   @Override
   protected void validate() throws FeatureException {
     super.validate();
-   
     if ((q == null || q.isEmpty()) &&
          ((fq == null) || fq.isEmpty()))
       throw new FeatureException(getClass().getSimpleName()+
           ": Q or FQ must be provided");
   }
-
+  /**
+   * Weight for a SolrFeature
+   **/
   public class SolrFeatureWeight extends FeatureWeight {
     Weight solrQueryWeight;
     Query query;
@@ -239,6 +240,9 @@ public class SolrFeature extends Feature {
       return idIter;
     }
 
+    /**
+     * Scorer for a SolrFeature
+     **/
     public class SolrFeatureScorer extends FeatureScorer {
       final private Scorer solrScorer;
 
@@ -259,9 +263,12 @@ public class SolrFeature extends Feature {
               + name, e);
         }
       }
-      
     }
 
+    /**
+     * An iterator that allows to iterate only on the documents for which a feature has
+     * a value.
+     **/
     private class SolrFeatureScorerIterator extends DocIdSetIterator {
 
       final private DocIdSetIterator filterIterator;

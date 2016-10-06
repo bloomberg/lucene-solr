@@ -42,7 +42,7 @@ used to perform the request plus other
 parameters. The plugin will generate a {@link org.apache.solr.search.ltr.LTRQuery}:
 a particular {@link org.apache.solr.search.RankQuery}
 that will encapsulate the given model and use it to
-rescore and rerank the document (by using an {@link org.apache.solr.search.ltr.LTRCollector}).
+rescore and rerank the document (by using an {@link org.apache.solr.ltr.LTRRescorer}).
 </p>
 <p>
 A model will be applied on each document through a {@link org.apache.solr.ltr.LTRScoringQuery}, a
@@ -77,7 +77,7 @@ provided by {@link org.apache.solr.response.transform.LTRFeatureLoggerTransforme
 </p>
 <p>
 {@link org.apache.solr.ltr.store} contains all the logic to store all the features and the models
-added by a user. Models are registered into a unique {@link org.apache.solr.ltr.ModelStore ModelStore},
+added by a user. Models are registered into a unique {@link org.apache.solr.ltr.store.ModelStore ModelStore},
 and each model specifies a particular {@link org.apache.solr.ltr.store.FeatureStore FeatureStore} that
 will contain a particular subset of features.
 <p>

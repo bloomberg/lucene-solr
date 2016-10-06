@@ -163,7 +163,9 @@ public abstract class Feature extends Query {
   }
 
   public abstract LinkedHashMap<String,Object> paramsToMap();
-
+  /**
+   * Weight for a feature
+   **/
   public abstract class FeatureWeight extends Weight {
 
     final protected IndexSearcher searcher;
@@ -234,16 +236,13 @@ public abstract class Feature extends Query {
     public String toString() {
       return Feature.this.toString();
     }
-    
-    
+
     @Override
     public void extractTerms(Set<Term> terms) {
       // needs to be implemented by query subclasses
       throw new UnsupportedOperationException();
     }
 
-    
-    
     /**
      * A 'recipe' for computing a feature
      */
@@ -279,7 +278,7 @@ public abstract class Feature extends Query {
       public int freq() throws IOException {
         throw new UnsupportedOperationException();
       }
-      
+
       @Override
       public int docID() {
         return itr.docID();
@@ -308,10 +307,9 @@ public abstract class Feature extends Query {
       @Override
       public float score() {
         return constScore;
-      }   
+      }
 
     }
-
 
   }
 

@@ -201,7 +201,10 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       return new LTRQuery(scoringQuery, reRankDocs);
     }
   }
-
+  /**
+   * A learning to rank Query, will incapsulate a learning to rank model, and delegate to it the rescoring
+   * of the documents.
+   **/
   private class LTRQuery extends AbstractReRankQuery {
     private final LTRScoringQuery scoringQuery;
 
@@ -220,14 +223,14 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       return sameClassAs(o) &&  equalsTo(getClass().cast(o));
     }
 
-    private boolean equalsTo(LTRQuery other) {    
+    private boolean equalsTo(LTRQuery other) {
       return (mainQuery.equals(other.mainQuery)
           && scoringQuery.equals(other.scoringQuery) && (reRankDocs == other.reRankDocs));
     }
 
     @Override
     public RankQuery wrap(Query _mainQuery) {
-      super.wrap(_mainQuery);    
+      super.wrap(_mainQuery);
       scoringQuery.setOriginalQuery(_mainQuery);
       return this;
     }
@@ -237,7 +240,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       return "{!ltr mainQuery='" + mainQuery.toString() + "' scoringQuery='"
           + scoringQuery.toString() + "' reRankDocs=" + reRankDocs + "}";
     }
-    
+
     @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
       return new LTRQuery(scoringQuery, reRankDocs).wrap(rewrittenMainQuery);
