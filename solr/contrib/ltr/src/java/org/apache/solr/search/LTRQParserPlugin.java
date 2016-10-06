@@ -45,6 +45,7 @@ import org.apache.solr.rest.RestManager;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,22 +84,29 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
    **/
   public static final String RERANK_DOCS = "reRankDocs";
 
-  private static int getInt(Object thObj, int defValue, String paramName) throws NumberFormatException{
-    if (thObj != null) {
-      try{
-        return Integer.parseInt(thObj.toString());
-      }catch(NumberFormatException nfe){
-        String errorStr = nfe.toString() + ":" + paramName + " not an integer";
-        throw new NumberFormatException(errorStr);
-      }
-    }
-    return defValue;
+  private int maxThreads  = LTRThreadModule.DEFAULT_MAX_THREADS;
+  private int maxQueryThreads = LTRThreadModule.DEFAULT_MAX_QUERYTHREADS;
+
+  public void setMaxThreads(int maxThreads) {
+    this.maxThreads = maxThreads;
+  }
+
+  public void setMaxQueryThreads(int maxQueryThreads) {
+    this.maxQueryThreads = maxQueryThreads;
   }
 
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
-    int maxThreads  = getInt(args.get("maxThreads"), LTRThreadModule.DEFAULT_MAX_THREADS, "maxThreads");
-    int maxQueryThreads = getInt(args.get("maxQueryThreads"), LTRThreadModule.DEFAULT_MAX_QUERYTHREADS, "maxQueryThreads");
+    SolrPluginUtils.invokeSetters(this, args);
+    if (maxThreads < 0){
+      throw new IllegalArgumentException("<maxThreads> cannot be less than 0");
+    }
+    if (maxQueryThreads < 0){
+      throw new IllegalArgumentException("<maxQueryThreads> cannot be less than 0");
+    }
+    if (maxThreads < maxQueryThreads){
+      throw new IllegalArgumentException("<maxQueryThreads> cannot be greater than <maxThreads>");
+    }
     threadManager = new LTRThreadModule(maxThreads, maxQueryThreads);
   }
   

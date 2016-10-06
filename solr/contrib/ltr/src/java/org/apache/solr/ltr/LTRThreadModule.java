@@ -28,9 +28,9 @@ import java.util.concurrent.TimeUnit;
 
 public class LTRThreadModule {
   ThreadMXBean tmxb = ManagementFactory.getThreadMXBean();
-  private Semaphore ltrSemaphore = null; 
-  private int maxThreads;
-  private int maxQueryThreads;
+  final private Semaphore ltrSemaphore;
+  final private int maxThreads;
+  final private int maxQueryThreads;
   public static final int DEFAULT_MAX_THREADS = 0; // do not do threading if 'maxThreads' is not specified in the config file
   public static final int DEFAULT_MAX_QUERYTHREADS = 0; // do not do threading if 'maxQueryThreads' is not specified in the config file
 
@@ -56,6 +56,8 @@ public class LTRThreadModule {
       }
       if  (this.maxThreads > 1 ){
         ltrSemaphore = new Semaphore(maxThreads);
+      } else {
+        ltrSemaphore = null;
       }
    }
    
