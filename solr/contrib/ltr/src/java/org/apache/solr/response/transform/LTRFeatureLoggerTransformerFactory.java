@@ -77,17 +77,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
     super.init(args);
-
-    final NamedList threadManagerArgs = LTRThreadModule.extractThreadModuleParams(args);
-    // if and only if there are thread module params then we want a thread module!
-    if (threadManagerArgs.size() > 0) {
-      // create and initialize the new instance
-      threadManager = new LTRThreadModule();
-      threadManager.init(threadManagerArgs);
-    } else {
-      threadManager = null;
-    }
-
+    threadManager = LTRThreadModule.getInstance(args);
     SolrPluginUtils.invokeSetters(this, args);
   }
 

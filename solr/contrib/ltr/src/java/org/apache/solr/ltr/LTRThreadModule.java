@@ -16,9 +16,6 @@
  */
 package org.apache.solr.ltr;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadMXBean;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -36,9 +33,25 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 final public class LTRThreadModule implements NamedListInitializedPlugin {
 
+  public static LTRThreadModule getInstance(NamedList args) {
+
+    final LTRThreadModule threadManager;
+    final NamedList threadManagerArgs = extractThreadModuleParams(args);
+    // if and only if there are thread module args then we want a thread module!
+    if (threadManagerArgs.size() > 0) {
+      // create and initialize the new instance
+      threadManager = new LTRThreadModule();
+      threadManager.init(threadManagerArgs);
+    } else {
+      threadManager = null;
+    }
+
+    return threadManager;
+  }
+
   private static String CONFIG_PREFIX = "threadModule.";
 
-  public static NamedList extractThreadModuleParams(NamedList args) {
+  private static NamedList extractThreadModuleParams(NamedList args) {
 
     // gather the thread module args from amongst the general args
     final NamedList extractedArgs = new NamedList();
@@ -67,14 +80,9 @@ final public class LTRThreadModule implements NamedListInitializedPlugin {
   private long keepAliveTimeSeconds = 10;
   private String threadNamePrefix = "ltrExecutor";
 
-  ThreadMXBean tmxb = ManagementFactory.getThreadMXBean();
-
   // implementation
   private Semaphore ltrSemaphore;
   private Executor createWeightScoreExecutor;
-
-  private final void initCreateWeightScoreExecutor() {
-  }
 
   public LTRThreadModule() {
   }
@@ -146,8 +154,8 @@ final public class LTRThreadModule implements NamedListInitializedPlugin {
     ltrSemaphore.release();
   }
 
-  public void execute(RunnableFuture<FeatureWeight> runnableFuture) {
-    createWeightScoreExecutor.execute(runnableFuture);
+  public void execute(Runnable command) {
+    createWeightScoreExecutor.execute(command);
   }
 
 }
