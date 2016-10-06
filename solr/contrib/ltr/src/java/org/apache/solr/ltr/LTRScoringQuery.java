@@ -63,6 +63,7 @@ public class LTRScoringQuery extends Query {
   // contains a description of the model
   final private LTRScoringModel ltrScoringModel;
   final private boolean extractAllFeatures;
+  final private LTRThreadModule ltrThreadMgr;
   final private Semaphore querySemaphore; // limits the number of threads per query, so that multiple requests can be serviced simultaneously
 
   // feature logger to output the features.
@@ -74,7 +75,6 @@ public class LTRScoringQuery extends Query {
   protected Query originalQuery;
   // Original solr request
   protected SolrQueryRequest request;
-  protected LTRThreadModule ltrThreadMgr = null;
 
   public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
     this(ltrScoringModel, Collections.<String,String[]>emptyMap(), false, null);
