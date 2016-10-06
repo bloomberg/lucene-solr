@@ -376,12 +376,12 @@ from the Extract features section above to do this. An example script has been i
 
 # Explanation of the core reranking logic
 An LTR model is plugged into the ranking through the [LTRQParserPlugin](/solr/contrib/ltr/src/java/org/apache/solr/search/LTRQParserPlugin.java). The plugin will
-read from the request the model, an instance of [LTRScoringModel](solr/contrib/ltr/src/java/org/apache/solr/ltr/model/LTRScoringModel.java),
-plus other parameters. The plugin will generate an LTRQuery, a particular org.apache.solr.search.RankQuery.
+read from the request the model, an instance of [LTRScoringModel](/solr/contrib/ltr/src/java/org/apache/solr/ltr/model/LTRScoringModel.java),
+plus other parameters. The plugin will generate an LTRQuery, a particular [ReRankQuery](/solr/core/src/java/org/apache/solr/search/AbstractReRankQuery.java).
 It wraps the original solr query for the first pass ranking, and uses the provided model in an
-[LTRScoringQuery](solr/contrib/ltr/src/java/org/apache/solr/ltr/ranking/LTRScoringQuery.java) to
+[LTRScoringQuery](/solr/contrib/ltr/src/java/org/apache/solr/ltr/LTRScoringQuery.java) to
 rescore and rerank the top documents.  The LTRScoringQuery will take care of computing the values of all the
-[features](solr/contrib/ltr/src/java/org/apache/solr/ltr/feature/Feature.java) and then will delegate the final score
+[features](/solr/contrib/ltr/src/java/org/apache/solr/ltr/feature/Feature.java) and then will delegate the final score
 generation to the LTRScoringModel.
 
 # Speeding up the weight creation with threads
