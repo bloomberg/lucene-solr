@@ -283,7 +283,7 @@ public class SolrFeature extends Feature {
      * An iterator that allows to iterate only on the documents for which a feature has
      * a value.
      **/
-    private class SolrFeatureScorerIterator extends DocIdSetIterator {
+    public class SolrFeatureScorerIterator extends DocIdSetIterator {
 
       final private DocIdSetIterator filterIterator;
       final private DocIdSetIterator scorerFilter;

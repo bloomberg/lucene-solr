@@ -39,7 +39,7 @@ A Learning to Rank model is plugged into the ranking through the {@link org.apac
 a {@link org.apache.solr.search.QParserPlugin}. The plugin will
 read from the request the model (instance of {@link org.apache.solr.ltr.LTRScoringQuery})
 used to perform the request plus other
-parameters. The plugin will generate a {@link org.apache.solr.search.ltr.LTRQuery}:
+parameters. The plugin will generate a {@link org.apache.solr.search.LTRQParserPlugin.LTRQuery LTRQuery}:
 a particular {@link org.apache.solr.search.RankQuery}
 that will encapsulate the given model and use it to
 rescore and rerank the document (by using an {@link org.apache.solr.ltr.LTRRescorer}).
@@ -72,7 +72,7 @@ it is modeled as a {@link org.apache.lucene.search.Query}. The package
 of features. One benefit of extending the Query object is that we can reuse
 Query as a feature, see for example {@link org.apache.solr.ltr.feature.SolrFeature}.
 Features for a document can also be returned in the response by
-using {@link org.apache.solr.response.transform.DocTransformer DocTrasformer}
+using {@link org.apache.solr.response.transform.DocTransformer DocTransformer}
 provided by {@link org.apache.solr.response.transform.LTRFeatureLoggerTransformerFactory}.
 </p>
 <p>
@@ -85,7 +85,7 @@ will contain a particular subset of features.
 A user can manage features and models through a REST API, provided by the
 {@link org.apache.solr.rest.ManagedResource Managed Resources}
 {@link org.apache.solr.ltr.store.rest.ManagedFeatureStore ManagedFeatureStore}
-and {@link org.apache.solr.ltr.store.rest.ManagedFeatureStore ManagedModelStore}.
+and {@link org.apache.solr.ltr.store.rest.ManagedModelStore ManagedModelStore}.
 </p>
 </body>
 </html>
