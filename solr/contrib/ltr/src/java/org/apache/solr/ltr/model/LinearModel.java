@@ -55,7 +55,7 @@ import org.apache.solr.ltr.norm.Normalizer;
  * <ul>
  * <li> <a href="https://papers.nips.cc/paper/2023-pranking-with-ranking.pdf">
  * Koby Crammer and Yoram Singer. Pranking with Ranking.
- * Advances in Neural Information Processing Systems (NIPS), MIT, 2001.</a>
+ * Advances in Neural Information Processing Systems (NIPS), 2001.</a>
  * </ul>
  */
 public class LinearModel extends LTRScoringModel {

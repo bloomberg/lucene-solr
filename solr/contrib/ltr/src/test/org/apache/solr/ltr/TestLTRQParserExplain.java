@@ -91,7 +91,7 @@ public class TestLTRQParserExplain extends TestRerankBase {
   @Test
   public void LinearScoreExplainMissingEfiFeatureShouldReturnDefaultScore() throws Exception {
     loadFeatures("features-linear-efi.json");
-    loadModels("linear-efi.json");
+    loadModels("linear-model-efi.json");
 
     SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
@@ -122,9 +122,9 @@ public class TestLTRQParserExplain extends TestRerankBase {
   }
 
   @Test
-  public void lambdaMARTScoreExplainMissingEfiFeatureShouldReturnDefaultScore() throws Exception {
+  public void multipleAdditiveTreesScoreExplainMissingEfiFeatureShouldReturnDefaultScore() throws Exception {
     loadFeatures("external_features_for_sparse_processing.json");
-    loadModels("lambdamartmodel_external_binary_features.json");
+    loadModels("multipleadditivetreesmodel_external_binary_features.json");
 
     SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
@@ -141,13 +141,13 @@ public class TestLTRQParserExplain extends TestRerankBase {
     assertJQ(
         "/query" + query.toQueryString(),
         "/debug/explain/7=='\n" +
-            "65.0 = LambdaMARTModel(name=external_model_binary_feature,trees="+trees+") model applied to features, sum of:\n" +
+            "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="+trees+") model applied to features, sum of:\n" +
             "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n" +
             "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
     assertJQ(
         "/query" + query.toQueryString(),
         "/debug/explain/9=='\n" +
-            "65.0 = LambdaMARTModel(name=external_model_binary_feature,trees="+trees+") model applied to features, sum of:\n" +
+            "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="+trees+") model applied to features, sum of:\n" +
             "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n" +
             "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
   }

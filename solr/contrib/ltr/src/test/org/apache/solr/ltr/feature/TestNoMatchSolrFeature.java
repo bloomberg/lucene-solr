@@ -170,7 +170,7 @@ public class TestNoMatchSolrFeature extends TestRerankBase {
   @Test
   public void tesOnlyNoMatchFeaturesInStoreAndModelReturnsNonzeroScore() throws Exception {
     // Tests model with all no matching features but expects a non 0 score
-    //  LambdaMART will return scores even for docs without any feature matches
+    //  MultipleAdditiveTrees will return scores even for docs without any feature matches
     loadModel(
         "nomatchmodel4",
         MultipleAdditiveTreesModel.class.getCanonicalName(),

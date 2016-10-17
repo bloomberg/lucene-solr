@@ -28,12 +28,12 @@ import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * A scoring model that computes scores based on the LambdaMART algorithm.
+ * A scoring model that computes scores based on the summation of multiple weighted trees.
  * <p>
  * Example configuration:
 <pre>{
-   "class" : "org.apache.solr.ltr.model.LambdaMARTModel",
-   "name" : "lambdamartmodel",
+   "class" : "org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+   "name" : "multipleadditivetreesmodel",
    "features":[
        { "name" : "userTextTitleMatch"},
        { "name" : "originalScore"}
@@ -73,8 +73,13 @@ import org.apache.solr.util.SolrPluginUtils;
  * Background reading:
  * <ul>
  * <li> <a href="http://research.microsoft.com/pubs/132652/MSR-TR-2010-82.pdf">
- * Christopher J.C. Burges. From RankNet to LambdaRank to LambdaMART: An Overview.
+ * Christopher J.C. Burges. From RankNet to LambdaRank to MultipleAdditiveTrees: An Overview.
  * Microsoft Research Technical Report MSR-TR-2010-82.</a>
+ * </ul>
+ * <ul>
+ * <li> <a href="https://papers.nips.cc/paper/3305-a-general-boosting-method-and-its-application-to-learning-ranking-functions-for-web-search.pdf">
+ * Z. Zheng, H. Zha, T. Zhang, O. Chapelle, K. Chen, and G. Sun. A General Boosting Method and its Application to Learning Ranking Functions for Web Search.
+ * Advances in Neural Information Processing Systems (NIPS), 2007.</a>
  * </ul>
  */
 public class MultipleAdditiveTreesModel extends LTRScoringModel {
@@ -208,20 +213,20 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     public void validate() throws ModelException {
       if (isLeaf()) {
         if (left != null || right != null) {
-          throw new ModelException("LambdaMARTModel tree node is leaf with left="+left+" and right="+right);
+          throw new ModelException("MultipleAdditiveTreesModel tree node is leaf with left="+left+" and right="+right);
         }
         return;
       }
       if (null == threshold) {
-        throw new ModelException("LambdaMARTModel tree node is missing threshold");
+        throw new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
       }
       if (null == left) {
-        throw new ModelException("LambdaMARTModel tree node is missing left");
+        throw new ModelException("MultipleAdditiveTreesModel tree node is missing left");
       } else {
         left.validate();
       }
       if (null == right) {
-        throw new ModelException("LambdaMARTModel tree node is missing right");
+        throw new ModelException("MultipleAdditiveTreesModel tree node is missing right");
       } else {
         right.validate();
       }
@@ -268,10 +273,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
     public void validate() throws ModelException {
       if (weight == null) {
-        throw new ModelException("LambdaMARTModel tree doesn't contain a weight");
+        throw new ModelException("MultipleAdditiveTreesModel tree doesn't contain a weight");
       }
       if (root == null) {
-        throw new ModelException("LambdaMARTModel tree doesn't contain a tree");
+        throw new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
       } else {
         root.validate();
       }
@@ -321,7 +326,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
   // /////////////////////////////////////////
   // produces a string that looks like:
-  // 40.0 = lambdamartmodel [ org.apache.solr.ltr.model.LambdaMARTModel ]
+  // 40.0 = multipleadditivetreesmodel [ org.apache.solr.ltr.model.MultipleAdditiveTreesModel ]
   // model applied to
   // features, sum of:
   // 50.0 = tree 0 | 'matchedTitle':1.0 > 0.500001, Go Right |
