@@ -227,7 +227,7 @@ to the bias value you'd like and make a weight of 1.0 for that feature.
 }
 ```
 
-This is an example of a toy Linear model. Type specifies the class to be
+This is an example of a toy Linear model. Class specifies the class to be
 using to interpret the model. Name is the model identifier you will use 
 when making request to the ltr framework. Features specifies the feature 
 space that you want extracted when using this model. All features that 
