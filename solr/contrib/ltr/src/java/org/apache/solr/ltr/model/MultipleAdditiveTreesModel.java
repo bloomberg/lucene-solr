@@ -29,6 +29,7 @@ import org.apache.solr.util.SolrPluginUtils;
 
 /**
  * A scoring model that computes scores based on the summation of multiple weighted trees.
+ * Example models are LambdaMART and Gradient Boosted Regression Trees (GBRT) .
  * <p>
  * Example configuration:
 <pre>{
@@ -73,7 +74,7 @@ import org.apache.solr.util.SolrPluginUtils;
  * Background reading:
  * <ul>
  * <li> <a href="http://research.microsoft.com/pubs/132652/MSR-TR-2010-82.pdf">
- * Christopher J.C. Burges. From RankNet to LambdaRank to MultipleAdditiveTrees: An Overview.
+ * Christopher J.C. Burges. From RankNet to LambdaRank to LambdaMART: An Overview.
  * Microsoft Research Technical Report MSR-TR-2010-82.</a>
  * </ul>
  * <ul>

@@ -26,7 +26,8 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.Normalizer;
 
 /**
- * A scoring model that computes scores using a dot product.
+ * A scoring model that computes scores using a dot product. 
+ * Example models are RankSVM and Pranking.
  * <p>
  * Example configuration:
  * <pre>{

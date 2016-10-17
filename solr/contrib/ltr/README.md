@@ -199,12 +199,11 @@ above.
 
 # Defining Models
 Currently the Learning to Rank plugin supports 2 generalized forms of
-models: 1. Linear Model i.e. [Linear](http://www.cs.cornell.edu/people/tj/publications/joachims_02c.pdf), [Pranking](https://papers.nips.cc/paper/2023-pranking-with-ranking.pdf)
-and 2. Multiple Additive Trees i.e. [Multiple Additive Trees](http://research.microsoft.com/pubs/132652/MSR-TR-2010-82.pdf), [Gradient Boosted Regression Trees (GBRT)](https://papers.nips.cc/paper/3305-a-general-boosting-method-and-its-application-to-learning-ranking-functions-for-web-search.pdf)
+models: 1. Linear Model i.e. [RankSVM](http://www.cs.cornell.edu/people/tj/publications/joachims_02c.pdf), [Pranking](https://papers.nips.cc/paper/2023-pranking-with-ranking.pdf)
+and 2. Multiple Additive Trees i.e. [LambdaMART](http://research.microsoft.com/pubs/132652/MSR-TR-2010-82.pdf), [Gradient Boosted Regression Trees (GBRT)](https://papers.nips.cc/paper/3305-a-general-boosting-method-and-its-application-to-learning-ranking-functions-for-web-search.pdf)
 
 ### Linear
-Use Linear for a linear model. Use Multiple Additive Trees for
-a non-linear model. If you'd like to introduce a bias set a constant feature
+If you'd like to introduce a bias set a constant feature
 to the bias value you'd like and make a weight of 1.0 for that feature.
 
 ###### model.json
@@ -284,8 +283,8 @@ You will need to convert the libSVM model format to the format specified above.
     }
 }
 ```
-This is an example of a toy Multiple Additive Trees. Type specifies the class to be using to
-interpret the model (MultipleAdditiveTreesModel in the case of Multiple Additive Trees). Name is the
+This is an example of a toy Multiple Additive Trees. Class specifies the class to be using to
+interpret the model. Name is the
 model identifier you will use when making request to the ltr framework.
 Features specifies the feature space that you want extracted when using this
 model. All features that appear in the model params will be used for scoring and
