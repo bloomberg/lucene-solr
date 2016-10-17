@@ -28,7 +28,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressCodecs({"Lucene3x", "Lucene41", "Lucene40", "Appending"})
-public class TestLambdaMARTModel extends TestRerankBase {
+public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
 
   @BeforeClass

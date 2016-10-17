@@ -77,7 +77,7 @@ import org.apache.solr.util.SolrPluginUtils;
  * Microsoft Research Technical Report MSR-TR-2010-82.</a>
  * </ul>
  */
-public class LambdaMARTModel extends LTRScoringModel {
+public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
   private final HashMap<String,Integer> fname2index;
   private List<RegressionTree> trees;
@@ -286,7 +286,7 @@ public class LambdaMARTModel extends LTRScoringModel {
     }
   }
 
-  public LambdaMARTModel(String name, List<Feature> features,
+  public MultipleAdditiveTreesModel(String name, List<Feature> features,
       List<Normalizer> norms,
       String featureStoreName, List<Feature> allFeatures,
       Map<String,Object> params) {
