@@ -18,14 +18,14 @@ package org.apache.solr.ltr.feature;
 
 import java.security.SecureRandom;
 
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-
-
+import org.noggit.ObjectBuilder;
 
 
 public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
@@ -106,11 +106,23 @@ public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
     
     final SolrQuery query = new SolrQuery();
     query.setQuery("{!edismax qf='comp_description^1' boost='sum(product(pow(global_normHits, 0.7), 1600), .1)' v='apple'}");
-    // request 20 rows, rows 15-20 are fetched from the second segment which should succeed if LTRRescorer::extractFeaturesInfo() advances the doc iterator properly
-    query.add("rows", "20");
+    // request 100 rows, if any rows are fetched from the second or subsequent segments the tests should succeed if LTRRescorer::extractFeaturesInfo() advances the doc iterator properly
+    int numRows = 100;
+    query.add("rows", (new Integer(numRows)).toString());
     query.add("wt", "json");
     query.add("fq", "global_categoryId:201");
     query.add("fl", "*, score,id,global_normHits,comp_description,fv:[features store='feature-store-6' format='dense' efi.user_text='apple']");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[19]/fv=='origScore:394.61035;userTextNameMatch:1.2356983;descriptionTermFreq:2.0;popularity:0.1;isCompany:1.0;queryPartialMatch2:1.2356983;queryPartialMatch2.1:1.2356983'");
+    String res = restTestHarness.query("/query" + query.toQueryString());
+   
+    Map<String,Object> resultJson = (Map<String,Object>) ObjectBuilder.fromJSON(res);
+    
+    List<Map<String,Object>> docs = (List<Map<String,Object>>)((Map<String,Object>)resultJson.get("response")).get("docs");
+    int passCount = 0;
+    for (final Map<String,Object> doc : docs) {
+       String features = (String)doc.get("fv");
+       assert(features.length() > 0);
+       ++passCount;
+    }
+    assert(passCount == numRows);
   }
 }

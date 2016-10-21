@@ -1,0 +1,42 @@
+[
+{ "name":"origScore",
+  "class":"org.apache.solr.ltr.feature.OriginalScoreFeature",
+  "params":{},
+  "store": "feature-store-6"
+},
+{ "name" : "userTextNameMatch",
+  "class" : "org.apache.solr.ltr.feature.SolrFeature",
+  "params" : { "q" : "{!field f=comp_description}${user_text}" },
+  "store": "feature-store-6"
+},
+{
+  "name": "descriptionTermFreq",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
+  "params": { "q" : "{!func}termfreq(comp_description,${user_text})" },
+  "store": "feature-store-6"
+},
+{
+  "name": "popularity",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
+  "params": { "q" : "{!func}global_normHits"},
+  "store": "feature-store-6"
+},
+{
+  "name": "isCompany",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
+  "params": {"fq" : ["{!field f=global_categoryId}201"] },
+  "store": "feature-store-6"
+},
+{
+  "name": "queryPartialMatch2",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
+  "params": {"q": "{!dismax qf=comp_description mm=2}${user_text}" },
+  "store": "feature-store-6"
+},
+{
+  "name": "queryPartialMatch2.1",
+  "class": "org.apache.solr.ltr.feature.SolrFeature",
+  "params": {"q": "{!dismax qf=comp_description mm=2}${user_text}" },
+  "store": "feature-store-6"
+}
+]
