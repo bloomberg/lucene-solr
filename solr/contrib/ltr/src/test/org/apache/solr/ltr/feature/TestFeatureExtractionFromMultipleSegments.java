@@ -28,7 +28,7 @@ import org.junit.Test;
 
 
 
-public class TestMultiSegment extends TestRerankBase {
+public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
   static final String AB = "abcdefghijklmnopqrstuvwxyz";
   static SecureRandom rnd = new SecureRandom();
   
@@ -41,7 +41,9 @@ public class TestMultiSegment extends TestRerankBase {
   
   @BeforeClass
   public static void before() throws Exception {    
+    // solrconfig-multiseg.xml contains the merge policy to restrict merging
     setuptest("solrconfig-multiseg.xml", "schema-ltr-all-feature-test.xml");
+    // index 400 documents
     for(int i = 0; i<400;i=i+20) {
       assertU(adoc("id", new Integer(i).toString(), "global_categoryId", "201", "comp_description", "apple is a company " + randomString(i%6+3), "global_normHits", "0.1"));
       assertU(adoc("id", new Integer(i+1).toString(), "global_categoryId", "201", "comp_description", "d " + randomString(i%6+3), "global_normHits", "0.11"));
@@ -100,10 +102,11 @@ public class TestMultiSegment extends TestRerankBase {
   }
   
   @Test
-  public void testPeopleFirstAndLastMatch() throws Exception {
+  public void testFeatureExtractionFromMultipleSegments() throws Exception {
     
     final SolrQuery query = new SolrQuery();
     query.setQuery("{!edismax qf='comp_description^1' boost='sum(product(pow(global_normHits, 0.7), 1600), .1)' v='apple'}");
+    // request 20 rows, rows 15-20 are fetched from the second segment which should succeed if LTRRescorer::extractFeaturesInfo() advances the doc iterator properly
     query.add("rows", "20");
     query.add("wt", "json");
     query.add("fq", "global_categoryId:201");
