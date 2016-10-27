@@ -62,6 +62,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
         this.boostedPriority = (Map<BytesRef, Integer>)context.get(QueryElevationComponent.BOOSTED_PRIORITY);
       }
     }
+    
 
     return new ReRankCollector(reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority);
   }
