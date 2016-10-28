@@ -52,14 +52,13 @@ public class ReRankCollector extends TopDocsCollector {
   public ReRankCollector(int reRankDocs,
       int length,
       Rescorer reRankQueryRescorer,
-      QueryCommand cmd,
+      Sort sort,
       IndexSearcher searcher,
       Map<BytesRef, Integer> boostedPriority) throws IOException {
     super(null);
     this.reRankDocs = reRankDocs;
     this.length = length;
     this.boostedPriority = boostedPriority;
-    Sort sort = cmd.getSort();
     if(sort == null) {
       this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length));
     } else {

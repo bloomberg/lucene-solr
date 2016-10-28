@@ -48,6 +48,8 @@ public class TestLTRWithGrouping extends TestRerankBase {
         "C", "popularity", "7","category","cat4"));
     assertU(adoc("id", "8", "title", "a1 b1 c1 d1 e1 f1 g1 h1", "description",
         "D", "popularity", "8","category","cat4"));
+    assertU(adoc("id", "9", "title", "a1 b1 c1 d1 e1 f1 g1 h1 i1", "description",
+        "D", "popularity", "9","category","cat5"));
     assertU(commit());
   }
   
@@ -66,7 +68,7 @@ public class TestLTRWithGrouping extends TestRerankBase {
     query.add("rows", "4");
 
     // Normal term match
-    assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==9");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
@@ -75,24 +77,27 @@ public class TestLTRWithGrouping extends TestRerankBase {
     //Add grouping
     query.add("group", "true");
     query.add("group.field", "category");
-    assertJQ("/query" + query.toQueryString(), "/grouped/category/matches==8");
+    assertJQ("/query" + query.toQueryString(), "/grouped/category/matches==9");
     assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[0]/doclist/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[1]/doclist/docs/[0]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[2]/doclist/docs/[0]/id=='4'");
     assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[3]/doclist/docs/[0]/id=='5'");
 
-    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=4}");
+    //Add ranking
+    query.add("rq", "{!ltr model=powpularityS-model reRankDocs=5}");
+    query.remove("fl");
+    query.add("fl", "*,score,features:[fv]");
     query.set("debugQuery", "on");
 
-    assertJQ("/query" + query.toQueryString(), "/grouped/category/matches==8");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='8'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==64.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='7'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==49.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='5'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==25.0");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/score==1.0");
+    assertJQ("/query" + query.toQueryString(), "/grouped/category/matches==9");
+    assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[0]/doclist/docs/[0]/id=='9'");
+    assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[0]/doclist/docs/[0]/score==81.0");
+    assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[1]/doclist/docs/[0]/id=='8'");
+    assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[1]/doclist/docs/[0]/score==64.0");
+    assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[2]/doclist/docs/[0]/id=='4'");
+    assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[2]/doclist/docs/[0]/score==16.0");
+    assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[3]/doclist/docs/[0]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/grouped/category/groups/[3]/doclist/docs/[0]/score==9.0");
 
     // aftertest();
 

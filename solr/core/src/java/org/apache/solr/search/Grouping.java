@@ -19,7 +19,9 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -68,6 +70,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrFieldSource;
 import org.apache.solr.search.grouping.collector.FilterCollector;
+import org.apache.solr.search.grouping.collector.RerankTermSecondPassGroupingCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -729,7 +732,11 @@ public class Grouping {
       }
 
       groupSort = groupSort == null ? Sort.RELEVANCE : groupSort;
-      firstPass = new TermFirstPassGroupingCollector(groupBy, groupSort, actualGroupsToFind);
+      int groupsToFind = actualGroupsToFind;
+      if (query instanceof RankQuery) {
+        groupsToFind = getMax(offset, Math.max(numGroups,((RankQuery)query).getReRankDocs()), maxDoc);
+      }
+      firstPass = new TermFirstPassGroupingCollector(groupBy, groupSort, groupsToFind);
       return firstPass;
     }
 
@@ -758,9 +765,18 @@ public class Grouping {
       int groupedDocsToCollect = getMax(groupOffset, docsPerGroup, maxDoc);
       groupedDocsToCollect = Math.max(groupedDocsToCollect, 1);
       Sort withinGroupSort = this.withinGroupSort != null ? this.withinGroupSort : Sort.RELEVANCE;
-      secondPass = new TermSecondPassGroupingCollector(
-          groupBy, topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores, needScores, false
-      );
+
+      if (query instanceof RankQuery) {
+        secondPass = new RerankTermSecondPassGroupingCollector(
+            groupBy, topGroups, groupSort, withinGroupSort, searcher, (RankQuery)query, groupedDocsToCollect, needScores,
+            needScores, false
+            );
+      } else {
+        secondPass = new TermSecondPassGroupingCollector(
+            groupBy, topGroups, groupSort, withinGroupSort, groupedDocsToCollect, needScores,
+            needScores, false
+            );
+      }
 
       if (totalCount == TotalCount.grouped) {
         allGroupsCollector = new TermAllGroupsCollector(groupBy);
@@ -784,7 +800,26 @@ public class Grouping {
      */
     @Override
     protected void finish() throws IOException {
-      result = secondPass != null ? secondPass.getTopGroups(0) : null;
+      if (query instanceof RankQuery && groupSort == Sort.RELEVANCE) {
+        // if we are sorting for relevance and query is a RankQuery, it may be that
+        // the order of the groups changed, we need to reorder
+        result = secondPass != null ? secondPass.getTopGroups(3) : null;
+        if (result != null) {
+          GroupDocs[] groups = result.groups;
+          Arrays.sort(groups, new Comparator<GroupDocs>() {
+            @Override
+            public int compare(GroupDocs o1, GroupDocs o2) {
+              if (o1.maxScore > o2.maxScore) return -1;
+              if (o1.maxScore < o2.maxScore) return 1;
+              return 0;
+            }
+          });
+        }
+      }
+      else {
+        result = secondPass != null ? secondPass.getTopGroups(0) : null;
+      }
+
       if (main) {
         mainResult = createSimpleResponse();
         return;
@@ -807,7 +842,8 @@ public class Grouping {
       // handle case of rows=0
       if (numGroups == 0) return;
 
-      for (GroupDocs<BytesRef> group : result.groups) {
+      for (int idx = 0; idx < Math.min(result.groups.length,actualGroupsToFind); ++idx) {
+        GroupDocs<BytesRef> group = result.groups[idx];
         NamedList nl = new SimpleOrderedMap();
         groupList.add(nl);                         // grouped={ key={ groups=[ {
 
@@ -981,7 +1017,7 @@ public class Grouping {
       Sort withinGroupSort = this.withinGroupSort != null ? this.withinGroupSort : Sort.RELEVANCE;
       secondPass = new FunctionSecondPassGroupingCollector(
           topGroups, groupSort, withinGroupSort, groupdDocsToCollect, needScores, needScores, false, groupBy, context
-      );
+          );
 
       if (totalCount == TotalCount.grouped) {
         allGroupsCollector = new FunctionAllGroupsCollector(groupBy, context);
