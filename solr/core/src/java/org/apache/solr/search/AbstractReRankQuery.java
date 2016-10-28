@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Rescorer;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
@@ -32,7 +33,6 @@ import org.apache.solr.request.SolrRequestInfo;
 
 public abstract class AbstractReRankQuery extends RankQuery {
   protected Query mainQuery;
-  final protected int reRankDocs;
   final protected Rescorer reRankQueryRescorer;
   protected Map<BytesRef, Integer> boostedPriority;
 
@@ -42,9 +42,9 @@ public abstract class AbstractReRankQuery extends RankQuery {
     this.reRankQueryRescorer = reRankQueryRescorer;
   }
 
-  public RankQuery wrap(Query _mainQuery) {
-    if(_mainQuery != null){
-      this.mainQuery = _mainQuery;
+  public RankQuery wrap(Query mainQuery) {
+    if(mainQuery != null){
+      this.mainQuery = mainQuery;
     }
     return  this;
   }
@@ -53,7 +53,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
     return null;
   }
 
-  public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
+  public TopDocsCollector getTopDocsCollector(Sort sort, int len, IndexSearcher searcher) throws IOException {
 
     if(this.boostedPriority == null) {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
@@ -62,8 +62,9 @@ public abstract class AbstractReRankQuery extends RankQuery {
         this.boostedPriority = (Map<BytesRef, Integer>)context.get(QueryElevationComponent.BOOSTED_PRIORITY);
       }
     }
+    
 
-    return new ReRankCollector(reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority);
+    return new ReRankCollector(reRankDocs, len, reRankQueryRescorer, sort, searcher, boostedPriority);
   }
 
   public Query rewrite(IndexReader reader) throws IOException {

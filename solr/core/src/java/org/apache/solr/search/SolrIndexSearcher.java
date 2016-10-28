@@ -1709,7 +1709,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     Query q = cmd.getQuery();
     if (q instanceof RankQuery) {
       RankQuery rq = (RankQuery) q;
-      return rq.getTopDocsCollector(len, cmd, this);
+      return rq.getTopDocsCollector(cmd.getSort(), len, this);
     }
 
     if (null == cmd.getSort()) {

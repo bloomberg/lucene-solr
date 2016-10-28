@@ -128,18 +128,19 @@ public class TestRankQueryPlugin extends QParserPlugin {
       this.mergeStrategy = mergeStrategy;
     }
 
-    public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) {
-      if(collector == 0)
-        return new TestCollector(null);
-      else
-        return new TestCollector1(null);
-    }
-
     public MergeStrategy getMergeStrategy() {
       if(mergeStrategy == 0)
         return new TestMergeStrategy();
       else
         return new TestMergeStrategy1();
+    }
+
+    public TopDocsCollector getTopDocsCollector(Sort sort, int len, IndexSearcher searcher)
+        throws IOException {
+      if(collector == 0)
+        return new TestCollector(null);
+      else
+        return new TestCollector1(null);
     }
   }
 

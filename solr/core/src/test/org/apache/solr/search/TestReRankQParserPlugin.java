@@ -599,5 +599,4 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
       assertTrue(e.code() == SolrException.ErrorCode.BAD_REQUEST.code);
     }
   }
-
 }
