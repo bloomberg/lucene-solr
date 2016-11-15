@@ -19,10 +19,8 @@ package org.apache.solr.ltr.feature;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -129,11 +127,6 @@ public class ValueFeature extends Feature {
       } else {
         featureValue = configValue;
       }
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      throw new UnsupportedOperationException();
     }
 
     @Override

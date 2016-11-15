@@ -19,12 +19,10 @@ package org.apache.solr.ltr.feature;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -111,11 +109,6 @@ public class FieldLengthFeature extends Feature {
     public FieldLengthFeatureWeight(IndexSearcher searcher,
         SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
       super(FieldLengthFeature.this, searcher, request, originalQuery, efi);
-    }
-
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      throw new UnsupportedOperationException();
     }
 
     @Override

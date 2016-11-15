@@ -256,6 +256,11 @@ public abstract class Feature extends Query {
       return Feature.this.toString();
     }
 
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      // no-op
+    }
+
     /**
      * A 'recipe' for computing a feature
      */
