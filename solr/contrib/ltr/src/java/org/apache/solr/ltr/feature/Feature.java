@@ -256,12 +256,6 @@ public abstract class Feature extends Query {
       return Feature.this.toString();
     }
 
-    @Override
-    public void extractTerms(Set<Term> terms) {
-      // needs to be implemented by query subclasses
-      throw new UnsupportedOperationException();
-    }
-
     /**
      * A 'recipe' for computing a feature
      */

@@ -19,8 +19,10 @@ package org.apache.solr.ltr.feature;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -76,7 +78,10 @@ public class OriginalScoreFeature extends Feature {
       return "OriginalScoreFeature [query:" + originalQuery.toString() + "]";
     }
 
-
+    @Override
+    public void extractTerms(Set<Term> terms) {
+      w.extractTerms(terms);
+    }
 
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
