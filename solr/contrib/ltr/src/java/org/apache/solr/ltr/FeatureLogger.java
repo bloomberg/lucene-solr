@@ -151,8 +151,10 @@ public abstract class FeatureLogger<FV_TYPE> {
   }
 
   public static class CSVFeatureLogger extends FeatureLogger<String> {
-    char keyValueSep = ':';
-    char featureSep = ';';
+    public static final char DEFAULT_KEY_VALUE_SEPARATOR = ':';
+    public static final char DEFAULT_FEATURE_SEPARATOR = ';';
+    char keyValueSep = DEFAULT_KEY_VALUE_SEPARATOR;
+    char featureSep = DEFAULT_FEATURE_SEPARATOR;
 
     public CSVFeatureLogger(FeatureFormat f) {
       super(f);

@@ -215,6 +215,12 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   @Test
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {
 
+    final char keyvalue_sep = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
+    final char value_delim = FeatureLogger.CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
+
+    final String docs0fv = "'matchedTitle"+keyvalue_sep+"1.0"+value_delim+"titlePhraseMatch"+keyvalue_sep+"0.40254828'";
+    final String docs0fv_fstore4 = "'popularity"+keyvalue_sep+"3.0"+value_delim+"originalScore"+keyvalue_sep+"1.0'";
+
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.add("fl", "*,score");
@@ -225,7 +231,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='4'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='matchedTitle:1.0;titlePhraseMatch:0.40254828'"); // extract all features in default store
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=="+docs0fv); // extract all features in default store
 
     query.remove("fl");
     query.remove("rq");
@@ -235,7 +241,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.999");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='popularity:3.0;originalScore:1.0'"); // extract all features from fstore4
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=="+docs0fv_fstore4); // extract all features from fstore4
 
 
     query.remove("fl");
@@ -245,7 +251,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     query.add("fl", "fv:[fv store=fstore4 efi.myPop=3]");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'"); // score using fstore2 used by externalmodelstore
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.7992");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='popularity:3.0;originalScore:1.0'"); // extract all features from fstore4
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=="+docs0fv_fstore4); // extract all features from fstore4
   }
 }
 

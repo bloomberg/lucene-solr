@@ -17,6 +17,7 @@
 package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
@@ -103,6 +104,8 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   @Test
   public void testIfADocumentDoesntHaveAFieldDefaultValueIsReturned() throws Exception {
+    final char keyvalue_sep = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
+
     SolrQuery query = new SolrQuery();
     query.setQuery("id:42");
     query.add("fl", "*, score");
@@ -116,7 +119,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'popularity:"+FIELD_VALUE_FEATURE_DEFAULT_VAL+"'}");
+            "/response/docs/[0]/=={'[fv]':'popularity"+keyvalue_sep+FIELD_VALUE_FEATURE_DEFAULT_VAL+"'}");
 
   }
 
@@ -128,6 +131,8 @@ public class TestFieldValueFeature extends TestRerankBase {
 
     loadFeature("popularity42", FieldValueFeature.class.getCanonicalName(), fstore,
             "{\"field\":\"popularity\",\"defaultValue\":\"42.0\"}");
+
+    final char keyvalue_sep = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
 
     SolrQuery query = new SolrQuery();
     query.setQuery("id:42");
@@ -145,7 +150,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'popularity42:42.0'}");
+            "/response/docs/[0]/=={'[fv]':'popularity42"+keyvalue_sep+"42.0'}");
 
   }
 
@@ -159,13 +164,15 @@ public class TestFieldValueFeature extends TestRerankBase {
     loadModel("not-existing-field-model", LinearModel.class.getCanonicalName(),
             new String[] {"not-existing-field"}, fstore, "{\"weights\":{\"not-existing-field\":1.0}}");
 
+    final char keyvalue_sep = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
+
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:42");
     query.add("rq", "{!ltr model=not-existing-field-model reRankDocs=4}");
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'not-existing-field:"+FIELD_VALUE_FEATURE_DEFAULT_VAL+"'}");
+            "/response/docs/[0]/=={'[fv]':'not-existing-field"+keyvalue_sep+FIELD_VALUE_FEATURE_DEFAULT_VAL+"'}");
 
   }
 
@@ -178,12 +185,14 @@ public class TestFieldValueFeature extends TestRerankBase {
     loadModel("trendy-model", LinearModel.class.getCanonicalName(),
             new String[] {"trendy"}, fstore, "{\"weights\":{\"trendy\":1.0}}");
 
+    final char keyvalue_sep = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
+
     SolrQuery query = new SolrQuery();
     query.setQuery("id:4");
     query.add("rq", "{!ltr model=trendy-model reRankDocs=4}");
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'trendy:0.0'}");
+            "/response/docs/[0]/=={'[fv]':'trendy"+keyvalue_sep+"0.0'}");
 
 
     query = new SolrQuery();
@@ -191,7 +200,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("rq", "{!ltr model=trendy-model reRankDocs=4}");
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'trendy:1.0'}");
+            "/response/docs/[0]/=={'[fv]':'trendy"+keyvalue_sep+"1.0'}");
 
     // check default value is false
     query = new SolrQuery();
@@ -199,7 +208,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("rq", "{!ltr model=trendy-model reRankDocs=4}");
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'trendy:0.0'}");
+            "/response/docs/[0]/=={'[fv]':'trendy"+keyvalue_sep+"0.0'}");
 
   }
 
