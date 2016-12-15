@@ -192,6 +192,33 @@ public abstract class FeatureLogger<FV_TYPE> {
       return features;
     }
 
+    /*
+     * For test use only.
+     */
+    public static String toFeatureVector(String ... keysAndValues) {
+      return toFeatureVector(DEFAULT_KEY_VALUE_SEPARATOR, DEFAULT_FEATURE_SEPARATOR,
+          keysAndValues);
+    }
+
+    /*
+     * For test use only.
+     */
+    public static String toFeatureVector(char keyValueSeparator, char featureSeparator,
+        String ... keysAndValues) {
+      StringBuilder sb = new StringBuilder(keysAndValues.length/2 * 3);
+      for (int ii = 0; ii+1 < keysAndValues.length; ii += 2) {
+          sb.append(keysAndValues[ii])
+          .append(keyValueSeparator)
+          .append(keysAndValues[ii+1])
+          .append(featureSeparator);
+      }
+
+      final String features = (sb.length() > 0 ?
+          sb.substring(0, sb.length() - 1) : "");
+
+      return features;
+    }
+
   }
 
 }

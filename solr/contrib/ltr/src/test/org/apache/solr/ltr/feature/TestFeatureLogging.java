@@ -56,14 +56,12 @@ public class TestFeatureLogging extends TestRerankBase {
         "c1", "c2", "c3"}, "test1",
         "{\"weights\":{\"c1\":1.0,\"c2\":1.0,\"c3\":1.0}}");
 
-    final char csv_keyvalue_separator = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
-    final char csv_value_delimiter = FeatureLogger.CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
-
-    final String docs0fv_sparse_csv = "'c1"+csv_keyvalue_separator+"1.0"
-        + csv_value_delimiter + "c2"+csv_keyvalue_separator+"2.0"
-        + csv_value_delimiter + "c3"+csv_keyvalue_separator+"3.0"
-        + csv_value_delimiter + "pop"+csv_keyvalue_separator+"2.0"
-        + csv_value_delimiter + "yesmatch"+csv_keyvalue_separator+"1.0'";
+    final String docs0fv_sparse_csv = FeatureLogger.CSVFeatureLogger.toFeatureVector(
+        "c1","1.0",
+        "c2","2.0",
+        "c3","3.0",
+        "pop","2.0",
+        "yesmatch","1.0");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg");
@@ -75,7 +73,7 @@ public class TestFeatureLogging extends TestRerankBase {
     restTestHarness.query("/query" + query.toQueryString());
     assertJQ(
         "/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'title':'bloomberg bloomberg ', 'description':'bloomberg','id':'7', 'popularity':2,  '[fv]':"+docs0fv_sparse_csv+"}");
+        "/response/docs/[0]/=={'title':'bloomberg bloomberg ', 'description':'bloomberg','id':'7', 'popularity':2,  '[fv]':'"+docs0fv_sparse_csv+"'}");
 
     query.remove("fl");
     query.add("fl", "[fv]");
@@ -84,13 +82,13 @@ public class TestFeatureLogging extends TestRerankBase {
 
     restTestHarness.query("/query" + query.toQueryString());
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'[fv]':"+docs0fv_sparse_csv+"}");
+        "/response/docs/[0]/=={'[fv]':'"+docs0fv_sparse_csv+"'}");
     query.remove("rq");
 
     // set logging at false but still asking for feature, and it should work anyway
     query.add("rq", "{!ltr reRankDocs=3 model=sum1}");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'[fv]':"+docs0fv_sparse_csv+"}");
+        "/response/docs/[0]/=={'[fv]':'"+docs0fv_sparse_csv+"'}");
 
 
   }
