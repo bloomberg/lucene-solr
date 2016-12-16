@@ -215,9 +215,9 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   @Test
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {
 
-    final String docs0fv = FeatureLogger.CSVFeatureLogger.toFeatureVector(
+    final String docs0fv = FeatureLoggerTestUtils.toFeatureVector(
         "matchedTitle","1.0", "titlePhraseMatch","0.40254828");
-    final String docs0fv_fstore4= FeatureLogger.CSVFeatureLogger.toFeatureVector(
+    final String docs0fv_fstore4= FeatureLoggerTestUtils.toFeatureVector(
         "popularity","3.0", "originalScore","1.0");
 
     final SolrQuery query = new SolrQuery();

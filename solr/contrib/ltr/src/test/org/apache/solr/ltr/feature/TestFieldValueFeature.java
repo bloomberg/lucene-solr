@@ -17,7 +17,7 @@
 package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.ltr.FeatureLogger;
+import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
 import org.junit.AfterClass;
@@ -118,7 +118,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'"+FeatureLogger.CSVFeatureLogger.toFeatureVector("popularity",Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("popularity",Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
 
   }
 
@@ -147,7 +147,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'"+FeatureLogger.CSVFeatureLogger.toFeatureVector("popularity42","42.0")+"'}");
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("popularity42","42.0")+"'}");
 
   }
 
@@ -167,7 +167,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'"+FeatureLogger.CSVFeatureLogger.toFeatureVector("not-existing-field",Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("not-existing-field",Float.toString(FIELD_VALUE_FEATURE_DEFAULT_VAL))+"'}");
 
   }
 
@@ -185,7 +185,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("rq", "{!ltr model=trendy-model reRankDocs=4}");
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'"+FeatureLogger.CSVFeatureLogger.toFeatureVector("trendy","0.0")+"'}");
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("trendy","0.0")+"'}");
 
 
     query = new SolrQuery();
@@ -193,7 +193,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("rq", "{!ltr model=trendy-model reRankDocs=4}");
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'"+FeatureLogger.CSVFeatureLogger.toFeatureVector("trendy","1.0")+"'}");
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("trendy","1.0")+"'}");
 
     // check default value is false
     query = new SolrQuery();
@@ -201,7 +201,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     query.add("rq", "{!ltr model=trendy-model reRankDocs=4}");
     query.add("fl", "[fv]");
     assertJQ("/query" + query.toQueryString(),
-            "/response/docs/[0]/=={'[fv]':'"+FeatureLogger.CSVFeatureLogger.toFeatureVector("trendy","0.0")+"'}");
+            "/response/docs/[0]/=={'[fv]':'"+FeatureLoggerTestUtils.toFeatureVector("trendy","0.0")+"'}");
 
   }
 

@@ -17,7 +17,7 @@
 package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.ltr.FeatureLogger;
+import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -104,7 +104,7 @@ public class TestExternalFeatures extends TestRerankBase {
     query.setQuery("*:*");
     query.add("rows", "1");
 
-    final String docs0fv_sparse_csv = FeatureLogger.CSVFeatureLogger.toFeatureVector(
+    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
         "confidence","2.3", "originalScore","1.0");
 
     // Features we're extracting depend on external feature info not passed in
@@ -132,7 +132,7 @@ public class TestExternalFeatures extends TestRerankBase {
     // Efi is explicitly not required, so we do not score the feature
     query.remove("fl");
     query.add("fl", "fvalias:[fv store=fstore2]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+FeatureLogger.CSVFeatureLogger.toFeatureVector("originalScore","0.0")+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+FeatureLoggerTestUtils.toFeatureVector("originalScore","0.0")+"'");
   }
 
   @Test
@@ -144,7 +144,7 @@ public class TestExternalFeatures extends TestRerankBase {
     // Efi is explicitly not required, so we do not score the feature
     query.remove("fl");
     query.add("fl", "fvalias:[fv store=fstore3]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+FeatureLogger.CSVFeatureLogger.toFeatureVector("originalScore","0.0")+"'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+FeatureLoggerTestUtils.toFeatureVector("originalScore","0.0")+"'");
   }
 
   @Test

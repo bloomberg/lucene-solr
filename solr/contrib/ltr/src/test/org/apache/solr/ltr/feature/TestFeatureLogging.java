@@ -17,7 +17,7 @@
 package org.apache.solr.ltr.feature;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.ltr.FeatureLogger;
+import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.store.FeatureStore;
@@ -56,7 +56,7 @@ public class TestFeatureLogging extends TestRerankBase {
         "c1", "c2", "c3"}, "test1",
         "{\"weights\":{\"c1\":1.0,\"c2\":1.0,\"c3\":1.0}}");
 
-    final String docs0fv_sparse_csv = FeatureLogger.CSVFeatureLogger.toFeatureVector(
+    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
         "c1","1.0",
         "c2","2.0",
         "c3","3.0",
@@ -116,24 +116,24 @@ public class TestFeatureLogging extends TestRerankBase {
     // No store specified, use default store for extraction
     query.add("fl", "fv:[fv]");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'fv':'"+FeatureLogger.CSVFeatureLogger.toFeatureVector("defaultf1","1.0")+"'}");
+        "/response/docs/[0]/=={'fv':'"+FeatureLoggerTestUtils.toFeatureVector("defaultf1","1.0")+"'}");
 
     // Store specified, use store for extraction
     query.remove("fl");
     query.add("fl", "fv:[fv store=store8]");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'fv':'"+FeatureLogger.CSVFeatureLogger.toFeatureVector("store8f1","2.0")+"'}");
+        "/response/docs/[0]/=={'fv':'"+FeatureLoggerTestUtils.toFeatureVector("store8f1","2.0")+"'}");
 
     // Store specified + model specified, use store for extraction
     query.add("rq", "{!ltr reRankDocs=3 model=store9m1}");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'fv':'"+FeatureLogger.CSVFeatureLogger.toFeatureVector("store8f1","2.0")+"'}");
+        "/response/docs/[0]/=={'fv':'"+FeatureLoggerTestUtils.toFeatureVector("store8f1","2.0")+"'}");
 
     // No store specified + model specified, use model store for extraction
     query.remove("fl");
     query.add("fl", "fv:[fv]");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'fv':'"+FeatureLogger.CSVFeatureLogger.toFeatureVector("store9f1","3.0")+"'}");
+        "/response/docs/[0]/=={'fv':'"+FeatureLoggerTestUtils.toFeatureVector("store9f1","3.0")+"'}");
   }
 
 
@@ -165,7 +165,7 @@ public class TestFeatureLogging extends TestRerankBase {
 
     query.add("rq", "{!ltr reRankDocs=3 model=sumgroup}");
 
-    final String docs0fv_sparse_csv = FeatureLogger.CSVFeatureLogger.toFeatureVector(
+    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector(
         "c1","1.0",
         "c2","2.0",
         "c3","3.0",
@@ -203,11 +203,11 @@ public class TestFeatureLogging extends TestRerankBase {
         "match"}, "test4",
         "{\"weights\":{\"match\":1.0}}");
 
-    final String docs0fv_sparse_csv = FeatureLogger.CSVFeatureLogger.toFeatureVector("match", "1.0", "c4", "1.0");
-    final String docs1fv_sparse_csv = FeatureLogger.CSVFeatureLogger.toFeatureVector("c4", "1.0");
+    final String docs0fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector("match", "1.0", "c4", "1.0");
+    final String docs1fv_sparse_csv = FeatureLoggerTestUtils.toFeatureVector("c4", "1.0");
 
-    final String docs0fv_dense_csv  = FeatureLogger.CSVFeatureLogger.toFeatureVector("match", "1.0", "c4", "1.0");
-    final String docs1fv_dense_csv  = FeatureLogger.CSVFeatureLogger.toFeatureVector("match", "0.0", "c4", "1.0");
+    final String docs0fv_dense_csv  = FeatureLoggerTestUtils.toFeatureVector("match", "1.0", "c4", "1.0");
+    final String docs1fv_dense_csv  = FeatureLoggerTestUtils.toFeatureVector("match", "0.0", "c4", "1.0");
 
     final String docs0fv_sparse_json = "{'match':1.0,'c4':1.0}";
     final String docs1fv_sparse_json = "{'c4':1.0}";

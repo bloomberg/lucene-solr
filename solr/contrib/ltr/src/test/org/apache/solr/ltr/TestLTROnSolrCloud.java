@@ -92,13 +92,13 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals("3", queryResponse.getResults().get(2).get("id").toString());
     assertEquals("4", queryResponse.getResults().get(3).get("id").toString());
 
-    final String result0_features= FeatureLogger.CSVFeatureLogger.toFeatureVector(
+    final String result0_features= FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS","64.0", "c3","2.0");
-    final String result1_features= FeatureLogger.CSVFeatureLogger.toFeatureVector(
+    final String result1_features= FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS","49.0", "c3","2.0");
-    final String result2_features= FeatureLogger.CSVFeatureLogger.toFeatureVector(
+    final String result2_features= FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS","36.0", "c3","2.0");
-    final String result3_features= FeatureLogger.CSVFeatureLogger.toFeatureVector(
+    final String result3_features= FeatureLoggerTestUtils.toFeatureVector(
         "powpularityS","25.0", "c3","2.0");
 
     // Test re-rank and feature vectors returned
