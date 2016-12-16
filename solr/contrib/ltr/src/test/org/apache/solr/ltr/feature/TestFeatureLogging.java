@@ -83,14 +83,6 @@ public class TestFeatureLogging extends TestRerankBase {
     restTestHarness.query("/query" + query.toQueryString());
     assertJQ("/query" + query.toQueryString(),
         "/response/docs/[0]/=={'[fv]':'"+docs0fv_sparse_csv+"'}");
-    query.remove("rq");
-
-    // set logging at false but still asking for feature, and it should work anyway
-    query.add("rq", "{!ltr reRankDocs=3 model=sum1}");
-    assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/=={'[fv]':'"+docs0fv_sparse_csv+"'}");
-
-
   }
 
   @Test
