@@ -59,15 +59,11 @@ import org.slf4j.LoggerFactory;
  * <code>efi.*</code> - External feature information variables required by the features
  * you are extracting.<br>
  * <code>format</code> - The format you want the features to be returned in.  Supports (dense|sparse). Defaults to sparse.<br>
- * <code>fvwt</code> - The feature vector output format. Supports (json/csv). Defaults to csv.<br>
 */
 
 public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  // used inside fl to specify the output format (csv/json) of the extracted features
-  private static final String FV_RESPONSE_WRITER = "fvwt";
 
   // used inside fl to specify the format (dense|sparse) of the extracted features
   private static final String FV_FORMAT = "format";
@@ -79,7 +75,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
   private String defaultStore;
-  private String defaultFvwt;
   private String defaultFormat;
   private char csvKeyValueDelimiter = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
   private char csvFeatureSeparator = FeatureLogger.CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
@@ -92,10 +87,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   public void setDefaultStore(String defaultStore) {
     this.defaultStore = defaultStore;
-  }
-
-  public void setDefaultFvwt(String defaultFvwt) {
-    this.defaultFvwt = defaultFvwt;
   }
 
   public void setDefaultFormat(String defaultFormat) {
@@ -136,18 +127,13 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     // Create and supply the feature logger to be used
     SolrQueryRequestContextUtils.setFeatureLogger(req,
         createFeatureLogger(
-            localparams.get(FV_RESPONSE_WRITER, defaultFvwt),
             localparams.get(FV_FORMAT, defaultFormat)));
 
     return new FeatureTransformer(name, localparams, req);
   }
 
   /**
-   * returns a FeatureLogger that logs the features in output, using the format
-   * specified in the 'stringFormat' param: 'csv' will log the features as a unique
-   * string in csv format 'json' will log the features in a map in a Map of
-   * featureName keys to featureValue values if format is null or empty, csv
-   * format will be selected.
+   * returns a FeatureLogger that logs the features
    * 'featureFormat' param: 'dense' will write features in dense format,
    * 'sparse' will write the features in sparse format, null or empty will
    * default to 'sparse'
@@ -155,7 +141,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
    *
    * @return a feature logger for the format specified.
    */
-  private FeatureLogger<?> createFeatureLogger(String stringFormat, String featureFormat) {
+  private FeatureLogger<?> createFeatureLogger(String featureFormat) {
     final FeatureLogger.FeatureFormat f;
     if (featureFormat == null || featureFormat.isEmpty() ||
         featureFormat.equals("sparse")) {
@@ -166,19 +152,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     }
     else {
       f = FeatureLogger.FeatureFormat.SPARSE;
-      log.warn("unknown feature logger feature format {} | {}", stringFormat, featureFormat);
+      log.warn("unknown feature logger feature format {}", featureFormat);
     }
-    if ((stringFormat == null) || stringFormat.isEmpty()) {
-      return new FeatureLogger.CSVFeatureLogger(f, csvKeyValueDelimiter, csvFeatureSeparator);
-    }
-    if (stringFormat.equals("csv")) {
-      return new FeatureLogger.CSVFeatureLogger(f, csvKeyValueDelimiter, csvFeatureSeparator);
-    }
-    if (stringFormat.equals("json")) {
-      return new FeatureLogger.MapFeatureLogger(f);
-    }
-    log.warn("unknown feature logger string format {} | {}", stringFormat, featureFormat);
-    return null;
+    return new FeatureLogger.CSVFeatureLogger(f, csvKeyValueDelimiter, csvFeatureSeparator);
   }
 
   class FeatureTransformer extends DocTransformer {

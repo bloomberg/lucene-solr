@@ -16,10 +16,6 @@
  */
 package org.apache.solr.ltr;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -79,30 +75,6 @@ public abstract class FeatureLogger<FV_TYPE> {
   public FV_TYPE getFeatureVector(int docid, LTRScoringQuery scoringQuery,
       SolrIndexSearcher searcher) {
     return (FV_TYPE) searcher.cacheLookup(QUERY_FV_CACHE_NAME, fvCacheKey(scoringQuery, docid));
-  }
-
-
-  public static class MapFeatureLogger extends FeatureLogger<Map<String,Float>> {
-
-    public MapFeatureLogger(FeatureFormat f) {
-      super(f);
-    }
-
-    @Override
-    public Map<String,Float> makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo) {
-      boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
-      Map<String,Float> hashmap = Collections.emptyMap();
-      if (featuresInfo.length > 0) {
-        hashmap = new HashMap<String,Float>(featuresInfo.length);
-        for (LTRScoringQuery.FeatureInfo featInfo:featuresInfo){
-          if (featInfo.isUsed() || isDense){
-            hashmap.put(featInfo.getName(), featInfo.getValue());
-          }
-        }
-      }
-      return hashmap;
-    }
-
   }
 
   public static class CSVFeatureLogger extends FeatureLogger<String> {
