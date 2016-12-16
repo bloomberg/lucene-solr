@@ -78,49 +78,4 @@ public abstract class FeatureLogger {
     return (String) searcher.cacheLookup(fvCacheName, fvCacheKey(scoringQuery, docid));
   }
 
-  /**
-   * A feature logger that logs in csv format.
-   */
-  public static class CSVFeatureLogger extends FeatureLogger {
-    public static final char DEFAULT_KEY_VALUE_SEPARATOR = '=';
-    public static final char DEFAULT_FEATURE_SEPARATOR = ',';
-    private final char keyValueSep;
-    private final char featureSep;
-
-    public CSVFeatureLogger(String fvCacheName, FeatureFormat f) {
-      super(fvCacheName, f);
-      this.keyValueSep = DEFAULT_KEY_VALUE_SEPARATOR;
-      this.featureSep = DEFAULT_FEATURE_SEPARATOR;
-    }
-
-    public CSVFeatureLogger(String fvCacheName, FeatureFormat f, char keyValueSep, char featureSep) {
-      super(fvCacheName, f);
-      this.keyValueSep = keyValueSep;
-      this.featureSep = featureSep;
-    }
-
-    @Override
-    public String makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo) {
-      // Allocate the buffer to a size based on the number of features instead of the 
-      // default 16.  You need space for the name, value, and two separators per feature, 
-      // but not all the features are expected to fire, so this is just a naive estimate. 
-      StringBuilder sb = new StringBuilder(featuresInfo.length * 3);
-      boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
-      for (LTRScoringQuery.FeatureInfo featInfo:featuresInfo) {
-        if (featInfo.isUsed() || isDense){
-          sb.append(featInfo.getName())
-          .append(keyValueSep)
-          .append(featInfo.getValue())
-          .append(featureSep);
-        }
-      }
-
-      final String features = (sb.length() > 0 ? 
-          sb.substring(0, sb.length() - 1) : "");
-
-      return features;
-    }
-
-  }
-
 }

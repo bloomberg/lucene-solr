@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.ltr.CSVFeatureLogger;
 import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRScoringQuery;
@@ -77,8 +78,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
   private String defaultStore;
   private String defaultFormat;
-  private char csvKeyValueDelimiter = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
-  private char csvFeatureSeparator = FeatureLogger.CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
+  private char csvKeyValueDelimiter = CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
+  private char csvFeatureSeparator = CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
 
   private LTRThreadModule threadManager = null;
 
@@ -162,7 +163,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     if (fvCacheName == null) {
       throw new IllegalArgumentException("a fvCacheName must be configured");
     }
-    return new FeatureLogger.CSVFeatureLogger(fvCacheName, f, csvKeyValueDelimiter, csvFeatureSeparator);
+    return new CSVFeatureLogger(fvCacheName, f, csvKeyValueDelimiter, csvFeatureSeparator);
   }
 
   class FeatureTransformer extends DocTransformer {

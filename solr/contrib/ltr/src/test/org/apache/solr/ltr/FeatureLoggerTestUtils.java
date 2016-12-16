@@ -20,8 +20,8 @@ public class FeatureLoggerTestUtils {
 
   public static String toFeatureVector(String ... keysAndValues) {
     return toFeatureVector(
-        FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR,
-        FeatureLogger.CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR,
+        CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR,
+        CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR,
         keysAndValues);
   }
 
