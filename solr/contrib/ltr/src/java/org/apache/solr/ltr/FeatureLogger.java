@@ -25,12 +25,13 @@ import org.apache.solr.search.SolrIndexSearcher;
 public abstract class FeatureLogger {
 
   /** the name of the cache using for storing the feature value **/
-  private static final String QUERY_FV_CACHE_NAME = "QUERY_DOC_FV";
+  private final String fvCacheName;
 
   public enum FeatureFormat {DENSE, SPARSE};
   protected final FeatureFormat featureFormat;
 
-  protected FeatureLogger(FeatureFormat f) {
+  protected FeatureLogger(String fvCacheName, FeatureFormat f) {
+    this.fvCacheName = fvCacheName;
     this.featureFormat = f;
   }
 
@@ -54,7 +55,7 @@ public abstract class FeatureLogger {
       return false;
     }
 
-    return searcher.cacheInsert(QUERY_FV_CACHE_NAME,
+    return searcher.cacheInsert(fvCacheName,
         fvCacheKey(scoringQuery, docid), featureVector) != null;
   }
 
@@ -74,23 +75,26 @@ public abstract class FeatureLogger {
 
   public String getFeatureVector(int docid, LTRScoringQuery scoringQuery,
       SolrIndexSearcher searcher) {
-    return (String) searcher.cacheLookup(QUERY_FV_CACHE_NAME, fvCacheKey(scoringQuery, docid));
+    return (String) searcher.cacheLookup(fvCacheName, fvCacheKey(scoringQuery, docid));
   }
 
+  /**
+   * A feature logger that logs in csv format.
+   */
   public static class CSVFeatureLogger extends FeatureLogger {
     public static final char DEFAULT_KEY_VALUE_SEPARATOR = '=';
     public static final char DEFAULT_FEATURE_SEPARATOR = ',';
     private final char keyValueSep;
     private final char featureSep;
 
-    public CSVFeatureLogger(FeatureFormat f) {
-      super(f);
+    public CSVFeatureLogger(String fvCacheName, FeatureFormat f) {
+      super(fvCacheName, f);
       this.keyValueSep = DEFAULT_KEY_VALUE_SEPARATOR;
       this.featureSep = DEFAULT_FEATURE_SEPARATOR;
     }
 
-    public CSVFeatureLogger(FeatureFormat f, char keyValueSep, char featureSep) {
-      super(f);
+    public CSVFeatureLogger(String fvCacheName, FeatureFormat f, char keyValueSep, char featureSep) {
+      super(fvCacheName, f);
       this.keyValueSep = keyValueSep;
       this.featureSep = featureSep;
     }

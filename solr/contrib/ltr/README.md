@@ -80,7 +80,9 @@ BONUS: Train an actual machine learning model
   In order to get the feature vector you will have to
   specify that you want the field (e.g., fl="*,[features])  -->
 
-  <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory" />
+  <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
+    <str name="fvCacheName">QUERY_DOC_FV</str>
+  </transformer>
 
   <query>
     ...
@@ -376,6 +378,7 @@ About half the time for ranking is spent in the creation of weights for each fea
   
   <!-- Transformer for extracting features -->
   <transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
+     <str name="fvCacheName">QUERY_DOC_FV</str>
      <int name="threadModule.totalPoolThreads">10</int> <!-- Maximum threads to share for all requests -->
      <int name="threadModule.numThreadsPerRequest">5</int> <!-- Maximum threads to use for a single request -->
   </transformer>

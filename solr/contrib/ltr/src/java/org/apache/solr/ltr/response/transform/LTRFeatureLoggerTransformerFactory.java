@@ -73,6 +73,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   private static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
+  private String fvCacheName;
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
   private String defaultStore;
   private String defaultFormat;
@@ -80,6 +81,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private char csvFeatureSeparator = FeatureLogger.CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
 
   private LTRThreadModule threadManager = null;
+
+  public void setFvCacheName(String fvCacheName) {
+    this.fvCacheName = fvCacheName;
+  }
 
   public void setLoggingModelName(String loggingModelName) {
     this.loggingModelName = loggingModelName;
@@ -154,7 +159,10 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       f = FeatureLogger.FeatureFormat.SPARSE;
       log.warn("unknown feature logger feature format {}", featureFormat);
     }
-    return new FeatureLogger.CSVFeatureLogger(f, csvKeyValueDelimiter, csvFeatureSeparator);
+    if (fvCacheName == null) {
+      throw new IllegalArgumentException("a fvCacheName must be configured");
+    }
+    return new FeatureLogger.CSVFeatureLogger(fvCacheName, f, csvKeyValueDelimiter, csvFeatureSeparator);
   }
 
   class FeatureTransformer extends DocTransformer {

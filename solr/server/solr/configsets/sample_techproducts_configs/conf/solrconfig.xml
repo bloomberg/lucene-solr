@@ -1667,6 +1667,8 @@
 
       https://cwiki.apache.org/confluence/display/solr/Result+Reranking
       -->
-    <transformer enable="${solr.ltr.enabled:false}" name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory"/>
+    <transformer enable="${solr.ltr.enabled:false}" name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
+      <str name="fvCacheName">QUERY_DOC_FV</str>
+    </transformer>
 
 </config>
