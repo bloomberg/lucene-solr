@@ -92,17 +92,14 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     assertEquals("3", queryResponse.getResults().get(2).get("id").toString());
     assertEquals("4", queryResponse.getResults().get(3).get("id").toString());
 
-    final char csv_keyvalue_separator = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
-    final char csv_value_delimiter = FeatureLogger.CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
-
-    final String result0_features = "powpularityS"+csv_keyvalue_separator+"64.0"
-        + csv_value_delimiter + "c3"+csv_keyvalue_separator+"2.0";
-    final String result1_features = "powpularityS"+csv_keyvalue_separator+"49.0"
-        + csv_value_delimiter + "c3"+csv_keyvalue_separator+"2.0";
-    final String result2_features = "powpularityS"+csv_keyvalue_separator+"36.0"
-        + csv_value_delimiter + "c3"+csv_keyvalue_separator+"2.0";
-    final String result3_features = "powpularityS"+csv_keyvalue_separator+"25.0"
-        + csv_value_delimiter + "c3"+csv_keyvalue_separator+"2.0";
+    final String result0_features= FeatureLogger.CSVFeatureLogger.toFeatureVector(
+        "powpularityS","64.0", "c3","2.0");
+    final String result1_features= FeatureLogger.CSVFeatureLogger.toFeatureVector(
+        "powpularityS","49.0", "c3","2.0");
+    final String result2_features= FeatureLogger.CSVFeatureLogger.toFeatureVector(
+        "powpularityS","36.0", "c3","2.0");
+    final String result3_features= FeatureLogger.CSVFeatureLogger.toFeatureVector(
+        "powpularityS","25.0", "c3","2.0");
 
     // Test re-rank and feature vectors returned
     query.setFields("*,score,features:[fv]");

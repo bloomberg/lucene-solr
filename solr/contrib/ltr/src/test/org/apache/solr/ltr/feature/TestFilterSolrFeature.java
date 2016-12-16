@@ -97,16 +97,13 @@ public class TestFilterSolrFeature extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=4 model=fqmodel efi.user_query=w2}");
     query.add("fl", "fv:[fv]");
 
-    final char csv_keyvalue_separator = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
-    final char csv_value_delimiter = FeatureLogger.CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
-
-    final String docs0fv_sparse_csv = "'matchedTitle"+csv_keyvalue_separator+"1.0"
-        + csv_value_delimiter + "popularity"+csv_keyvalue_separator+"3.0'";
+    final String docs0fv_sparse_csv= FeatureLogger.CSVFeatureLogger.toFeatureVector(
+        "matchedTitle","1.0", "popularity","3.0");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='2'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=="+docs0fv_sparse_csv);
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fv=='"+docs0fv_sparse_csv+"'");
   }
 
 }

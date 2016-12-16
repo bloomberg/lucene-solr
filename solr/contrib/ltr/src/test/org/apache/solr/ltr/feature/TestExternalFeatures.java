@@ -104,11 +104,8 @@ public class TestExternalFeatures extends TestRerankBase {
     query.setQuery("*:*");
     query.add("rows", "1");
 
-    final char csv_keyvalue_separator = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
-    final char csv_value_delimiter = FeatureLogger.CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
-
-    final String docs0fv_sparse_csv = "'confidence"+csv_keyvalue_separator+"2.3"
-        + csv_value_delimiter + "originalScore"+csv_keyvalue_separator+"1.0'";
+    final String docs0fv_sparse_csv = FeatureLogger.CSVFeatureLogger.toFeatureVector(
+        "confidence","2.3", "originalScore","1.0");
 
     // Features we're extracting depend on external feature info not passed in
     query.add("fl", "[fv]");
@@ -117,13 +114,13 @@ public class TestExternalFeatures extends TestRerankBase {
     // Adding efi in features section should make it work
     query.remove("fl");
     query.add("fl", "score,fvalias:[fv store=fstore2 efi.myconf=2.3]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=="+docs0fv_sparse_csv);
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fv_sparse_csv+"'");
 
     // Adding efi in transformer + rq should still use the transformer's params for feature extraction
     query.remove("fl");
     query.add("fl", "score,fvalias:[fv store=fstore2 efi.myconf=2.3]");
     query.add("rq", "{!ltr reRankDocs=3 model=externalmodel efi.user_query=w3}");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=="+docs0fv_sparse_csv);
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+docs0fv_sparse_csv+"'");
   }
 
   @Test
@@ -132,12 +129,10 @@ public class TestExternalFeatures extends TestRerankBase {
     query.setQuery("*:*");
     query.add("rows", "1");
 
-    final char keyvalue_sep = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
-
     // Efi is explicitly not required, so we do not score the feature
     query.remove("fl");
     query.add("fl", "fvalias:[fv store=fstore2]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='originalScore"+keyvalue_sep+"0.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+FeatureLogger.CSVFeatureLogger.toFeatureVector("originalScore","0.0")+"'");
   }
 
   @Test
@@ -146,12 +141,10 @@ public class TestExternalFeatures extends TestRerankBase {
     query.setQuery("*:*");
     query.add("rows", "1");
 
-    final char keyvalue_sep = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
-
     // Efi is explicitly not required, so we do not score the feature
     query.remove("fl");
     query.add("fl", "fvalias:[fv store=fstore3]");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='originalScore"+keyvalue_sep+"0.0'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/fvalias=='"+FeatureLogger.CSVFeatureLogger.toFeatureVector("originalScore","0.0")+"'");
   }
 
   @Test

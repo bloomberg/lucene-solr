@@ -130,23 +130,20 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     final String doc3Score = ((Double) ((Map<String,Object>) ((ArrayList<Object>) ((Map<String,Object>) jsonParse
         .get("response")).get("docs")).get(3)).get("score")).toString();
 
-    final char keyvalue_sep = FeatureLogger.CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
-    final char value_delim = FeatureLogger.CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
-
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[0]/fv=='origScore" + keyvalue_sep + doc0Score + value_delim + "c2"+keyvalue_sep+"2.0'");
+        "/response/docs/[0]/fv=='" + FeatureLogger.CSVFeatureLogger.toFeatureVector("origScore", doc0Score, "c2", "2.0")+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/id=='8'");
 
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[1]/fv=='origScore" + keyvalue_sep + doc1Score + value_delim + "c2"+keyvalue_sep+"2.0'");
+        "/response/docs/[1]/fv=='" + FeatureLogger.CSVFeatureLogger.toFeatureVector("origScore", doc1Score, "c2", "2.0")+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='6'");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[2]/fv=='origScore" + keyvalue_sep + doc2Score + value_delim + "c2"+keyvalue_sep+"2.0'");
+        "/response/docs/[2]/fv=='" + FeatureLogger.CSVFeatureLogger.toFeatureVector("origScore", doc2Score, "c2", "2.0")+"'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='7'");
     assertJQ("/query" + query.toQueryString(),
-        "/response/docs/[3]/fv=='origScore" + keyvalue_sep + doc3Score + value_delim + "c2"+keyvalue_sep+"2.0'");
+        "/response/docs/[3]/fv=='" + FeatureLogger.CSVFeatureLogger.toFeatureVector("origScore", doc3Score, "c2", "2.0")+"'");
   }
 
 }
