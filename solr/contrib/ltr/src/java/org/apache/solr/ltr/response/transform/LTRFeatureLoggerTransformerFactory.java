@@ -141,7 +141,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
    *
    * @return a feature logger for the format specified.
    */
-  private FeatureLogger<?> createFeatureLogger(String featureFormat) {
+  private FeatureLogger createFeatureLogger(String featureFormat) {
     final FeatureLogger.FeatureFormat f;
     if (featureFormat == null || featureFormat.isEmpty() ||
         featureFormat.equals("sparse")) {
@@ -167,7 +167,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private SolrIndexSearcher searcher;
     private LTRScoringQuery scoringQuery;
     private LTRScoringQuery.ModelWeight modelWeight;
-    private FeatureLogger<?> featureLogger;
+    private FeatureLogger featureLogger;
     private boolean docsWereNotReranked;
 
     /**

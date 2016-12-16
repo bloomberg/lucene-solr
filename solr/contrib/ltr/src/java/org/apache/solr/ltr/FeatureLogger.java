@@ -22,7 +22,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * FeatureLogger can be registered in a model and provide a strategy for logging
  * the feature values.
  */
-public abstract class FeatureLogger<FV_TYPE> {
+public abstract class FeatureLogger {
 
   /** the name of the cache using for storing the feature value **/
   private static final String QUERY_FV_CACHE_NAME = "QUERY_DOC_FV";
@@ -49,7 +49,7 @@ public abstract class FeatureLogger<FV_TYPE> {
 
   public boolean log(int docid, LTRScoringQuery scoringQuery,
       SolrIndexSearcher searcher, LTRScoringQuery.FeatureInfo[] featuresInfo) {
-    final FV_TYPE featureVector = makeFeatureVector(featuresInfo);
+    final String featureVector = makeFeatureVector(featuresInfo);
     if (featureVector == null) {
       return false;
     }
@@ -58,7 +58,7 @@ public abstract class FeatureLogger<FV_TYPE> {
         fvCacheKey(scoringQuery, docid), featureVector) != null;
   }
 
-  public abstract FV_TYPE makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo);
+  public abstract String makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo);
 
   private static int fvCacheKey(LTRScoringQuery scoringQuery, int docid) {
     return  scoringQuery.hashCode() + (31 * docid);
@@ -72,12 +72,12 @@ public abstract class FeatureLogger<FV_TYPE> {
    * @return String representation of the list of features calculated for docid
    */
 
-  public FV_TYPE getFeatureVector(int docid, LTRScoringQuery scoringQuery,
+  public String getFeatureVector(int docid, LTRScoringQuery scoringQuery,
       SolrIndexSearcher searcher) {
-    return (FV_TYPE) searcher.cacheLookup(QUERY_FV_CACHE_NAME, fvCacheKey(scoringQuery, docid));
+    return (String) searcher.cacheLookup(QUERY_FV_CACHE_NAME, fvCacheKey(scoringQuery, docid));
   }
 
-  public static class CSVFeatureLogger extends FeatureLogger<String> {
+  public static class CSVFeatureLogger extends FeatureLogger {
     public static final char DEFAULT_KEY_VALUE_SEPARATOR = '=';
     public static final char DEFAULT_FEATURE_SEPARATOR = ',';
     private final char keyValueSep;
