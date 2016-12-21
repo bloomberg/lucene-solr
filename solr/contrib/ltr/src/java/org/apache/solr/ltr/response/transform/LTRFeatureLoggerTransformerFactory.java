@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
  * will default to the features used by your reranking model.<br>
  * <code>efi.*</code> - External feature information variables required by the features
  * you are extracting.<br>
- * <code>format</code> - The format you want the features to be returned in.  Supports (dense|sparse). Defaults to sparse.<br>
+ * <code>format</code> - The format you want the features to be returned in.  Supports (dense|sparse). Defaults to dense.<br>
 */
 
 public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
@@ -77,7 +77,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private String fvCacheName;
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
   private String defaultStore;
-  private FeatureLogger.FeatureFormat defaultFormat = FeatureLogger.FeatureFormat.SPARSE;
+  private FeatureLogger.FeatureFormat defaultFormat = FeatureLogger.FeatureFormat.DENSE;
   private char csvKeyValueDelimiter = CSVFeatureLogger.DEFAULT_KEY_VALUE_SEPARATOR;
   private char csvFeatureSeparator = CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
 
