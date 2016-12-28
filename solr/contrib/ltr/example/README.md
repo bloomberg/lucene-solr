@@ -20,7 +20,7 @@ Please refer to the Solr Reference Guide's section on [Result Reranking](https:/
 
 4. Search and rerank the results using the trained model
 
-   http://localhost:8983/solr/techproducts/query?indent=on&q=test&wt=json&rq={!ltr%20model=ExampleModel%20reRankDocs=25%20efi.user_query=%27test%27}&fl=price,score,name
+   http://localhost:8983/solr/techproducts/query?indent=on&q=test&wt=json&rq={!ltr%20model=exampleModel%20reRankDocs=25%20efi.user_query=%27test%27}&fl=price,score,name
 
 # Assemble training data
 In order to train a learning to rank model you need training data. Training data is

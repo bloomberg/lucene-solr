@@ -7,16 +7,16 @@
     }
 },
 {
+    "name":"originalScore",
+    "class":"org.apache.solr.ltr.feature.OriginalScoreFeature",
+    "params":{}
+},
+{
     "name":  "price",
     "class": "org.apache.solr.ltr.feature.FieldValueFeature",
     "params": {
         "field": "price"
     }
-},
-{
-    "name":"originalScore",
-    "class":"org.apache.solr.ltr.feature.OriginalScoreFeature",
-    "params":{}
 },
 {
     "name" : "productNameMatchQuery",
