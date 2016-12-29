@@ -38,10 +38,6 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity","4"));
     assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity","5"));
     assertU(commit());
-
-    loadFeatures("multipleadditivetreesmodel_features.json"); // currently needed to force
-    // scoring on all docs
-    loadModels("multipleadditivetreesmodel.json");
   }
 
   @AfterClass
@@ -52,6 +48,9 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
 
   @Test
   public void testMultipleAdditiveTreesScoringWithAndWithoutEfiFeatureMatches() throws Exception {
+    loadFeatures("multipleadditivetreesmodel_features.json");
+    loadModels("multipleadditivetreesmodel.json");
+
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.add("rows", "3");
@@ -75,7 +74,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=3 model=multipleadditivetreesmodel efi.user_query=w3}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==-20.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
   }
@@ -123,7 +122,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
         new ModelException("no trees declared for model multipleadditivetreesmodel_no_params");
     try {
         createModelFromFiles("multipleadditivetreesmodel_no_params.json",
-              "multipleadditivetreesmodel_features.json");
+              "multipleadditivetreesmodel_features.json", null);
         fail("multipleAdditiveTreesTestNoParams failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
@@ -138,7 +137,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
         new ModelException("no trees declared for model multipleadditivetreesmodel_no_trees");
     try {
         createModelFromFiles("multipleadditivetreesmodel_no_trees.json",
-            "multipleadditivetreesmodel_features.json");
+            "multipleadditivetreesmodel_features.json", null);
         fail("multipleAdditiveTreesTestEmptyParams failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
@@ -152,7 +151,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
         new ModelException("MultipleAdditiveTreesModel tree doesn't contain a weight");
     try {
         createModelFromFiles("multipleadditivetreesmodel_no_weight.json",
-            "multipleadditivetreesmodel_features.json");
+            "multipleadditivetreesmodel_features.json", null);
         fail("multipleAdditiveTreesTestNoWeight failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
@@ -166,7 +165,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
         new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
     try {
         createModelFromFiles("multipleadditivetreesmodel_no_tree.json",
-            "multipleadditivetreesmodel_features.json");
+            "multipleadditivetreesmodel_features.json", null);
         fail("multipleAdditiveTreesTestTreesParamDoesNotContatinTree failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
@@ -180,7 +179,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
         new ModelException("no features declared for model multipleadditivetreesmodel_no_features");
     try {
         createModelFromFiles("multipleadditivetreesmodel_no_features.json",
-            "multipleadditivetreesmodel_features.json");
+            "multipleadditivetreesmodel_features.json", null);
         fail("multipleAdditiveTreesTestNoFeaturesSpecified failed to throw exception: "+expectedException);
     } catch (ModelException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());
@@ -193,7 +192,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
         new ModelException("MultipleAdditiveTreesModel tree node is missing right");
     try {
         createModelFromFiles("multipleadditivetreesmodel_no_right.json",
-            "multipleadditivetreesmodel_features.json");
+            "multipleadditivetreesmodel_features.json", null);
         fail("multipleAdditiveTreesTestNoRight failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
@@ -207,7 +206,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
         new ModelException("MultipleAdditiveTreesModel tree node is missing left");
     try {
         createModelFromFiles("multipleadditivetreesmodel_no_left.json",
-            "multipleadditivetreesmodel_features.json");
+            "multipleadditivetreesmodel_features.json", null);
         fail("multipleAdditiveTreesTestNoLeft failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
@@ -221,7 +220,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
         new ModelException("MultipleAdditiveTreesModel tree node is missing threshold");
     try {
         createModelFromFiles("multipleadditivetreesmodel_no_threshold.json",
-            "multipleadditivetreesmodel_features.json");
+            "multipleadditivetreesmodel_features.json", null);
         fail("multipleAdditiveTreesTestNoThreshold failed to throw exception: "+expectedException);
     } catch (Exception actualException) {
       Throwable rootError = getRootCause(actualException);
@@ -235,7 +234,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
         new ModelException("MultipleAdditiveTreesModel tree node is leaf with left=-100.0 and right=75.0");
     try {
         createModelFromFiles("multipleadditivetreesmodel_no_feature.json",
-              "multipleadditivetreesmodel_features.json");
+              "multipleadditivetreesmodel_features.json", null);
         fail("multipleAdditiveTreesTestMissingTreeFeature failed to throw exception: "+expectedException);
     } catch (ModelException actualException) {
       assertEquals(expectedException.toString(), actualException.toString());

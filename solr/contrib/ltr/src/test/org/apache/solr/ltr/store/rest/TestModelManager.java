@@ -37,13 +37,6 @@ public class TestModelManager extends TestRerankBase {
     setuptest(true);
   }
 
-  @Before
-  public void restart() throws Exception {
-    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/*");
-    restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/*");
-
-  }
-
   @Test
   public void test() throws Exception {
     final SolrResourceLoader loader = new SolrResourceLoader(
@@ -136,17 +129,29 @@ public class TestModelManager extends TestRerankBase {
     assert (qryResult.contains("\"name\":\"testmodel3\"")
         && qryResult.contains("\"name\":\"testmodel4\"") && qryResult
           .contains("\"name\":\"testmodel5\""));
-    /*
-     * assertJQ(LTRParams.MSTORE_END_POINT, "/models/[0]/name=='testmodel3'");
-     * assertJQ(LTRParams.MSTORE_END_POINT, "/models/[1]/name=='testmodel4'");
-     * assertJQ(LTRParams.MSTORE_END_POINT, "/models/[2]/name=='testmodel5'");
-     */
+
+    assertJQ(ManagedModelStore.REST_END_POINT + "/_DEFAULT_",
+        "/models/[0]/name=='testmodel3'");
+    assertJQ(ManagedModelStore.REST_END_POINT + "/_DEFAULT_",
+        "/models/[1]/name=='testmodel4'");
+    assertJQ(ManagedModelStore.REST_END_POINT + "/_DEFAULT_",
+        "/models/[2]/name=='testmodel5'");
+    restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/testmodel3");
+    restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/testmodel4");
+    restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/testmodel5");
+    assertJQ(ManagedModelStore.REST_END_POINT + "/_DEFAULT_",
+        "/models==[]'");
+
     assertJQ(ManagedFeatureStore.REST_END_POINT,
         "/featureStores==['TEST','_DEFAULT_']");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/_DEFAULT_",
         "/features/[0]/name=='test1'");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/TEST",
         "/features/[0]/name=='test33'");
+    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/_DEFAULT_");
+    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/TEST");
+    assertJQ(ManagedFeatureStore.REST_END_POINT,
+        "/featureStores==[]");
   }
 
   @Test
@@ -154,10 +159,16 @@ public class TestModelManager extends TestRerankBase {
     loadFeatures("features-linear.json");
     loadModels("linear-model.json");
 
+    final String modelName = "6029760550880411648";
     assertJQ(ManagedModelStore.REST_END_POINT,
-        "/models/[0]/name=='6029760550880411648'");
+        "/models/[0]/name=='"+modelName+"'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT + "/_DEFAULT_",
+        "/features/[0]/name=='title'");
     assertJQ(ManagedFeatureStore.REST_END_POINT + "/_DEFAULT_",
         "/features/[1]/name=='description'");
+
+    restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/"+modelName);
+    restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/_DEFAULT_");
   }
 
 }

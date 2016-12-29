@@ -312,7 +312,7 @@ public class TestRerankBase extends RestTestBase {
   }
 
   public static LTRScoringModel createModelFromFiles(String modelFileName,
-      String featureFileName) throws ModelException, Exception {
+      String featureFileName, String featureStoreName) throws ModelException, Exception {
     URL url = TestRerankBase.class.getResource("/modelExamples/"
         + modelFileName);
     final String modelJson = FileUtils.readFileToString(new File(url.toURI()),
@@ -333,7 +333,7 @@ public class TestRerankBase extends RestTestBase {
 
     final ManagedFeatureStore fs = getManagedFeatureStore();
     // fs.getFeatureStore(null).clear();
-    fs.doDeleteChild(null, "*"); // is this safe??
+    fs.doDeleteChild(null, (featureStoreName == null ? "_DEFAULT_" : featureStoreName)); // is this safe??
     // based on my need to call this I dont think that
     // "getNewManagedFeatureStore()"
     // is actually returning a new feature store each time
