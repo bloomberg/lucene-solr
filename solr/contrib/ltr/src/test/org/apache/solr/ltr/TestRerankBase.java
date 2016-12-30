@@ -43,6 +43,7 @@ import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.model.ModelException;
+import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -309,6 +310,12 @@ public class TestRerankBase extends RestTestBase {
 
     assertJPut(ManagedModelStore.REST_END_POINT, multipleModels,
         "/responseHeader/status==0");
+  }
+
+  public static LTRScoringModel createModelFromFiles(String modelFileName,
+      String featureFileName) throws ModelException, Exception {
+    return createModelFromFiles(modelFileName, featureFileName,
+        FeatureStore.DEFAULT_FEATURE_STORE_NAME);
   }
 
   public static LTRScoringModel createModelFromFiles(String modelFileName,

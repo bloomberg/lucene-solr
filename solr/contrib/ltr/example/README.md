@@ -2,11 +2,19 @@ This README file is only about this example directory's content.
 
 Please refer to the Solr Reference Guide's section on [Result Reranking](https://cwiki.apache.org/confluence/display/solr/Result+Reranking) section for broader information on Learning to Rank (LTR) with Apache Solr.
 
+# Start Solr with the LTR plugin enabled
+
+   `./bin/solr -e techproducts -Dsolr.ltr.enabled=true`
+
 # Train an example machine learning model using LIBLINEAR
 
 1. Download and install [liblinear](https://www.csie.ntu.edu.tw/~cjlin/liblinear/)
 
 2. Change `contrib/ltr/example/config.json` "trainingLibraryLocation" to point to the train directory where you installed liblinear.
+
+   Alternatively, leave the `config.json` file unchanged and create a soft-link to your liblinear directory e.g.
+
+  `ln -s /Users/YourNameHere/Downloads/liblinear-2.1 ./contrib/ltr/example/liblinear`
 
 3. Extract features, train a reranking model, and deploy it to Solr.
 
@@ -28,15 +36,15 @@ what "teaches" the model what the appropriate weight for each feature is. In gen
 training data is a collection of queries with associated documents and what their ranking/score
 should be. As an example:
 ```
-secretary of state|John Kerry|0.66|CROWDSOURCE
-secretary of state|Cesar A. Perales|0.33|CROWDSOURCE
-secretary of state|New York State|0.0|CROWDSOURCE
-secretary of state|Colorado State University Secretary|0.0|CROWDSOURCE
+hard drive|SP2514N|0.6666666|CLICK_LOGS
+hard drive|6H500F0|0.330082034|CLICK_LOGS
+hard drive|F8V7067-APL-KIT|0.0|CLICK_LOGS
+hard drive|IW-02|0.0|CLICK_LOGS
 
-microsoft ceo|Satya Nadella|1.0|CLICK_LOG
-microsoft ceo|Microsoft|0.0|CLICK_LOG
-microsoft ceo|State|0.0|CLICK_LOG
-microsoft ceo|Secretary|0.0|CLICK_LOG
+ipod|MA147LL/A|1.0|EXPLICIT
+ipod|F8V7067-APL-KIT|0.25|EXPLICIT
+ipod|IW-02|0.25|EXPLICIT
+ipod|6H500F0|0.0|EXPLICIT
 ```
 In this example the first column indicates the query, the second column indicates a unique id for that doc,
 the third column indicates the relative importance or relevance of that doc, and the fourth column indicates the source.
