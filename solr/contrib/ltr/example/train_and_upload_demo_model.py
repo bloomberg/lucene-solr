@@ -38,7 +38,7 @@ def generateHttpRequest(config,searchText,docId):
 
 def generateTrainingData(solrQueries, host, port):
     '''Given a list of solr queries, yields a tuple of query , docId , score , source , feature vector for each query.
-    Feature Vector is a csv list of strings of form "key=value"'''
+    Feature Vector is a list of strings of form "key=value"'''
     conn = httplib.HTTPConnection(host, port)
     headers = {"Connection":" keep-alive"}
 

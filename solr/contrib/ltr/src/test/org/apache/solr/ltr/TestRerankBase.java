@@ -340,7 +340,7 @@ public class TestRerankBase extends RestTestBase {
 
     final ManagedFeatureStore fs = getManagedFeatureStore();
     // fs.getFeatureStore(null).clear();
-    fs.doDeleteChild(null, (featureStoreName == null ? "_DEFAULT_" : featureStoreName)); // is this safe??
+    fs.doDeleteChild(null, featureStoreName); // is this safe??
     // based on my need to call this I dont think that
     // "getNewManagedFeatureStore()"
     // is actually returning a new feature store each time
