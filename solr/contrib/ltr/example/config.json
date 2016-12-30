@@ -10,8 +10,8 @@
   "trainedModelFile":         "exampleTrainedModel.txt",
   "trainingLibraryLocation":  "liblinear/train",
   "trainingLibraryOptions":   "-q",
-  "featuresFile":             "exampleFeatures.json",
-  "featureStoreName":         "exampleFeatureStore",
+  "solrFeaturesFile":         "exampleFeatures.json",
+  "solrFeatureStoreName":     "exampleFeatureStore",
   "solrModelFile":            "exampleModel.json",
   "solrModelName":            "exampleModel"
 }

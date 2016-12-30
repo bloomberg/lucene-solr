@@ -10,14 +10,14 @@ from optparse import OptionParser
 
 solrQueryUrl = ""
 
-def generateQueries(userQueriesFile, config):
+def generateQueries(userQueriesFile, solrUrlComposer):
         with open(userQueriesFile) as input:
             solrQueryUrls = [] #A list of tuples with solrQueryUrl,solrQuery,docId,scoreForPQ,source
 
             for line in input:
                 line = line.strip();
                 searchText,docId,score,source = line.split("|");
-                solrQuery = generateHttpRequest(config,searchText,docId)
+                solrQuery = solrUrlComposer(searchText,docId,score,source)
                 solrQueryUrls.append((solrQuery,searchText,docId,score,source))
 
         return solrQueryUrls;
@@ -25,7 +25,7 @@ def generateQueries(userQueriesFile, config):
 def generateHttpRequest(config,searchText,docId):
     global solrQueryUrl
     if len(solrQueryUrl) < 1:
-        solrQueryUrl = "/solr/%(collection)s/%(requestHandler)s?fl=id,score,[features store=%(featureStoreName)s %(efiParams)s]&q=" % config
+        solrQueryUrl = "/solr/%(collection)s/%(requestHandler)s?fl=id,score,[features store=%(solrFeatureStoreName)s %(efiParams)s]&q=" % config
         solrQueryUrl = solrQueryUrl.replace(" ","+")
         solrQueryUrl += urllib.quote_plus("id:")
 
@@ -125,11 +125,14 @@ def main(argv=None):
     with open(options.configFile) as configFile:
         config = json.load(configFile)
 
-        print "Uploading features ("+config["featuresFile"]+") to Solr"
-        setupSolr(config["collection"], config["host"], config["port"], config["featuresFile"], config["featureStoreName"])
+        def composeSolrUrl(searchText,docId,score,source):
+            return generateHttpRequest(config,searchText,docId)
+
+        print "Uploading features ("+config["solrFeaturesFile"]+") to Solr"
+        setupSolr(config["collection"], config["host"], config["port"], config["solrFeaturesFile"], config["solrFeatureStoreName"])
 
         print "Converting user queries ("+config["userQueriesFile"]+") into Solr queries for feature extraction"
-        reRankQueries = generateQueries(config["userQueriesFile"], config)
+        reRankQueries = generateQueries(config["userQueriesFile"], composeSolrUrl)
 
         print "Running Solr queries to extract features"
         fvGenerator = generateTrainingData(reRankQueries, config["host"], config["port"])
@@ -140,7 +143,7 @@ def main(argv=None):
         libsvm_formatter.trainLibSvm(config["trainingLibraryLocation"],config["trainingLibraryOptions"],config["trainingFile"],config["trainedModelFile"])
 
         print "Converting trained model ("+config["trainedModelFile"]+") to solr model ("+config["solrModelFile"]+")"
-        formatter.convertLibSvmModelToLtrModel(config["trainedModelFile"], config["solrModelFile"], config["solrModelName"], config["featureStoreName"])
+        formatter.convertLibSvmModelToLtrModel(config["trainedModelFile"], config["solrModelFile"], config["solrModelName"], config["solrFeatureStoreName"])
 
         print "Uploading model ("+config["solrModelFile"]+") to Solr"
         uploadModel(config["collection"], config["host"], config["port"], config["solrModelFile"], config["solrModelName"])

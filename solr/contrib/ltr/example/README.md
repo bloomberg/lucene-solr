@@ -12,7 +12,7 @@ Please refer to the Solr Reference Guide's section on [Result Reranking](https:/
 
 2. Change `contrib/ltr/example/config.json` "trainingLibraryLocation" to point to the train directory where you installed liblinear.
 
-   Alternatively, leave the `config.json` file unchanged and create a soft-link to your liblinear directory e.g.
+   Alternatively, leave the `config.json` file unchanged and create a soft-link to your `liblinear` directory e.g.
 
   `ln -s /Users/YourNameHere/Downloads/liblinear-2.1 ./contrib/ltr/example/liblinear`
 
@@ -22,7 +22,7 @@ Please refer to the Solr Reference Guide's section on [Result Reranking](https:/
 
   `python train_and_upload_demo_model.py -c config.json`
 
-   This script deploys your features from `config.json` "featuresFile" to Solr.  Then it takes the relevance judged query
+   This script deploys your features from `config.json` "solrFeaturesFile" to Solr.  Then it takes the relevance judged query
    document pairs of "userQueriesFile" and merges it with the features extracted from Solr into a training
    file.  That file is used to train a linear model, which is then deployed to Solr for you to rerank results.
 
