@@ -10,22 +10,24 @@ from optparse import OptionParser
 
 solrQueryUrl = ""
 
-def generateQueries(userQueriesFile, solrUrlComposer):
+def generateQueries(userQueriesFile,collection,requestHandler,solrFeatureStoreName,efiParams):
         with open(userQueriesFile) as input:
             solrQueryUrls = [] #A list of tuples with solrQueryUrl,solrQuery,docId,scoreForPQ,source
 
             for line in input:
                 line = line.strip();
                 searchText,docId,score,source = line.split("|");
-                solrQuery = solrUrlComposer(searchText,docId,score,source)
+                solrQuery = generateHttpRequest(collection,requestHandler,solrFeatureStoreName,efiParams,searchText,docId)
                 solrQueryUrls.append((solrQuery,searchText,docId,score,source))
 
         return solrQueryUrls;
 
-def generateHttpRequest(config,searchText,docId):
+def generateHttpRequest(collection,requestHandler,solrFeatureStoreName,efiParams,searchText,docId):
     global solrQueryUrl
     if len(solrQueryUrl) < 1:
-        solrQueryUrl = "/solr/%(collection)s/%(requestHandler)s?fl=id,score,[features store=%(solrFeatureStoreName)s %(efiParams)s]&q=" % config
+        solrQueryUrl = "/".join([ "", "solr", collection, requestHandler ])
+        solrQueryUrl += ("?fl=" + ",".join([ "id", "score", "[features store="+solrFeatureStoreName+" "+efiParams+"]" ]))
+        solrQueryUrl += "&q="
         solrQueryUrl = solrQueryUrl.replace(" ","+")
         solrQueryUrl += urllib.quote_plus("id:")
 
@@ -125,14 +127,11 @@ def main(argv=None):
     with open(options.configFile) as configFile:
         config = json.load(configFile)
 
-        def composeSolrUrl(searchText,docId,score,source):
-            return generateHttpRequest(config,searchText,docId)
-
         print "Uploading features ("+config["solrFeaturesFile"]+") to Solr"
         setupSolr(config["collection"], config["host"], config["port"], config["solrFeaturesFile"], config["solrFeatureStoreName"])
 
         print "Converting user queries ("+config["userQueriesFile"]+") into Solr queries for feature extraction"
-        reRankQueries = generateQueries(config["userQueriesFile"], composeSolrUrl)
+        reRankQueries = generateQueries(config["userQueriesFile"], config["collection"], config["requestHandler"], config["solrFeatureStoreName"], config["efiParams"])
 
         print "Running Solr queries to extract features"
         fvGenerator = generateTrainingData(reRankQueries, config["host"], config["port"])
