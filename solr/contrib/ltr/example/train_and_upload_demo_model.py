@@ -10,7 +10,7 @@ from optparse import OptionParser
 
 solrQueryUrl = ""
 
-def generateQueries(userQueriesFile,collection,requestHandler,solrFeatureStoreName,efiParams):
+def generateQueries(userQueriesFile, collection, requestHandler, solrFeatureStoreName, efiParams):
         with open(userQueriesFile) as input:
             solrQueryUrls = [] #A list of tuples with solrQueryUrl,solrQuery,docId,scoreForPQ,source
 
@@ -22,7 +22,7 @@ def generateQueries(userQueriesFile,collection,requestHandler,solrFeatureStoreNa
 
         return solrQueryUrls;
 
-def generateHttpRequest(collection,requestHandler,solrFeatureStoreName,efiParams,searchText,docId):
+def generateHttpRequest(collection, requestHandler, solrFeatureStoreName, efiParams, searchText, docId):
     global solrQueryUrl
     if len(solrQueryUrl) < 1:
         solrQueryUrl = "/".join([ "", "solr", collection, requestHandler ])
