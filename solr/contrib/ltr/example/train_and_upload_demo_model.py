@@ -10,6 +10,42 @@ from optparse import OptionParser
 
 solrQueryUrl = ""
 
+
+def setupSolr(collection, host, port, featuresFile, featureStoreName):
+    '''Sets up solr with the proper features for the test'''
+
+    conn = httplib.HTTPConnection(host, port)
+
+    baseUrl = "/solr/" + collection
+    featureUrl = baseUrl + "/schema/feature-store"
+
+    conn.request("DELETE", featureUrl+"/"+featureStoreName)
+    r = conn.getresponse()
+    msg = r.read()
+    if (r.status != httplib.OK and
+        r.status != httplib.CREATED and
+        r.status != httplib.ACCEPTED and
+        r.status != httplib.NOT_FOUND):
+        raise Exception("Status: {0} {1}\nResponse: {2}".format(r.status, r.reason, msg))
+
+
+    # Add features
+    headers = {'Content-type': 'application/json'}
+    featuresBody = open(featuresFile)
+
+    conn.request("POST", featureUrl, featuresBody, headers)
+    r = conn.getresponse()
+    msg = r.read()
+    if (r.status != httplib.OK and
+        r.status != httplib.ACCEPTED):
+        print r.status
+        print ""
+        print r.reason;
+        raise Exception("Status: {0} {1}\nResponse: {2}".format(r.status, r.reason, msg))
+
+    conn.close()
+
+
 def generateQueries(userQueriesFile, collection, requestHandler, solrFeatureStoreName, efiParams):
         with open(userQueriesFile) as input:
             solrQueryUrls = [] #A list of tuples with solrQueryUrl,solrQuery,docId,scoreForPQ,source
@@ -21,6 +57,7 @@ def generateQueries(userQueriesFile, collection, requestHandler, solrFeatureStor
                 solrQueryUrls.append((solrQuery,searchText,docId,score,source))
 
         return solrQueryUrls;
+
 
 def generateHttpRequest(collection, requestHandler, solrFeatureStoreName, efiParams, searchText, docId):
     global solrQueryUrl
@@ -37,6 +74,7 @@ def generateHttpRequest(collection, requestHandler, solrFeatureStoreName, efiPar
     solrQuery = solrQuery.replace("%24USERQUERY", userQuery).replace('$USERQUERY', urllib.quote_plus("\\'" + userQuery + "\\'"))
 
     return solrQuery
+
 
 def generateTrainingData(solrQueries, host, port):
     '''Given a list of solr queries, yields a tuple of query , docId , score , source , feature vector for each query.
@@ -75,39 +113,29 @@ def generateTrainingData(solrQueries, host, port):
 
     conn.close()
 
-def setupSolr(collection, host, port, featuresFile, featureStoreName):
-    '''Sets up solr with the proper features for the test'''
 
-    conn = httplib.HTTPConnection(host, port)
-
-    baseUrl = "/solr/" + collection
-    featureUrl = baseUrl + "/schema/feature-store"
-
-    conn.request("DELETE", featureUrl+"/"+featureStoreName)
-    r = conn.getresponse()
-    msg = r.read()
-    if (r.status != httplib.OK and
-        r.status != httplib.CREATED and
-        r.status != httplib.ACCEPTED and
-        r.status != httplib.NOT_FOUND):
-        raise Exception("Status: {0} {1}\nResponse: {2}".format(r.status, r.reason, msg))
-
-
-    # Add features
+def uploadModel(collection, host, port, modelFile, modelName):
+    modelUrl = "/solr/" + collection + "/schema/model-store"
     headers = {'Content-type': 'application/json'}
-    featuresBody = open(featuresFile)
+    with open(modelFile) as modelBody:
+        conn = httplib.HTTPConnection(host, port)
 
-    conn.request("POST", featureUrl, featuresBody, headers)
-    r = conn.getresponse()
-    msg = r.read()
-    if (r.status != httplib.OK and
-        r.status != httplib.ACCEPTED):
-        print r.status
-        print ""
-        print r.reason;
-        raise Exception("Status: {0} {1}\nResponse: {2}".format(r.status, r.reason, msg))
+        conn.request("DELETE", modelUrl+"/"+modelName)
+        r = conn.getresponse()
+        msg = r.read()
+        if (r.status != httplib.OK and
+            r.status != httplib.CREATED and
+            r.status != httplib.ACCEPTED and
+            r.status != httplib.NOT_FOUND):
+            raise Exception("Status: {0} {1}\nResponse: {2}".format(r.status, r.reason, msg))
 
-    conn.close()
+        conn.request("POST", modelUrl, modelBody, headers)
+        r = conn.getresponse()
+        msg = r.read()
+        if (r.status != httplib.OK and
+            r.status != httplib.CREATED and
+            r.status != httplib.ACCEPTED):
+                raise Exception("Status: {0} {1}\nResponse: {2}".format(r.status, r.reason, msg))
 
 
 def main(argv=None):
@@ -147,28 +175,6 @@ def main(argv=None):
         print "Uploading model ("+config["solrModelFile"]+") to Solr"
         uploadModel(config["collection"], config["host"], config["port"], config["solrModelFile"], config["solrModelName"])
 
-def uploadModel(collection, host, port, modelFile, modelName):
-    modelUrl = "/solr/" + collection + "/schema/model-store"
-    headers = {'Content-type': 'application/json'}
-    with open(modelFile) as modelBody:
-        conn = httplib.HTTPConnection(host, port)
-
-        conn.request("DELETE", modelUrl+"/"+modelName)
-        r = conn.getresponse()
-        msg = r.read()
-        if (r.status != httplib.OK and
-            r.status != httplib.CREATED and
-            r.status != httplib.ACCEPTED and
-            r.status != httplib.NOT_FOUND):
-            raise Exception("Status: {0} {1}\nResponse: {2}".format(r.status, r.reason, msg))
-
-        conn.request("POST", modelUrl, modelBody, headers)
-        r = conn.getresponse()
-        msg = r.read()
-        if (r.status != httplib.OK and
-            r.status != httplib.CREATED and
-            r.status != httplib.ACCEPTED):
-                raise Exception("Status: {0} {1}\nResponse: {2}".format(r.status, r.reason, msg))
 
 if __name__ == '__main__':
     sys.exit(main())
