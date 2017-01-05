@@ -50,13 +50,13 @@ ipod|6H500F0|0.0|HUMAN_JUDGEMENT
 ```
 The columns in the example represent:
 
-    1. the user query;
+  1. the user query;
 
-    2. a unique id for a document in the response;
+  2. a unique id for a document in the response;
 
-    3. the a score representing the relevance of that document (not necessarily between zero and one);
+  3. the a score representing the relevance of that document (not necessarily between zero and one);
 
-    4. the source, i.e., if the training record was produced by using interaction data (`CLICK_LOGS`) or by human judgements (`HUMAN_JUDGEMENT`).
+  4. the source, i.e., if the training record was produced by using interaction data (`CLICK_LOGS`) or by human judgements (`HUMAN_JUDGEMENT`).
 
 ## How to produce training data
 
