@@ -38,15 +38,15 @@ what *teaches* the model what the appropriate weight for each feature is. In gen
 training data is a collection of queries with associated documents and what their ranking/score
 should be. As an example:
 ```
-hard drive|SP2514N|0.6666666|CLICK_LOGS
-hard drive|6H500F0|0.330082034|CLICK_LOGS
+hard drive|SP2514N        |0.6|CLICK_LOGS
+hard drive|6H500F0        |0.3|CLICK_LOGS
 hard drive|F8V7067-APL-KIT|0.0|CLICK_LOGS
-hard drive|IW-02|0.0|CLICK_LOGS
+hard drive|IW-02          |0.0|CLICK_LOGS
 
-ipod|MA147LL/A|1.0|HUMAN_JUDGEMENT
-ipod|F8V7067-APL-KIT|0.5|HUMAN_JUDGEMENT
-ipod|IW-02|0.5|HUMAN_JUDGEMENT
-ipod|6H500F0|0.0|HUMAN_JUDGEMENT
+ipod      |MA147LL/A      |1.0|HUMAN_JUDGEMENT
+ipod      |F8V7067-APL-KIT|0.5|HUMAN_JUDGEMENT
+ipod      |IW-02          |0.5|HUMAN_JUDGEMENT
+ipod      |6H500F0        |0.0|HUMAN_JUDGEMENT
 ```
 The columns in the example represent:
 
