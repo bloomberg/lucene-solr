@@ -72,9 +72,9 @@ the scope of this readme to provide a complete review of all the techniques.
 In the following we illustrate a simple way for obtaining training
 data from simple interaction data.
 
-Simple interaction data will be a Solr log providing:
+Simple interaction data will be a Solr log file, with two different types for record:
 
-  * When a user performs a query we have a record with `user-id, query, responses`,
+  * **query**: when a user performs a query we have a record with `user-id, query, responses`,
   where `responses` is a list of unique document ids returned for a query.
 
 **Example:**
@@ -83,7 +83,7 @@ Simple interaction data will be a Solr log providing:
 query: diego, ipod, [SP2514N,6H500F0,F8V7067-APL-KIT,IW-02]
 ```
 
-  * When a user performs a click we have a record with `user-id, document-id, click`
+  * **click**: when a user performs a click we have a record with `user-id, document-id, click`
 
 **Example:**
 ```
