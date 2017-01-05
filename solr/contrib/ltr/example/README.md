@@ -69,7 +69,7 @@ You might collect data for use with your machine learning algorithm relying on:
 
 There are many ways of preparing interaction data for training a model, and it is outside
 the scope of this readme to provide a complete review of all the techniques.
-In the following are illustrated some simple techniques for obtaining training
+In the following we illustrate a simple way for obtaining training
 data from simple interaction data.
 
 Simple interaction data will be a Solr log providing:
