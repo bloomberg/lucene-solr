@@ -123,3 +123,9 @@ dataset produced can be better than the one produced from interaction data.
 It is worth to note that human judgements can be produced also relying on a
 crowdsourcing platform, that allows a user to show human workers documents associated with a
 query and to get back relevance labels.
+Usually the judge visualizes a query together with a list of results and her task
+consists in assigning a relevance label to each document (e.g., Perfect, Excellent, Good, Fair, Not relevant).
+Training data can then be obtained by translating the labels into numeric scores
+(e.g., Perfect = 4, Excellect = 3, Good = 2, Fair = 1, Not relevant = 0).
+
+
