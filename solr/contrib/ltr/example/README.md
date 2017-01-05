@@ -28,11 +28,13 @@ Please refer to the Solr Reference Guide's section on [Result Reranking](https:/
 
 4. Search and rerank the results using the trained model
 
-   http://localhost:8983/solr/techproducts/query?indent=on&q=test&wt=json&rq={!ltr%20model=exampleModel%20reRankDocs=25%20efi.user_query=%27test%27}&fl=price,score,name
+```
+http://localhost:8983/solr/techproducts/query?indent=on&q=test&wt=json&rq={!ltr%20model=exampleModel%20reRankDocs=25%20efi.user_query=%27test%27}&fl=price,score,name
+```
 
 # Assemble training data
 In order to train a learning to rank model you need training data. Training data is
-what "/teaches/" the model what the appropriate weight for each feature is. In general
+what *teaches* the model what the appropriate weight for each feature is. In general
 training data is a collection of queries with associated documents and what their ranking/score
 should be. As an example:
 ```
@@ -47,14 +49,18 @@ ipod|IW-02|0.5|HUMAN_JUDGEMENT
 ipod|6H500F0|0.0|HUMAN_JUDGEMENT
 ```
 The columns in the example represent:
+
     1. the user query;
+
     2. a unique id for a document in the response;
+
     3. the a score representing the relevance of that document (not necessarily between zero and one);
+
     4. the source, i.e., if the training record was produced by using interaction data (`CLICK_LOGS`) or by human judgements (`HUMAN_JUDGEMENT`).
 
 ## How to produce training data
 
-There are 2 primary ways you might collect data for use with your machine learning algorithm:
+You might collect data for use with your machine learning algorithm relying on:
 
   * **Users Interactions**: given a specific query, it is possible to log all the users interactions (e.g., clicks, shares on social networks, send by email etc), and then use them as proxies for relevance;
   * **Human Judgments**: A training dataset is produced by explitely asking some judges to evaluate the relavance of a document given the query.
