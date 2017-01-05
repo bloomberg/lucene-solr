@@ -78,17 +78,17 @@ between Solr and the users. The service will log two different types of record:
 **Example:**
 
 ```
-diego, ipod, [SP2514N,6H500F0,F8V7067-APL-KIT,IW-02]
+diego, hard drive, [SP2514N,6H500F0,F8V7067-APL-KIT,IW-02]
 ```
 
   * **click**: when a user performs a click we have a record with `user-id, query, document-id, click`
 
 **Example:**
 ```
-christine, ipod, SP2154N
-diego    , ipod, SP2154N
-michael  , ipod, SP2154N
-joshua   , ipod, IW-02
+christine, hard drive, SP2154N
+diego    , hard drive, SP2154N
+michael  , hard drive, SP2154N
+joshua   , hard drive, IW-02
 ```
 
 Given a log composed by records like these, a simple way to produce a training dataset is to group on the query field
