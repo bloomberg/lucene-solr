@@ -118,7 +118,7 @@ by Chuklin, Markov and Rijke.
 
 ### Prepare training data from human judgements
 
-Another way to get training data is asking human judgements to label them.
+Another way to get training data is asking human judges to label them.
 Producing human judgements is in general more expensive, but the quality of the
 dataset produced can be better than the one produced from interaction data.
 It is worth to note that human judgements can be produced also relying on a
