@@ -115,6 +115,11 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
     return getQuery(parseXML(xmlStream).getDocumentElement());
   }
 
+  // for test use
+  SpanQuery parseAsSpanQuery(InputStream xmlStream) throws ParserException {
+    return getSpanQuery(parseXML(xmlStream).getDocumentElement());
+  }
+
   public void addQueryBuilder(String nodeName, QueryBuilder builder) {
     queryFactory.addBuilder(nodeName, builder);
   }
