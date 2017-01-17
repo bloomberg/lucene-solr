@@ -38,7 +38,6 @@ public class HandyQueryBuilder extends SolrQueryBuilder {
     super(defaultField, analyzer, req, queryFactory, spanFactory);
   }
 
-  @Override
   public Query getQuery(Element e) throws ParserException {
     final BooleanQuery.Builder bq = new BooleanQuery.Builder();
     final Query lhsQ = getSubQuery(e, "Left");
