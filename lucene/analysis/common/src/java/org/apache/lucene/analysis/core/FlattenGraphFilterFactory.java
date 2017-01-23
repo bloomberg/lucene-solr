@@ -14,4 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-PR.registerLangHandler(PR.sourceDecorator({keywords:"bytes,default,double,enum,extend,extensions,false,group,import,max,message,option,optional,package,repeated,required,returns,rpc,service,syntax,to,true",types:/^(bool|(double|s?fixed|[su]?int)(32|64)|float|string)\b/,cStyleComments:!0}),["proto"]);
+
+package org.apache.lucene.analysis.core;
+
+import java.util.Map;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+
+/** 
+ * Factory for {@link FlattenGraphFilter}. 
+ *
+ * @lucene.experimental
+ */
+public class FlattenGraphFilterFactory extends TokenFilterFactory {
+
+  /** Creates a new FlattenGraphFilterFactory */
+  public FlattenGraphFilterFactory(Map<String,String> args) {
+    super(args);
+    if (!args.isEmpty()) {
+      throw new IllegalArgumentException("Unknown parameters: " + args);
+    }
+  }
+  
+  @Override
+  public TokenStream create(TokenStream input) {
+    return new FlattenGraphFilter(input);
+  }
+}
