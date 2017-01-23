@@ -128,6 +128,11 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
     spanFactory.addBuilder(nodeName, builder);
   }
 
+  public void addSpanQueryBuilder(String nodeName, SpanQueryBuilder builder) {
+    queryFactory.addBuilder(nodeName, builder);
+    spanFactory.addBuilder(nodeName, builder);
+  }
+
   static Document parseXML(InputStream pXmlFile) throws ParserException {
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     DocumentBuilder db = null;

@@ -17,18 +17,17 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 
-public abstract class SolrQueryBuilder implements QueryBuilder {
+public abstract class SolrSpanQueryBuilder extends SolrQueryBuilder implements SpanQueryBuilder {
 
-  protected final SolrQueryRequest req;
-  protected final QueryBuilder queryFactory;
+  protected final SpanQueryBuilder spanFactory;
 
-  public SolrQueryBuilder(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req, QueryBuilder queryFactory) {
-    this.req = req;
-    this.queryFactory = queryFactory;
+  public SolrSpanQueryBuilder(String defaultField, Analyzer analyzer,
+      SolrQueryRequest req, SpanQueryBuilder spanFactory) {
+    super(defaultField, analyzer, req, spanFactory);
+    this.spanFactory = spanFactory;
   }
 
 }
