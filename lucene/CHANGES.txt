@@ -77,6 +77,17 @@ API Changes
 * LUCENE-7643: Replaced doc-values queries in lucene/sandbox with factory
   methods on the *DocValuesField classes. (Adrien Grand)
 
+* LUCENE-7659: Added a IndexWriter#getFieldNames() method (experimental) to return
+  all field names as visible from the IndexWriter. This would be useful for
+  IndexWriter#updateDocValues() calls, to prevent calling with non-existent
+  docValues fields (Ishan Chattopadhyaya, Adrien Grand, Mike McCandless)
+
+* LUCENE-6959: Removed ToParentBlockJoinCollector in favour of
+  ParentChildrenBlockJoinQuery, that can return the matching children documents per
+  parent document. This query should be executed for each matching parent document
+  after the main query has been executed. (Adrien Grand, Martijn van Groningen,
+  Mike McCandless)
+
 New Features
 
 * LUCENE-7623: Add FunctionScoreQuery and FunctionMatchQuery (Alan Woodward,
@@ -86,6 +97,11 @@ New Features
   WordDelimiterFilter except it produces correct token graphs so that
   proximity queries at search time will produce correct results (Mike
   McCandless)
+
+* LUCENE-7656: Added the LatLonDocValuesField.new(Box/Distance)Query() factory
+  methods that are the equivalent of factory methods on LatLonPoint but operate
+  on doc values. These new methods should be wrapped in an IndexOrDocValuesQuery
+  for best performance. (Adrien Grand)
 
 Bug Fixes
 
@@ -109,6 +125,20 @@ Optimizations
   match the range on single-valued fields when more than half the documents in
   the index would match. (Adrien Grand)
 
+* LUCENE-7656: Speed up for LatLonPointDistanceQuery by computing distances even
+  less often. (Adrien Grand)
+
+* LUCENE-7661: Speed up for LatLonPointInPolygonQuery by pre-computing the
+  relation of the polygon with a grid. (Adrien Grand)
+
+* LUCENE-7660: Speed up LatLonPointDistanceQuery by improving the detection of
+  whether BKD cells are entirely within the distance close to the dateline.
+  (Adrien Grand)
+
+* LUCENE-7654: ToParentBlockJoinQuery now implements two-phase iteration and
+  computes scores lazily in order to be faster when used in conjunctions.
+  (Adrien Grand)
+
 Build
 
 * LUCENE-7651: Fix Javadocs build for Java 8u121 by injecting "Google Code
@@ -117,6 +147,31 @@ Build
   (Uwe Schindler)
 
 * LUCENE-7653: Update randomizedtesting to version 2.5.0. (Dawid Weiss)
+
+* LUCENE-7665: Remove grouping dependency from the join module.
+  (Martijn van Groningen)
+
+Other
+
+* LUCENE-7666: Fix typos in lucene-join package info javadoc.
+  (Tom Saleeba via Christine Poerschke)
+
+* LUCENE-7658: queryparser/xml CoreParser now implements SpanQueryBuilder interface.
+  (Daniel Collins, Christine Poerschke)
+
+======================= Lucene 6.4.1 =======================
+
+Bug Fixes
+
+* LUCENE-7657: Fixed potential memory leak in the case that a (Span)TermQuery
+  with a TermContext is cached. (Adrien Grand)
+
+* LUCENE-7647: Made stored fields reclaim native memory more aggressively when
+  configured with BEST_COMPRESSION. This could otherwise result in out-of-memory
+  issues. (Adrien Grand)
+
+* LUCENE-7670: AnalyzingInfixSuggester should not immediately open an
+  IndexWriter over an already-built index. (Steve Rowe)
 
 ======================= Lucene 6.4.0 =======================
 

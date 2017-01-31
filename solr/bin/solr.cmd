@@ -45,71 +45,71 @@ set "SOLR_SSL_OPTS= "
 IF DEFINED SOLR_SSL_KEY_STORE (
   set "SOLR_JETTY_CONFIG=--module=https"
   set SOLR_URL_SCHEME=https
-  set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
+  set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
   IF DEFINED SOLR_SSL_KEY_STORE_PASSWORD (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.keystore.password=%SOLR_SSL_KEY_STORE_PASSWORD%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore.password=%SOLR_SSL_KEY_STORE_PASSWORD%"
   )
   IF DEFINED SOLR_SSL_KEY_STORE_TYPE (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.keystore.type=%SOLR_SSL_KEY_STORE_TYPE%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore.type=%SOLR_SSL_KEY_STORE_TYPE%"
   )
 
   IF DEFINED SOLR_SSL_TRUST_STORE (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.truststore=%SOLR_SSL_TRUST_STORE%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.truststore=%SOLR_SSL_TRUST_STORE%"
   )
   IF DEFINED SOLR_SSL_TRUST_STORE_PASSWORD (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.truststore.password=%SOLR_SSL_TRUST_STORE_PASSWORD%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.truststore.password=%SOLR_SSL_TRUST_STORE_PASSWORD%"
   )
   IF DEFINED SOLR_SSL_TRUST_STORE_TYPE (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.truststore.type=%SOLR_SSL_TRUST_STORE_TYPE%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.truststore.type=%SOLR_SSL_TRUST_STORE_TYPE%"
   )
 
   IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.ssl.needClientAuth=%SOLR_SSL_NEED_CLIENT_AUTH%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.needClientAuth=%SOLR_SSL_NEED_CLIENT_AUTH%"
   )
   IF DEFINED SOLR_SSL_WANT_CLIENT_AUTH (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Dsolr.jetty.ssl.wantClientAuth=%SOLR_SSL_WANT_CLIENT_AUTH%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.wantClientAuth=%SOLR_SSL_WANT_CLIENT_AUTH%"
   )
 
   IF DEFINED SOLR_SSL_CLIENT_KEY_STORE (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStore=%SOLR_SSL_CLIENT_KEY_STORE%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStore=%SOLR_SSL_CLIENT_KEY_STORE%"
 
     IF DEFINED SOLR_SSL_CLIENT_KEY_STORE_PASSWORD (
-      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStorePassword=%SOLR_SSL_CLIENT_KEY_STORE_PASSWORD%"
+      set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStorePassword=%SOLR_SSL_CLIENT_KEY_STORE_PASSWORD%"
     )
     IF DEFINED SOLR_SSL_CLIENT_KEY_STORE_TYPE (
-      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStoreType=%SOLR_SSL_CLIENT_KEY_STORE_TYPE%"
+      set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStoreType=%SOLR_SSL_CLIENT_KEY_STORE_TYPE%"
     )
   ) ELSE (
     IF DEFINED SOLR_SSL_KEY_STORE (
-      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStore=%SOLR_SSL_KEY_STORE%"
+      set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStore=%SOLR_SSL_KEY_STORE%"
     )
     IF DEFINED SOLR_SSL_KEY_STORE_PASSWORD (
-      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStorePassword=%SOLR_SSL_KEY_STORE_PASSWORD%"
+      set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStorePassword=%SOLR_SSL_KEY_STORE_PASSWORD%"
     )
     IF DEFINED SOLR_SSL_KEY_STORE_TYPE (
-      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.keyStoreType=%SOLR_SSL_KEY_STORE_TYPE%"
+      set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStoreType=%SOLR_SSL_KEY_STORE_TYPE%"
     )
   )
 
   IF DEFINED SOLR_SSL_CLIENT_TRUST_STORE (
-    set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStore=%SOLR_SSL_CLIENT_TRUST_STORE%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.trustStore=%SOLR_SSL_CLIENT_TRUST_STORE%"
 
     IF DEFINED SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD (
-      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStorePassword=%SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD%"
+      set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.trustStorePassword=%SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD%"
     )
 
     IF DEFINED SOLR_SSL_CLIENT_TRUST_STORE_TYPE (
-      set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStoreType=%SOLR_SSL_CLIENT_TRUST_STORE_TYPE%"
+      set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.trustStoreType=%SOLR_SSL_CLIENT_TRUST_STORE_TYPE%"
     )
   ) ELSE (
     IF DEFINED SOLR_SSL_TRUST_STORE (
-     set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStore=%SOLR_SSL_TRUST_STORE%"
+     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.trustStore=%SOLR_SSL_TRUST_STORE%"
     )
     IF DEFINED SOLR_SSL_TRUST_STORE_PASSWORD (
-     set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStorePassword=%SOLR_SSL_TRUST_STORE_PASSWORD%"
+     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.trustStorePassword=%SOLR_SSL_TRUST_STORE_PASSWORD%"
     )
     IF DEFINED SOLR_SSL_TRUST_STORE_TYPE (
-     set "SOLR_SSL_OPTS=%SOLR_SSL_OPTS% -Djavax.net.ssl.trustStoreType=%SOLR_SSL_TRUST_STORE_TYPE%"
+     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.trustStoreType=%SOLR_SSL_TRUST_STORE_TYPE%"
     )
   )
 ) ELSE (
@@ -1219,10 +1219,12 @@ goto done
 
 :run_utils
 set "TOOL_CMD=%~1"
+set q="-q"
+IF "%verbose%"=="1"  set q=""
 "%JAVA%" %SOLR_SSL_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configuration="file:%DEFAULT_SERVER_DIR%\scripts\cloud-scripts\log4j.properties" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.util.SolrCLI utils -s "%DEFAULT_SERVER_DIR%" -l "%SOLR_LOGS_DIR%" %TOOL_CMD%
+  org.apache.solr.util.SolrCLI utils -s "%DEFAULT_SERVER_DIR%" -l "%SOLR_LOGS_DIR%" %q:"=% %TOOL_CMD%
 if errorlevel 1 (
    exit /b 1
 )
