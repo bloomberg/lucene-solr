@@ -17,8 +17,8 @@
 package org.apache.solr.update;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 
@@ -66,7 +66,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
 
   private final InstrumentedHttpRequestExecutor httpRequestExecutor;
 
-  private final Set<String> metricNames = new HashSet<>();
+  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
@@ -117,11 +117,11 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
     registry = manager.registry(registryName);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    clientConnectionManager.initializeMetrics(manager, registryName, expandedScope);
-    httpRequestExecutor.initializeMetrics(manager, registryName, expandedScope);
+    clientConnectionManager.initializeMetrics(manager, registryName, tag, expandedScope);
+    httpRequestExecutor.initializeMetrics(manager, registryName, tag, expandedScope);
     updateExecutor = MetricUtils.instrumentedExecutorService(updateExecutor, this, registry,
         SolrMetricManager.mkName("updateExecutor", expandedScope, "threadPool"));
     recoveryExecutor = MetricUtils.instrumentedExecutorService(recoveryExecutor, this, registry,

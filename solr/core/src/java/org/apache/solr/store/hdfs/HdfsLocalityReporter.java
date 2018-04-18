@@ -19,7 +19,6 @@ package org.apache.solr.store.hdfs;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +50,10 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
   private String hostname;
   private final ConcurrentMap<HdfsDirectory,ConcurrentMap<FileStatus,BlockLocation[]>> cache;
 
-  private final Set<String> metricNames = new HashSet<>();
+  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricRegistry registry;
+  private SolrMetricManager metricManager;
+  private String registryName;
 
   public HdfsLocalityReporter() {
     cache = new ConcurrentHashMap<>();
@@ -95,7 +96,9 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
    * Provide statistics on HDFS block locality, both in terms of bytes and block counts.
    */
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    this.metricManager = manager;
+    this.registryName = registryName;
     registry = manager.registry(registryName);
     MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
       long totalBytes = 0;
@@ -146,7 +149,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
         map.put(LOCALITY_BLOCKS_RATIO, localCount / (double) totalCount);
       }
     });
-    manager.registerGauge(this, registryName, metricsMap, true, "hdfsLocality", getCategory().toString(), scope);
+    manager.registerGauge(this, registryName, metricsMap, tag, true, "hdfsLocality", getCategory().toString(), scope);
   }
 
   /**

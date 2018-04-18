@@ -43,9 +43,8 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  * The ParallelStream decorates a TupleStream implementation and pushes it to N workers for parallel execution.
  * Workers are chosen from a SolrCloud collection.
  * Tuples that are streamed back from the workers are ordered by a Comparator.
+ * @since 5.1.0
  **/
-
-
 public class ParallelStream extends CloudSolrStream implements Expressible {
 
   private TupleStream tupleStream;
@@ -267,6 +266,7 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
 
         String url = shardUrls.get(w);
         SolrStream solrStream = new SolrStream(url, paramsLoc);
+        solrStream.setStreamContext(streamContext);
         solrStreams.add(solrStream);
       }
 

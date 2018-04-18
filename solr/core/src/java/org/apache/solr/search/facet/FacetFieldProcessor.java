@@ -18,8 +18,10 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,9 +83,20 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     if (accs != null) {
-      // reuse these accs, but reset them first
+      // reuse these accs, but reset them first and resize since size could be different
       for (SlotAcc acc : accs) {
         acc.reset();
+        acc.resize(new SlotAcc.Resizer() {
+          @Override
+          public int getNewSize() {
+            return slotCount;
+          }
+
+          @Override
+          public int getNewSlot(int oldSlot) {
+            return 0;
+          }
+        });
       }
       return;
     } else {
@@ -129,7 +142,36 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
       sortAcc = indexOrderAcc;
       deferredAggs = freq.getFacetStats();
-    } else {
+    }
+
+    // If we are going to return all buckets and if there are no subfacets (that would need a domain), then don't defer
+    // any aggregation calculations to a second phase.  This way we can avoid calculating domains for each bucket, which
+    // can be expensive.
+    if (freq.limit == -1 && freq.subFacets.size() == 0) {
+      accs = new SlotAcc[ freq.getFacetStats().size() ];
+      int otherAccIdx = 0;
+      for (Map.Entry<String,AggValueSource> entry : freq.getFacetStats().entrySet()) {
+        AggValueSource agg = entry.getValue();
+        SlotAcc acc = agg.createSlotAcc(fcontext, numDocs, numSlots);
+        acc.key = entry.getKey();
+        accMap.put(acc.key, acc);
+        accs[otherAccIdx++] = acc;
+      }
+      if (accs.length == 1) {
+        collectAcc = accs[0];
+      } else {
+        collectAcc = new MultiAcc(fcontext, accs);
+      }
+
+      if (sortAcc == null) {
+        sortAcc = accMap.get(freq.sortVariable);
+        assert sortAcc != null;
+      }
+
+      deferredAggs = null;
+    }
+
+    if (sortAcc == null) {
       AggValueSource sortAgg = freq.getFacetStats().get(freq.sortVariable);
       if (sortAgg != null) {
         collectAcc = sortAgg.createSlotAcc(fcontext, numDocs, numSlots);
@@ -140,7 +182,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       deferredAggs.remove(freq.sortVariable);
     }
 
-    if (deferredAggs.size() == 0) {
+    if (deferredAggs == null || deferredAggs.size() == 0) {
       deferredAggs = null;
     }
 
@@ -308,11 +350,10 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       res.add("allBuckets", allBuckets);
     }
 
+    SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
     if (freq.missing) {
-      // TODO: it would be more efficient to build up a missing DocSet if we need it here anyway.
-      SimpleOrderedMap<Object> missingBucket = new SimpleOrderedMap<>();
-      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, false, null);
       res.add("missing", missingBucket);
+      // moved missing fillBucket after we fill facet since it will reset all the accumulators.
     }
 
     // if we are deep paging, we don't have to order the highest "offset" counts.
@@ -338,6 +379,11 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       fillBucket(bucket, countAcc.getCount(slotNum), slotNum, null, filter);
 
       bucketList.add(bucket);
+    }
+
+    if (freq.missing) {
+      // TODO: it would be more efficient to build up a missing DocSet if we need it here anyway.
+      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, false, null);
     }
 
     return res;
@@ -437,6 +483,61 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
   }
+
+  static class MultiAcc extends SlotAcc {
+    final SlotAcc[] subAccs;
+
+    MultiAcc(FacetContext fcontext, SlotAcc[] subAccs) {
+      super(fcontext);
+      this.subAccs = subAccs;
+    }
+
+    @Override
+    public void setNextReader(LeafReaderContext ctx) throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.setNextReader(ctx);
+      }
+    }
+
+    @Override
+    public void collect(int doc, int slot) throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.collect(doc, slot);
+      }
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object getValue(int slotNum) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void reset() throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.reset();
+      }
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      for (SlotAcc acc : subAccs) {
+        acc.resize(resizer);
+      }
+    }
+
+    @Override
+    public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
+      for (SlotAcc acc : subAccs) {
+        acc.setValues(bucket, slotNum);
+      }
+    }
+  }
+
 
   static class SpecialSlotAcc extends SlotAcc {
     SlotAcc collectAcc;
@@ -603,10 +704,12 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   private SimpleOrderedMap<Object> refineBucket(Object bucketVal, boolean skip, Map<String,Object> facetInfo) throws IOException {
     SimpleOrderedMap<Object> bucket = new SimpleOrderedMap<>();
     FieldType ft = sf.getType();
+    bucketVal = ft.toNativeType(bucketVal);  // refinement info passed in as JSON will cause int->long and float->double
     bucket.add("val", bucketVal);
-    // String internal = ft.toInternal( tobj.toString() );  // TODO - we need a better way to get from object to query...
 
-    Query domainQ = ft.getFieldQuery(null, sf, bucketVal.toString());
+    // fieldQuery currently relies on a string input of the value...
+    String bucketStr = bucketVal instanceof Date ? Instant.ofEpochMilli(((Date)bucketVal).getTime()).toString() : bucketVal.toString();
+    Query domainQ = ft.getFieldQuery(null, sf, bucketStr);
 
     fillBucket(bucket, domainQ, null, skip, facetInfo);
 

@@ -66,6 +66,7 @@ public interface SolrInfoBean {
    * Modifiable set of metric names that this component reports (default is null,
    * which means none). If not null then this set is used by {@link #registerMetricName(String)}
    * to capture what metrics names are reported from this component.
+   * <p><b>NOTE: this set has to allow iteration under modifications.</b></p>
    */
   default Set<String> getMetricNames() {
     return null;
@@ -82,7 +83,7 @@ public interface SolrInfoBean {
   /** Register a metric name that this component reports. This method is called by various
    * metric registration methods in {@link org.apache.solr.metrics.SolrMetricManager} in order
    * to capture what metric names are reported from this component (which in turn is called
-   * from {@link org.apache.solr.metrics.SolrMetricProducer#initializeMetrics(SolrMetricManager, String, String)}).
+   * from {@link org.apache.solr.metrics.SolrMetricProducer#initializeMetrics(SolrMetricManager, String, String, String)}).
    * <p>Default implementation registers all metrics added by a component. Implementations may
    * override this to avoid reporting some or all metrics returned by {@link #getMetricsSnapshot()}</p>
    */

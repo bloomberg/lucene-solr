@@ -123,6 +123,7 @@ public class SolrConfig extends Config implements MapSerializable {
   private int formUploadLimitKB;
 
   private boolean enableRemoteStreams;
+  private boolean enableStreamBody;
 
   private boolean handleSelect;
 
@@ -298,17 +299,21 @@ public class SolrConfig extends Config implements MapSerializable {
     updateHandlerInfo = loadUpdatehandlerInfo();
 
     multipartUploadLimitKB = getInt(
-        "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2048);
+        "requestDispatcher/requestParsers/@multipartUploadLimitInKB", Integer.MAX_VALUE);
+    if (multipartUploadLimitKB == -1) multipartUploadLimitKB = Integer.MAX_VALUE;
 
     formUploadLimitKB = getInt(
-        "requestDispatcher/requestParsers/@formdataUploadLimitInKB", 2048);
+        "requestDispatcher/requestParsers/@formdataUploadLimitInKB", Integer.MAX_VALUE);
+    if (formUploadLimitKB == -1) formUploadLimitKB = Integer.MAX_VALUE;
 
     enableRemoteStreams = getBool(
         "requestDispatcher/requestParsers/@enableRemoteStreaming", false);
 
-    // Let this filter take care of /select?xxx format
+    enableStreamBody = getBool(
+        "requestDispatcher/requestParsers/@enableStreamBody", false);
+
     handleSelect = getBool(
-        "requestDispatcher/@handleSelect", true);
+        "requestDispatcher/@handleSelect", !luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
 
     addHttpRequestToContext = getBool(
         "requestDispatcher/requestParsers/@addHttpRequestToContext", false);
@@ -365,10 +370,21 @@ public class SolrConfig extends Config implements MapSerializable {
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
   static {
+    // Raise the Lucene static limit so we can control this with higher granularity.  See SOLR-10921
+    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
+
     Map<String, SolrPluginInfo> map = new HashMap<>();
     for (SolrPluginInfo plugin : plugins) map.put(plugin.clazz.getName(), plugin);
     classVsSolrPluginInfo = Collections.unmodifiableMap(map);
   }
+
+  {
+    // non-static setMaxClauseCount because the test framework sometimes reverts the value on us and
+    // the static setting above is only executed once.  This re-sets the value every time a SolrConfig
+    // obect is created. See SOLR-10921
+    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
+  }
+
 
   public static class SolrPluginInfo {
 
@@ -770,6 +786,10 @@ public class SolrConfig extends Config implements MapSerializable {
 
   public boolean isEnableRemoteStreams() {
     return enableRemoteStreams;
+  }
+
+  public boolean isEnableStreamBody() {
+    return enableStreamBody;
   }
 
   @Override

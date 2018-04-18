@@ -16,8 +16,8 @@
  */
 package org.apache.solr.search;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.SolrInfoBean;
@@ -36,7 +36,7 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
   private boolean disableJmxEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryListJmx");
 
   private MetricRegistry registry;
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
 
   @Override
   public String getName() { return this.getClass().getName(); }
@@ -56,7 +56,7 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
     registry = manager.registry(registryName);
     MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
       if (detailed && !disableEntryList && !disableJmxEntryList) {
@@ -72,6 +72,6 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
         map.put("entries_count", UninvertingReader.getUninvertedStatsSize());
       }
     });
-    manager.register(this, registryName, metricsMap, true, "fieldCache", Category.CACHE.toString(), scope);
+    manager.registerGauge(this, registryName, metricsMap, tag, true, "fieldCache", Category.CACHE.toString(), scope);
   }
 }

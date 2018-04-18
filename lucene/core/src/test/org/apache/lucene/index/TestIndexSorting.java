@@ -61,7 +61,6 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.CollectionStatistics;
-import org.apache.lucene.search.EarlyTerminatingSortingCollector;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -1948,13 +1947,8 @@ public class TestIndexSorting extends LuceneTestCase {
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      return in.computeWeight(boost, collectionStats, termStats);
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-      return in.simScorer(weight, context);
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return in.scorer(boost, collectionStats, termStats);
     }
 
   }
@@ -2228,12 +2222,7 @@ public class TestIndexSorting extends LuceneTestCase {
 
   // pits index time sorting against query time sorting
   public void testRandom3() throws Exception {
-    int numDocs;
-    if (TEST_NIGHTLY) {
-      numDocs = atLeast(100000);
-    } else {
-      numDocs = atLeast(1000);
-    }
+    int numDocs = atLeast(1000);
     List<RandomDoc> docs = new ArrayList<>();
 
     Sort sort = randomSort();
@@ -2335,13 +2324,12 @@ public class TestIndexSorting extends LuceneTestCase {
         System.out.println("TEST: iter=" + iter + " numHits=" + numHits);
       }
 
-      TopFieldCollector c1 = TopFieldCollector.create(sort, numHits, true, true, true);
+      TopFieldCollector c1 = TopFieldCollector.create(sort, numHits, true, true, true, true);
       s1.search(new MatchAllDocsQuery(), c1);
       TopDocs hits1 = c1.topDocs();
 
-      TopFieldCollector c2 = TopFieldCollector.create(sort, numHits, true, true, true);
-      EarlyTerminatingSortingCollector c3 = new EarlyTerminatingSortingCollector(c2, sort, numHits);
-      s2.search(new MatchAllDocsQuery(), c3);
+      TopFieldCollector c2 = TopFieldCollector.create(sort, numHits, true, true, true, false);
+      s2.search(new MatchAllDocsQuery(), c2);
 
       TopDocs hits2 = c2.topDocs();
 
@@ -2362,7 +2350,7 @@ public class TestIndexSorting extends LuceneTestCase {
         ScoreDoc hit1 = hits1.scoreDocs[i];
         ScoreDoc hit2 = hits2.scoreDocs[i];
         assertEquals(r1.document(hit1.doc).get("id"), r2.document(hit2.doc).get("id"));
-        assertEquals(((FieldDoc) hit1).fields, ((FieldDoc) hit2).fields);
+        assertArrayEquals(((FieldDoc) hit1).fields, ((FieldDoc) hit2).fields);
       }
     }
 
@@ -2441,7 +2429,7 @@ public class TestIndexSorting extends LuceneTestCase {
         assertTrue(sparseValues.advanceExact(docID));
         assertTrue(sparseBinaryValues.advanceExact(docID));
         assertTrue(normsValues.advanceExact(docID));
-        assertEquals(124, normsValues.longValue());
+        assertEquals(1, normsValues.longValue());
         assertEquals(127-docID, (int) sparseValues.longValue());
         assertEquals(new BytesRef(Integer.toString(127-docID)), sparseBinaryValues.binaryValue());
       } else {

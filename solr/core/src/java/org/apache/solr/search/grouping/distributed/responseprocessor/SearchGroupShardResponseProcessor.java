@@ -49,12 +49,9 @@ import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchG
  */
 public class SearchGroupShardResponseProcessor implements ShardResponseProcessor {
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
-    SortSpec ss = rb.getSortSpec();
+    SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();
     Sort groupSort = rb.getGroupingSpec().getGroupSort();
     final String[] fields = rb.getGroupingSpec().getFields();
     Sort withinGroupSort = rb.getGroupingSpec().getSortWithinGroup();
@@ -151,9 +148,9 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
       if (rq instanceof AbstractReRankQuery){
         maxSize = ((AbstractReRankQuery) rq).getReRankDocs();
       } else {
-        maxSize = ss.getCount();
+        maxSize = rb.getSortSpec().getCount();
       }
-      Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, ss.getOffset(), maxSize, groupSort);
+      Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, groupSortSpec.getOffset(), groupSortSpec.getCount(), groupSort);
       if (mergedTopGroups == null) {
         continue;
       }

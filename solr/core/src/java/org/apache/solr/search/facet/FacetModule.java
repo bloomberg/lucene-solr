@@ -17,7 +17,9 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +40,8 @@ import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.RTimer;
-import org.noggit.JSONUtil;
+import org.noggit.CharArr;
+import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 
 public class FacetModule extends SearchComponent {
@@ -234,7 +237,23 @@ public class FacetModule extends SearchComponent {
 
       Map<String,Object> finfo = new HashMap<>(1);
       finfo.put(FACET_REFINE, refinement);
-      String finfoStr = JSONUtil.toJSON(finfo);
+
+      // String finfoStr = JSONUtil.toJSON(finfo, -1);  // this doesn't handle formatting of Date objects the way we want
+      CharArr out = new CharArr();
+      JSONWriter jsonWriter = new JSONWriter(out, -1) {
+        @Override
+        public void handleUnknownClass(Object o) {
+          // handle date formatting correctly
+          if (o instanceof Date) {
+            String s = Instant.ofEpochMilli(((Date)o).getTime()).toString();
+            writeString(s);
+            return;
+          }
+          super.handleUnknownClass(o);
+        }
+      };
+      jsonWriter.write(finfo);
+      String finfoStr = out.toString();
       // System.err.println("##################### REFINE=" + finfoStr);
       shardsRefineRequest.params.add(FACET_INFO, finfoStr);
 
@@ -281,10 +300,8 @@ public class FacetModule extends SearchComponent {
       }
 
       if ((sreq.purpose & PURPOSE_REFINE_JSON_FACETS) != 0) {
-        System.err.println("REFINE FACET RESULT FROM SHARD = " + facet);
+        // System.err.println("REFINE FACET RESULT FROM SHARD = " + facet);
         // call merge again with a diff flag set on the context???
-//        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "WORK IN PROGRESS, MERGING FACET REFINEMENT NOT SUPPORTED YET!");
-
         facetState.mcontext.root = facet;
         facetState.mcontext.setShard(shardRsp.getShard());  // TODO: roll newShard into setShard?
         facetState.merger.merge(facet , facetState.mcontext);

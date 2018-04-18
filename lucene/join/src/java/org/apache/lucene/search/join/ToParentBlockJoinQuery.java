@@ -28,6 +28,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterWeight;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
@@ -84,8 +85,8 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    return new BlockJoinWeight(this, childQuery.createWeight(searcher, needsScores, boost), parentsFilter, needsScores ? scoreMode : ScoreMode.None);
+  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode weightScoreMode, float boost) throws IOException {
+    return new BlockJoinWeight(this, childQuery.createWeight(searcher, weightScoreMode, boost), parentsFilter, weightScoreMode.needsScores() ? scoreMode : ScoreMode.None);
   }
 
   /** Return our child query. */
@@ -109,7 +110,7 @@ public class ToParentBlockJoinQuery extends Query {
       if (scorerSupplier == null) {
         return null;
       }
-      return scorerSupplier.get(false);
+      return scorerSupplier.get(Long.MAX_VALUE);
     }
 
     // NOTE: acceptDocs applies (and is checked) only in the
@@ -132,8 +133,8 @@ public class ToParentBlockJoinQuery extends Query {
       return new ScorerSupplier() {
 
         @Override
-        public Scorer get(boolean randomAccess) throws IOException {
-          return new BlockJoinScorer(BlockJoinWeight.this, childScorerSupplier.get(randomAccess), parents, scoreMode);
+        public Scorer get(long leadCost) throws IOException {
+          return new BlockJoinScorer(BlockJoinWeight.this, childScorerSupplier.get(leadCost), parents, scoreMode);
         }
 
         @Override
@@ -150,6 +151,28 @@ public class ToParentBlockJoinQuery extends Query {
         return scorer.explain(context, in);
       }
       return Explanation.noMatch("Not a match");
+    }
+
+    @Override
+    public Matches matches(LeafReaderContext context, int doc) throws IOException {
+      // The default implementation would delegate to the joinQuery's Weight, which
+      // matches on children.  We need to match on the parent instead
+      Scorer scorer = scorer(context);
+      if (scorer == null) {
+        return null;
+      }
+      final TwoPhaseIterator twoPhase = scorer.twoPhaseIterator();
+      if (twoPhase == null) {
+        if (scorer.iterator().advance(doc) != doc) {
+          return null;
+        }
+      }
+      else {
+        if (twoPhase.approximation().advance(doc) != doc || twoPhase.matches() == false) {
+          return null;
+        }
+      }
+      return Matches.MATCH_WITH_NO_TERMS;
     }
   }
 
@@ -236,7 +259,6 @@ public class ToParentBlockJoinQuery extends Query {
     private final ParentApproximation parentApproximation;
     private final ParentTwoPhase parentTwoPhase;
     private float score;
-    private int freq;
 
     public BlockJoinScorer(Weight weight, Scorer childScorer, BitSet parentBits, ScoreMode scoreMode) {
       super(weight);
@@ -286,11 +308,16 @@ public class ToParentBlockJoinQuery extends Query {
       setScoreAndFreq();
       return score;
     }
-    
+
     @Override
-    public int freq() throws IOException {
-      setScoreAndFreq();
-      return freq;
+    public float getMaxScore(int upTo) throws IOException {
+      switch(scoreMode) {
+        case Max:
+        case Min:
+          return childScorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+        default:
+          return Float.POSITIVE_INFINITY;
+      }
     }
 
     private void setScoreAndFreq() throws IOException {
@@ -312,7 +339,7 @@ public class ToParentBlockJoinQuery extends Query {
               score = Math.min(score, childScore);
               break;
             case Max:
-              score = Math.min(score, childScore);
+              score = Math.max(score, childScore);
               break;
             case None:
               break;
@@ -330,7 +357,6 @@ public class ToParentBlockJoinQuery extends Query {
         score /= freq;
       }
       this.score = (float) score;
-      this.freq = freq;
     }
 
     public Explanation explain(LeafReaderContext context, Weight childWeight) throws IOException {
@@ -344,13 +370,12 @@ public class ToParentBlockJoinQuery extends Query {
         Explanation child = childWeight.explain(context, childDoc - context.docBase);
         if (child.isMatch()) {
           matches++;
-          if (bestChild == null || child.getValue() > bestChild.getValue()) {
+          if (bestChild == null || child.getValue().floatValue() > bestChild.getValue().floatValue()) {
             bestChild = child;
           }
         }
       }
 
-      assert freq() == matches;
       return Explanation.match(score(), String.format(Locale.ROOT,
           "Score based on %d child docs in range from %d to %d, best match:", matches, start, end), bestChild
       );

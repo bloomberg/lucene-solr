@@ -23,12 +23,20 @@ import org.apache.lucene.index.LeafReaderContext;
 class AssertingWeight extends FilterWeight {
 
   final Random random;
-  final boolean needsScores;
+  final ScoreMode scoreMode;
 
-  AssertingWeight(Random random, Weight in, boolean needsScores) {
+  AssertingWeight(Random random, Weight in, ScoreMode scoreMode) {
     super(in);
     this.random = random;
-    this.needsScores = needsScores;
+    this.scoreMode = scoreMode;
+  }
+
+  @Override
+  public Matches matches(LeafReaderContext context, int doc) throws IOException {
+    Matches matches = in.matches(context, doc);
+    if (matches == null)
+      return null;
+    return new AssertingMatches(matches);
   }
 
   @Override
@@ -36,7 +44,7 @@ class AssertingWeight extends FilterWeight {
     if (random.nextBoolean()) {
       final Scorer inScorer = in.scorer(context);
       assert inScorer == null || inScorer.docID() == -1;
-      return AssertingScorer.wrap(new Random(random.nextLong()), inScorer, needsScores);
+      return AssertingScorer.wrap(new Random(random.nextLong()), inScorer, scoreMode);
     } else {
       final ScorerSupplier scorerSupplier = scorerSupplier(context);
       if (scorerSupplier == null) {
@@ -46,7 +54,7 @@ class AssertingWeight extends FilterWeight {
         // Evil: make sure computing the cost has no side effects
         scorerSupplier.cost();
       }
-      return scorerSupplier.get(false);
+      return scorerSupplier.get(Long.MAX_VALUE);
     }
   }
 
@@ -59,10 +67,11 @@ class AssertingWeight extends FilterWeight {
     return new ScorerSupplier() {
       private boolean getCalled = false;
       @Override
-      public Scorer get(boolean randomAccess) throws IOException {
+      public Scorer get(long leadCost) throws IOException {
         assert getCalled == false;
         getCalled = true;
-        return AssertingScorer.wrap(new Random(random.nextLong()), inScorerSupplier.get(randomAccess), needsScores);
+        assert leadCost >= 0 : leadCost;
+        return AssertingScorer.wrap(new Random(random.nextLong()), inScorerSupplier.get(leadCost), scoreMode);
       }
 
       @Override
@@ -81,6 +90,6 @@ class AssertingWeight extends FilterWeight {
       return null;
     }
 
-    return AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer, context.reader().maxDoc());
+    return AssertingBulkScorer.wrap(new Random(random.nextLong()), inScorer, context.reader().maxDoc(), scoreMode);
   }
 }

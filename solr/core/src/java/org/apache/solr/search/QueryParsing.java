@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -56,32 +56,6 @@ public class QueryParsing {
   public static final char LOCALPARAM_END = '}';
   // true if the value was specified by the "v" param (i.e. v=myval, or v=$param)
   public static final String VAL_EXPLICIT = "__VAL_EXPLICIT__";
-
-
-  /**
-   * Returns the "preferred" default operator for use by Query Parsers,
-   * based on the settings in the IndexSchema which may be overridden using 
-   * an optional String override value.
-   *
-   * @see IndexSchema#getQueryParserDefaultOperator()
-   * @see #OP
-   */
-  public static QueryParser.Operator getQueryParserDefaultOperator(final IndexSchema sch,
-                                                       final String override) {
-    String val = override;
-    if (null == val) val = sch.getQueryParserDefaultOperator();
-    return "AND".equals(val) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
-  }
-
-  /**
-   * Returns the effective default field based on the 'df' param or
-   * hardcoded schema default.  May be null if either exists specified.
-   * @see org.apache.solr.common.params.CommonParams#DF
-   * @see org.apache.solr.schema.IndexSchema#getDefaultSearchFieldName
-   */
-  public static String getDefaultField(final IndexSchema s, final String df) {
-    return df != null ? df : s.getDefaultSearchFieldName();
-  }
 
   /**
    * @param txt Text to parse
@@ -123,12 +97,12 @@ public class QueryParsing {
         throw new SyntaxError("Expected ending character '" + endChar + "' parsing local params '" + txt + '"');
 
       }
-      String val = null;
+      String[] val = new String[1];
 
       ch = p.peek();
       if (ch != '=') {
         // single word... treat {!func} as type=func for easy lookup
-        val = id;
+        val[0] = id;
         id = TYPE;
       } else {
         // saw equals, so read value
@@ -142,7 +116,7 @@ public class QueryParsing {
         }
 
         if (ch == '\"' || ch == '\'') {
-          val = p.getQuotedString();
+          val[0] = p.getQuotedString();
         } else {
           // read unquoted literal ended by whitespace or endChar (normally '}')
           // there is no escaping.
@@ -153,7 +127,7 @@ public class QueryParsing {
             }
             char c = p.val.charAt(p.pos);
             if (c == endChar || Character.isWhitespace(c)) {
-              val = p.val.substring(valStart, p.pos);
+              val[0] = p.val.substring(valStart, p.pos);
               break;
             }
             p.pos++;
@@ -162,7 +136,7 @@ public class QueryParsing {
 
         if (deref) {  // dereference parameter
           if (params != null) {
-            val = params.get(val);
+            val = params.getParams(val[0]);
           }
         }
       }
@@ -396,4 +370,12 @@ public class QueryParsing {
     return out;
   }
 
+  /**
+   * Parses default operator string into Operator object
+   * @param operator the string from request
+   * @return Operator.AND if string equals "AND", else return Operator.OR (default)
+   */
+  public static QueryParser.Operator parseOP(String operator) {
+    return "and".equalsIgnoreCase(operator) ? QueryParser.Operator.AND : QueryParser.Operator.OR;
+  }
 }

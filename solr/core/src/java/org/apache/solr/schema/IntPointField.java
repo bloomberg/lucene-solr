@@ -25,8 +25,8 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -64,16 +64,18 @@ public class IntPointField extends PointField implements IntValueFieldType {
     if (min == null) {
       actualMin = Integer.MIN_VALUE;
     } else {
-      actualMin = Integer.parseInt(min);
+      actualMin = parseIntFromUser(field.getName(), min);
       if (!minInclusive) {
+        if (actualMin == Integer.MAX_VALUE) return new MatchNoDocsQuery();
         actualMin++;
       }
     }
     if (max == null) {
       actualMax = Integer.MAX_VALUE;
     } else {
-      actualMax = Integer.parseInt(max);
+      actualMax = parseIntFromUser(field.getName(), max);
       if (!maxInclusive) {
+        if (actualMax == Integer.MIN_VALUE) return new MatchNoDocsQuery();
         actualMax--;
       }
     }
@@ -97,7 +99,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return IntPoint.newExactQuery(field.getName(), Integer.parseInt(externalVal));
+    return IntPoint.newExactQuery(field.getName(), parseIntFromUser(field.getName(), externalVal));
   }
   
   @Override
@@ -109,7 +111,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
     int[] values = new int[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
-      values[i] = Integer.parseInt(val);
+      values[i] = parseIntFromUser(field.getName(), val);
       i++;
     }
     return IntPoint.newSetQuery(field.getName(), values);
@@ -124,25 +126,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     result.grow(Integer.BYTES);
     result.setLength(Integer.BYTES);
-    IntPoint.encodeDimension(Integer.parseInt(val.toString()), result.bytes(), 0);
-  }
-
-  @Override
-  public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-
-    Object missingValue = null;
-    boolean sortMissingLast = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    if (sortMissingLast) {
-      missingValue = top ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-    } else if (sortMissingFirst) {
-      missingValue = top ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-    }
-    SortField sf = new SortField(field.getName(), SortField.Type.INT, top);
-    sf.setMissingValue(missingValue);
-    return sf;
+    IntPoint.encodeDimension(parseIntFromUser(null, val.toString()), result.bytes(), 0);
   }
 
   @Override

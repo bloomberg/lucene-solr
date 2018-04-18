@@ -29,6 +29,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
@@ -69,6 +71,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
@@ -87,6 +90,7 @@ import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -348,67 +352,6 @@ public class TestIndexWriter extends LuceneTestCase {
       } else if (j < 50) {
         assertEquals(flushCount, lastFlushCount);
         writer.getConfig().setMaxBufferedDocs(10);
-        writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-      } else if (50 == j) {
-        assertTrue(flushCount > lastFlushCount);
-      }
-    }
-    writer.close();
-    dir.close();
-  }
-
-  public void testChangingRAMBuffer2() throws IOException {
-    Directory dir = newDirectory();      
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    writer.getConfig().setMaxBufferedDocs(10);
-    writer.getConfig().setMaxBufferedDeleteTerms(10);
-    writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-
-    for(int j=1;j<52;j++) {
-      Document doc = new Document();
-      doc.add(new Field("field", "aaa" + j, storedTextType));
-      writer.addDocument(doc);
-    }
-      
-    int lastFlushCount = -1;
-    for(int j=1;j<52;j++) {
-      writer.deleteDocuments(new Term("field", "aaa" + j));
-      TestUtil.syncConcurrentMerges(writer);
-      int flushCount = writer.getFlushCount();
-       
-      if (j == 1)
-        lastFlushCount = flushCount;
-      else if (j < 10) {
-        // No new files should be created
-        assertEquals(flushCount, lastFlushCount);
-      } else if (10 == j) {
-        assertTrue("" + j, flushCount > lastFlushCount);
-        lastFlushCount = flushCount;
-        writer.getConfig().setRAMBufferSizeMB(0.000001);
-        writer.getConfig().setMaxBufferedDeleteTerms(1);
-      } else if (j < 20) {
-        assertTrue(flushCount > lastFlushCount);
-        lastFlushCount = flushCount;
-      } else if (20 == j) {
-        writer.getConfig().setRAMBufferSizeMB(16);
-        writer.getConfig().setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-        lastFlushCount = flushCount;
-      } else if (j < 30) {
-        assertEquals(flushCount, lastFlushCount);
-      } else if (30 == j) {
-        writer.getConfig().setRAMBufferSizeMB(0.000001);
-        writer.getConfig().setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-        writer.getConfig().setMaxBufferedDeleteTerms(1);
-      } else if (j < 40) {
-        assertTrue(flushCount> lastFlushCount);
-        lastFlushCount = flushCount;
-      } else if (40 == j) {
-        writer.getConfig().setMaxBufferedDeleteTerms(10);
-        writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-        lastFlushCount = flushCount;
-      } else if (j < 50) {
-        assertEquals(flushCount, lastFlushCount);
-        writer.getConfig().setMaxBufferedDeleteTerms(10);
         writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       } else if (50 == j) {
         assertTrue(flushCount > lastFlushCount);
@@ -694,7 +637,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
     LeafReader subreader = getOnlyLeafReader(reader);
-    TermsEnum te = subreader.fields().terms("").iterator();
+    TermsEnum te = subreader.terms("").iterator();
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
     assertEquals(new BytesRef("c"), te.next());
@@ -715,7 +658,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
     LeafReader subreader = getOnlyLeafReader(reader);
-    TermsEnum te = subreader.fields().terms("").iterator();
+    TermsEnum te = subreader.terms("").iterator();
     assertEquals(new BytesRef(""), te.next());
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
@@ -1686,29 +1629,6 @@ public class TestIndexWriter extends LuceneTestCase {
     d.close();
   }
 
-  public void testChangeIndexOptions() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir,
-                                    new IndexWriterConfig(new MockAnalyzer(random())));
-
-    FieldType docsAndFreqs = new FieldType(TextField.TYPE_NOT_STORED);
-    docsAndFreqs.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-
-    FieldType docsOnly = new FieldType(TextField.TYPE_NOT_STORED);
-    docsOnly.setIndexOptions(IndexOptions.DOCS);
-
-    Document doc = new Document();
-    doc.add(new Field("field", "a b c", docsAndFreqs));
-    w.addDocument(doc);
-    w.addDocument(doc);
-
-    doc = new Document();
-    doc.add(new Field("field", "a b c", docsOnly));
-    w.addDocument(doc);
-    w.close();
-    dir.close();
-  }
-
   public void testOnlyUpdateDocuments() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir,
@@ -2302,14 +2222,21 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testMergeAllDeleted() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    AtomicBoolean keepFullyDeletedSegments = new AtomicBoolean();
+    iwc.setMergePolicy(new FilterMergePolicy(iwc.getMergePolicy()) {
+      @Override
+      public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+        return keepFullyDeletedSegments.get();
+      }
+    });
     final SetOnce<IndexWriter> iwRef = new SetOnce<>();
     IndexWriter evilWriter = RandomIndexWriter.mockIndexWriter(random(), dir, iwc, new RandomIndexWriter.TestPoint() {
       @Override
       public void apply(String message) {
         if ("startCommitMerge".equals(message)) {
-          iwRef.get().setKeepFullyDeletedSegments(false);
+          keepFullyDeletedSegments.set(false);
         } else if ("startMergeInit".equals(message)) {
-          iwRef.get().setKeepFullyDeletedSegments(true);
+          keepFullyDeletedSegments.set(true);
         }
       }
     });
@@ -2527,7 +2454,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // Make sure CheckIndex includes id output:
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(d);
-    checker.setCrossCheckTermVectors(false);
+    checker.setDoSlowChecks(false);
     checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
     CheckIndex.Status indexStatus = checker.checkIndex(null);
     String s = bos.toString(IOUtils.UTF_8);
@@ -2809,4 +2736,427 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
+  public void testFlushLargestWriter() throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
+    int numDocs = indexDocsForMultipleThreadStates(w);
+    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+        = w.docWriter.flushControl.findLargestNonPendingWriter();
+    assertFalse(largestNonPendingWriter.flushPending);
+    assertNotNull(largestNonPendingWriter.dwpt);
+
+    int numRamDocs = w.numRamDocs();
+    int numDocsInDWPT = largestNonPendingWriter.dwpt.getNumDocsInRAM();
+    assertTrue(w.flushNextBuffer());
+    assertNull(largestNonPendingWriter.dwpt);
+    assertEquals(numRamDocs-numDocsInDWPT, w.numRamDocs());
+
+    // make sure it's not locked
+    largestNonPendingWriter.lock();
+    largestNonPendingWriter.unlock();
+    if (random().nextBoolean()) {
+      w.commit();
+    }
+    DirectoryReader reader = DirectoryReader.open(w, true, true);
+    assertEquals(numDocs, reader.numDocs());
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  private int indexDocsForMultipleThreadStates(IndexWriter w) throws InterruptedException {
+    Thread[] threads = new Thread[3];
+    CountDownLatch latch = new CountDownLatch(threads.length);
+    int numDocsPerThread = 10 + random().nextInt(30);
+    // ensure we have more than on thread state
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread(() -> {
+        latch.countDown();
+        try {
+          latch.await();
+          for (int j = 0; j < numDocsPerThread; j++) {
+            Document doc = new Document();
+            doc.add(new StringField("id", "foo", Field.Store.YES));
+            w.addDocument(doc);
+          }
+        } catch (Exception e) {
+          throw new AssertionError(e);
+        }
+      });
+      threads[i].start();
+    }
+    for (Thread t : threads) {
+      t.join();
+    }
+    return numDocsPerThread * threads.length;
+  }
+
+  public void testNeverCheckOutOnFullFlush() throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
+    indexDocsForMultipleThreadStates(w);
+    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+        = w.docWriter.flushControl.findLargestNonPendingWriter();
+    assertFalse(largestNonPendingWriter.flushPending);
+    assertNotNull(largestNonPendingWriter.dwpt);
+    int activeThreadStateCount = w.docWriter.perThreadPool.getActiveThreadStateCount();
+    w.docWriter.flushControl.markForFullFlush();
+    DocumentsWriterPerThread documentsWriterPerThread = w.docWriter.flushControl.checkoutLargestNonPendingWriter();
+    assertNull(documentsWriterPerThread);
+    assertEquals(activeThreadStateCount, w.docWriter.flushControl.numQueuedFlushes());
+    w.docWriter.flushControl.abortFullFlushes();
+    assertNull("was aborted", w.docWriter.flushControl.checkoutLargestNonPendingWriter());
+    assertEquals(0, w.docWriter.flushControl.numQueuedFlushes());
+    w.close();
+    dir.close();
+  }
+
+  public void testHoldLockOnLargestWriter() throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
+    int numDocs = indexDocsForMultipleThreadStates(w);
+    DocumentsWriterPerThreadPool.ThreadState largestNonPendingWriter
+        = w.docWriter.flushControl.findLargestNonPendingWriter();
+    assertFalse(largestNonPendingWriter.flushPending);
+    assertNotNull(largestNonPendingWriter.dwpt);
+
+    CountDownLatch wait = new CountDownLatch(1);
+    CountDownLatch locked = new CountDownLatch(1);
+    Thread lockThread = new Thread(() -> {
+      try {
+        largestNonPendingWriter.lock();
+        locked.countDown();
+        wait.await();
+      } catch (InterruptedException e) {
+        throw new AssertionError(e);
+      } finally {
+        largestNonPendingWriter.unlock();
+      }
+    });
+    lockThread.start();
+    Thread flushThread = new Thread(() -> {
+      try {
+        locked.await();
+        assertTrue(w.flushNextBuffer());
+      } catch (Exception e) {
+        throw new AssertionError(e);
+      }
+    });
+    flushThread.start();
+
+    locked.await();
+    // access a synced method to ensure we never lock while we hold the flush control monitor
+    w.docWriter.flushControl.activeBytes();
+    wait.countDown();
+    lockThread.join();
+    flushThread.join();
+
+    assertNull("largest DWPT should be flushed", largestNonPendingWriter.dwpt);
+    // make sure it's not locked
+    largestNonPendingWriter.lock();
+    largestNonPendingWriter.unlock();
+    if (random().nextBoolean()) {
+      w.commit();
+    }
+    DirectoryReader reader = DirectoryReader.open(w, true, true);
+    assertEquals(numDocs, reader.numDocs());
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testCheckPendingFlushPostUpdate() throws IOException, InterruptedException {
+    MockDirectoryWrapper dir = newMockDirectory();
+    Set<String> flushingThreads = Collections.synchronizedSet(new HashSet<>());
+    dir.failOn(new MockDirectoryWrapper.Failure() {
+      @Override
+      public void eval(MockDirectoryWrapper dir) throws IOException {
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+          if ("flush".equals(trace[i].getMethodName())
+              && "org.apache.lucene.index.DocumentsWriterPerThread".equals(trace[i].getClassName())) {
+            flushingThreads.add(Thread.currentThread().getName());
+            break;
+          }
+        }
+      }
+    });
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig()
+        .setCheckPendingFlushUpdate(false)
+        .setMaxBufferedDocs(Integer.MAX_VALUE)
+        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    AtomicBoolean done = new AtomicBoolean(false);
+    int numThreads = 2 + random().nextInt(3);
+    CountDownLatch latch = new CountDownLatch(numThreads);
+    Set<String> indexingThreads = new HashSet<>();
+    Thread[] threads = new Thread[numThreads];
+    for (int i = 0; i < numThreads; i++) {
+      threads[i] = new Thread(() -> {
+        latch.countDown();
+        int numDocs = 0;
+        while (done.get() == false) {
+
+          Document doc = new Document();
+          doc.add(new StringField("id", "foo", Field.Store.YES));
+          try {
+            w.addDocument(doc);
+          } catch (Exception e) {
+            throw new AssertionError(e);
+          }
+          if (numDocs++ % 10 == 0) {
+            Thread.yield();
+          }
+        }
+      });
+      indexingThreads.add(threads[i].getName());
+      threads[i].start();
+    }
+    latch.await();
+    try {
+      int numIters = rarely() ? 1 + random().nextInt(5) : 1;
+      for (int i = 0; i < numIters; i++) {
+        waitForDocsInBuffers(w, Math.min(2, threads.length));
+        w.commit();
+        assertTrue(flushingThreads.toString(), flushingThreads.contains(Thread.currentThread().getName()));
+        flushingThreads.retainAll(indexingThreads);
+        assertTrue(flushingThreads.toString(), flushingThreads.isEmpty());
+      }
+      w.getConfig().setCheckPendingFlushUpdate(true);
+      numIters = 0;
+      while (true) {
+        assertFalse("should finish in less than 100 iterations", numIters++ >= 100);
+        waitForDocsInBuffers(w, Math.min(2, threads.length));
+        w.flush();
+        flushingThreads.retainAll(indexingThreads);
+        if (flushingThreads.isEmpty() == false) {
+          break;
+        }
+      }
+    } finally {
+      done.set(true);
+      for (int i = 0; i < numThreads; i++) {
+        threads[i].join();
+      }
+      IOUtils.close(w, dir);
+    }
+  }
+
+  private static void waitForDocsInBuffers(IndexWriter w, int buffersWithDocs) {
+    // wait until at least N threadstates have a doc in order to observe
+    // who flushes the segments.
+    while(true) {
+      int numStatesWithDocs = 0;
+      DocumentsWriterPerThreadPool perThreadPool = w.docWriter.perThreadPool;
+      for (int i = 0; i < perThreadPool.getActiveThreadStateCount(); i++) {
+        DocumentsWriterPerThreadPool.ThreadState threadState = perThreadPool.getThreadState(i);
+        threadState.lock();
+        try {
+          DocumentsWriterPerThread dwpt = threadState.dwpt;
+          if (dwpt != null && dwpt.getNumDocsInRAM() > 1) {
+            numStatesWithDocs++;
+          }
+        } finally {
+          threadState.unlock();
+        }
+      }
+      if (numStatesWithDocs >= buffersWithDocs) {
+        return;
+      }
+    }
+  }
+
+  public void testSoftUpdateDocuments() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("soft_delete"));
+    expectThrows(IllegalArgumentException.class, () -> {
+      writer.softUpdateDocument(null, new Document(), new NumericDocValuesField("soft_delete", 1));
+    });
+    
+    expectThrows(IllegalArgumentException.class, () -> {
+      writer.softUpdateDocument(new Term("id", "1"), new Document());
+    });
+
+    expectThrows(IllegalArgumentException.class, () -> {
+      writer.softUpdateDocuments(null, Arrays.asList(new Document()), new NumericDocValuesField("soft_delete", 1));
+    });
+
+    expectThrows(IllegalArgumentException.class, () -> {
+      writer.softUpdateDocuments(new Term("id", "1"), Arrays.asList(new Document()));
+    });
+
+    Document doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "1", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "2", Field.Store.YES));
+    Field field = new NumericDocValuesField("soft_delete", 1);
+    writer.softUpdateDocument(new Term("id", "1"), doc, field);
+    DirectoryReader reader = DirectoryReader.open(writer);
+    assertEquals(2, reader.docFreq(new Term("id", "1")));
+    IndexSearcher searcher = new IndexSearcher(reader);
+    TopDocs topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
+    assertEquals(1, topDocs.totalHits);
+    Document document = reader.document(topDocs.scoreDocs[0].doc);
+    assertEquals("2", document.get("version"));
+
+    // update the on-disk version
+    doc = new Document();
+    doc.add(new StringField("id", "1", Field.Store.YES));
+    doc.add(new StringField("version", "3", Field.Store.YES));
+    field = new NumericDocValuesField("soft_delete", 1);
+    writer.softUpdateDocument(new Term("id", "1"), doc, field);
+    DirectoryReader oldReader = reader;
+    reader = DirectoryReader.openIfChanged(reader, writer);
+    assertNotSame(reader, oldReader);
+    oldReader.close();
+    searcher = new IndexSearcher(reader);
+    topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
+    assertEquals(1, topDocs.totalHits);
+    document = reader.document(topDocs.scoreDocs[0].doc);
+    assertEquals("3", document.get("version"));
+
+    // now delete it
+    writer.updateDocValues(new Term("id", "1"), field);
+    oldReader = reader;
+    reader = DirectoryReader.openIfChanged(reader, writer);
+    assertNotSame(reader, oldReader);
+    assertNotNull(reader);
+    oldReader.close();
+    searcher = new IndexSearcher(reader);
+    topDocs = searcher.search(new TermQuery(new Term("id", "1")), 10);
+    assertEquals(0, topDocs.totalHits);
+
+    writer.close();
+    reader.close();
+    dir.close();
+  }
+
+  public void testSoftUpdatesConcurrently() throws IOException, InterruptedException {
+    softUpdatesConcurrently(false);
+  }
+
+  public void testSoftUpdatesConcurrentlyMixedDeletes() throws IOException, InterruptedException {
+    softUpdatesConcurrently(true);
+  }
+
+  public void softUpdatesConcurrently(boolean mixDeletes) throws IOException, InterruptedException {
+    Directory dir = newDirectory();
+    IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
+    indexWriterConfig.setSoftDeletesField("soft_delete");
+    AtomicBoolean mergeAwaySoftDeletes = new AtomicBoolean(random().nextBoolean());
+    if (mixDeletes == false) {
+      indexWriterConfig.setMergePolicy(new OneMergeWrappingMergePolicy(indexWriterConfig.getMergePolicy(), towrap ->
+          new MergePolicy.OneMerge(towrap.segments) {
+            @Override
+            public CodecReader wrapForMerge(CodecReader reader) throws IOException {
+              if (mergeAwaySoftDeletes.get()) {
+                return towrap.wrapForMerge(reader);
+              } else {
+                CodecReader wrapped = towrap.wrapForMerge(reader);
+                return new FilterCodecReader(wrapped) {
+                  @Override
+                  public CacheHelper getCoreCacheHelper() {
+                    return in.getCoreCacheHelper();
+                  }
+
+                  @Override
+                  public CacheHelper getReaderCacheHelper() {
+                    return in.getReaderCacheHelper();
+                  }
+
+                  @Override
+                  public Bits getLiveDocs() {
+                    return null; // everything is live
+                  }
+
+                  @Override
+                  public int numDocs() {
+                    return maxDoc();
+                  }
+                };
+              }
+            }
+          }
+      ));
+    }
+    IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
+    Thread[] threads = new Thread[2 + random().nextInt(3)];
+    CountDownLatch startLatch = new CountDownLatch(1);
+    CountDownLatch started = new CountDownLatch(threads.length);
+    boolean updateSeveralDocs = random().nextBoolean();
+    Set<String> ids = Collections.synchronizedSet(new HashSet<>());
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread(() -> {
+        try {
+          started.countDown();
+          startLatch.await();
+          for (int d = 0;  d < 100; d++) {
+            String id = String.valueOf(random().nextInt(10));
+            if (updateSeveralDocs) {
+              Document doc = new Document();
+              doc.add(new StringField("id", id, Field.Store.YES));
+              if (mixDeletes && random().nextBoolean()) {
+                writer.updateDocuments(new Term("id", id), Arrays.asList(doc, doc));
+              } else {
+                writer.softUpdateDocuments(new Term("id", id), Arrays.asList(doc, doc),
+                    new NumericDocValuesField("soft_delete", 1));
+              }
+            } else {
+              Document doc = new Document();
+              doc.add(new StringField("id", id, Field.Store.YES));
+              if (mixDeletes && random().nextBoolean()) {
+                writer.updateDocument(new Term("id", id), doc);
+              } else {
+                writer.softUpdateDocument(new Term("id", id), doc,
+                    new NumericDocValuesField("soft_delete", 1));
+              }
+            }
+            ids.add(id);
+          }
+        } catch (IOException | InterruptedException e) {
+          throw new AssertionError(e);
+        }
+      });
+      threads[i].start();
+    }
+    started.await();
+    startLatch.countDown();
+
+    for (int i = 0; i < threads.length; i++) {
+      threads[i].join();
+    }
+    DirectoryReader reader = DirectoryReader.open(writer);
+    IndexSearcher searcher = new IndexSearcher(reader);
+    for (String id : ids) {
+      TopDocs topDocs = searcher.search(new TermQuery(new Term("id", id)), 10);
+      if (updateSeveralDocs) {
+        assertEquals(2, topDocs.totalHits);
+        assertEquals(Math.abs(topDocs.scoreDocs[0].doc - topDocs.scoreDocs[1].doc), 1);
+      } else {
+        assertEquals(1, topDocs.totalHits);
+      }
+    }
+    mergeAwaySoftDeletes.set(true);
+    writer.addDocument(new Document()); // add a dummy doc to trigger a segment here
+    writer.flush();
+    writer.forceMerge(1);
+    DirectoryReader oldReader = reader;
+    reader = DirectoryReader.openIfChanged(reader, writer);
+    if (reader != null) {
+      oldReader.close();
+      assertNotSame(oldReader, reader);
+    } else {
+      reader = oldReader;
+    }
+    for (String id : ids) {
+      if (updateSeveralDocs) {
+        assertEquals(2, reader.docFreq(new Term("id", id)));
+      } else {
+        assertEquals(1, reader.docFreq(new Term("id", id)));
+      }
+    }
+    IOUtils.close(reader, writer, dir);
+  }
 }

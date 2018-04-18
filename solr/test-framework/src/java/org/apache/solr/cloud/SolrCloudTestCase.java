@@ -22,11 +22,13 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -85,7 +87,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /**
    * Builder class for a MiniSolrCloudCluster
    */
-  protected static class Builder {
+  public static class Builder {
 
     private final int nodeCount;
     private final Path baseDir;
@@ -185,7 +187,15 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public void configure() throws Exception {
-      cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig, null, securityJson);
+      cluster = build();
+    }
+
+    /**
+     * Configure, run and return the {@link MiniSolrCloudCluster}
+     * @throws Exception if an error occurs on startup
+     */
+    public MiniSolrCloudCluster build() throws Exception {
+      MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig, null, securityJson);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
         ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
@@ -197,6 +207,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
           props.setClusterProperty(entry.getKey(), entry.getValue());
         }
       }
+      return cluster;
     }
 
   }
@@ -241,7 +252,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   /**
    * Get the collection state for a particular collection
    */
-  protected DocCollection getCollectionState(String collectionName) {
+  protected static DocCollection getCollectionState(String collectionName) {
     return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
   }
 
@@ -254,21 +265,23 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * @param collection  the collection to watch
    * @param predicate   a predicate to match against the collection state
    */
-  protected void waitForState(String message, String collection, CollectionStatePredicate predicate) {
+  protected static void waitForState(String message, String collection, CollectionStatePredicate predicate) {
     AtomicReference<DocCollection> state = new AtomicReference<>();
+    AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
       cluster.getSolrClient().waitForState(collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> {
         state.set(c);
+        liveNodesLastSeen.set(n);
         return predicate.matches(n, c);
       });
     } catch (Exception e) {
-      fail(message + "\n" + e.getMessage() + "\nLast available state: " + state.get());
+      fail(message + "\n" + e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
     }
   }
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of shards and replicas
+   * number of active shards and active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {

@@ -22,7 +22,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
@@ -30,7 +29,7 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -50,7 +49,7 @@ public class TestTermQuery extends LuceneTestCase {
         new TermQuery(new Term("foo", "baz")));
     QueryUtils.checkEqual(
         new TermQuery(new Term("foo", "bar")),
-        new TermQuery(new Term("foo", "bar"), TermContext.build(new MultiReader().getContext(), new Term("foo", "bar"))));
+        new TermQuery(new Term("foo", "bar"), TermStates.build(new MultiReader().getContext(), new Term("foo", "bar"), true)));
   }
 
   public void testCreateWeightDoesNotSeekIfScoresAreNotNeeded() throws IOException {
@@ -74,10 +73,10 @@ public class TestTermQuery extends LuceneTestCase {
     IndexSearcher noSeekSearcher = new IndexSearcher(noSeekReader);
     Query query = new TermQuery(new Term("foo", "bar"));
     AssertionError e = expectThrows(AssertionError.class,
-        () -> noSeekSearcher.createNormalizedWeight(query, true));
+        () -> noSeekSearcher.createWeight(noSeekSearcher.rewrite(query), ScoreMode.COMPLETE, 1));
     assertEquals("no seek", e.getMessage());
 
-    noSeekSearcher.createNormalizedWeight(query, false); // no exception
+    noSeekSearcher.createWeight(noSeekSearcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1); // no exception
     IndexSearcher searcher = new IndexSearcher(reader);
     // use a collector rather than searcher.count() which would just read the
     // doc freq instead of creating a scorer
@@ -85,7 +84,7 @@ public class TestTermQuery extends LuceneTestCase {
     searcher.search(query, collector);
     assertEquals(1, collector.getTotalHits());
     TermQuery queryWithContext = new TermQuery(new Term("foo", "bar"),
-        TermContext.build(reader.getContext(), new Term("foo", "bar")));
+        TermStates.build(reader.getContext(), new Term("foo", "bar"), true));
     collector = new TotalHitCountCollector();
     searcher.search(queryWithContext, collector);
     assertEquals(1, collector.getTotalHits());
@@ -123,31 +122,27 @@ public class TestTermQuery extends LuceneTestCase {
     }
 
     @Override
-    public Fields fields() throws IOException {
-      return new FilterFields(super.fields()) {
+    public Terms terms(String field) throws IOException {
+      Terms terms = super.terms(field);
+      return terms==null ? null : new FilterTerms(terms) {
         @Override
-        public Terms terms(String field) throws IOException {
-          return new FilterTerms(super.terms(field)) {
+        public TermsEnum iterator() throws IOException {
+          return new FilterTermsEnum(super.iterator()) {
             @Override
-            public TermsEnum iterator() throws IOException {
-              return new FilterTermsEnum(super.iterator()) {
-                @Override
-                public SeekStatus seekCeil(BytesRef text) throws IOException {
-                  throw new AssertionError("no seek");
-                }
-                @Override
-                public void seekExact(BytesRef term, TermState state) throws IOException {
-                  throw new AssertionError("no seek");
-                }
-                @Override
-                public boolean seekExact(BytesRef text) throws IOException {
-                  throw new AssertionError("no seek");
-                }
-                @Override
-                public void seekExact(long ord) throws IOException {
-                  throw new AssertionError("no seek");
-                }
-              };
+            public SeekStatus seekCeil(BytesRef text) throws IOException {
+              throw new AssertionError("no seek");
+            }
+            @Override
+            public void seekExact(BytesRef term, TermState state) throws IOException {
+              throw new AssertionError("no seek");
+            }
+            @Override
+            public boolean seekExact(BytesRef text) throws IOException {
+              throw new AssertionError("no seek");
+            }
+            @Override
+            public void seekExact(long ord) throws IOException {
+              throw new AssertionError("no seek");
             }
           };
         }

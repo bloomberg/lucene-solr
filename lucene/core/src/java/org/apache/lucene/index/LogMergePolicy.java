@@ -19,10 +19,10 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>This class implements a {@link MergePolicy} that tries
@@ -150,7 +150,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  #setCalibrateSizeByDeletes} is set. */
   protected long sizeDocs(SegmentCommitInfo info, IndexWriter writer) throws IOException {
     if (calibrateSizeByDeletes) {
-      int delCount = writer.numDeletedDocs(info);
+      int delCount = writer.numDeletesToMerge(info);
       assert delCount <= info.info.maxDoc();
       return (info.info.maxDoc() - (long)delCount);
     } else {
@@ -388,7 +388,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     assert writer != null;
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = segmentInfos.info(i);
-      int delCount = writer.numDeletedDocs(info);
+      int delCount = writer.numDeletesToMerge(info);
       if (delCount > 0) {
         if (verbose(writer)) {
           message("  segment " + info.info.name + " has deletions", writer);
@@ -462,7 +462,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     final List<SegmentInfoAndLevel> levels = new ArrayList<>(numSegments);
     final float norm = (float) Math.log(mergeFactor);
 
-    final Collection<SegmentCommitInfo> mergingSegments = writer.getMergingSegments();
+    final Set<SegmentCommitInfo> mergingSegments = writer.getMergingSegments();
 
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = infos.info(i);

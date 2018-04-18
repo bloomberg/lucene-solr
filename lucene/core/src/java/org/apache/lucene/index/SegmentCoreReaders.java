@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.Closeable;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -92,7 +93,6 @@ final class SegmentCoreReaders {
 
     final Codec codec = si.info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) it's the cfsdir, otherwise it's the segment's directory.
-
     boolean success = false;
     
     try {
@@ -162,17 +162,13 @@ final class SegmentCoreReaders {
     throw new AlreadyClosedException("SegmentCoreReaders is already closed");
   }
 
+  @SuppressWarnings("try")
   void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
-//      System.err.println("--- closing core readers");
       Throwable th = null;
-      try {
+      try (Closeable finalizer = this::notifyCoreClosedListeners){
         IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
                       cfsReader, normsProducer, pointsReader);
-      } catch (Throwable throwable) {
-        th = throwable;
-      } finally {
-        notifyCoreClosedListeners(th);
       }
     }
   }
@@ -195,25 +191,9 @@ final class SegmentCoreReaders {
     return cacheHelper;
   }
 
-  private void notifyCoreClosedListeners(Throwable th) throws IOException {
+  private void notifyCoreClosedListeners() throws IOException {
     synchronized(coreClosedListeners) {
-      for (IndexReader.ClosedListener listener : coreClosedListeners) {
-        // SegmentReader uses our instance as its
-        // coreCacheKey:
-        try {
-          listener.onClose(cacheHelper.getKey());
-        } catch (Throwable t) {
-          if (th == null) {
-            th = t;
-          } else {
-            th.addSuppressed(t);
-          }
-        }
-      }
-      
-      if (th != null) {
-        throw IOUtils.rethrowAlways(th);
-      }
+      IOUtils.applyToAll(coreClosedListeners, l -> l.onClose(cacheHelper.getKey()));
     }
   }
 

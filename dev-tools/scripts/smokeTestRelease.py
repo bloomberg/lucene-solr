@@ -190,8 +190,8 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'Implementation-Vendor: The Apache Software Foundation',
       # Make sure 1.8 compiler was used to build release bits:
       'X-Compile-Source-JDK: 8',
-      # Make sure 1.8 or 1.9 ant was used to build release bits: (this will match 1.8.x, 1.9.x)
-      ('Ant-Version: Apache Ant 1.8', 'Ant-Version: Apache Ant 1.9'),
+      # Make sure 1.8, 1.9 or 1.10 ant was used to build release bits: (this will match 1.8.x, 1.9.x, 1.10.x)
+      ('Ant-Version: Apache Ant 1.8', 'Ant-Version: Apache Ant 1.9', 'Ant-Version: Apache Ant 1.10'),
       # Make sure .class files are 1.8 format:
       'X-Compile-Target-JDK: 8',
       'Specification-Version: %s' % version,
@@ -296,7 +296,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   expectedSigs = []
   if isSigned:
     expectedSigs.append('asc')
-  expectedSigs.extend(['md5', 'sha1'])
+  expectedSigs.extend(['sha1', 'sha512'])
   
   artifacts = []
   for text, subURL in ents:
@@ -547,31 +547,31 @@ def run(command, logFile):
     raise RuntimeError('command "%s" failed; see log file %s' % (command, logPath))
     
 def verifyDigests(artifact, urlString, tmpDir):
-  print('    verify md5/sha1 digests')
-  md5Expected, t = load(urlString + '.md5').strip().split()
-  if t != '*'+artifact:
-    raise RuntimeError('MD5 %s.md5 lists artifact %s but expected *%s' % (urlString, t, artifact))
-  
+  print('    verify sha1/sha512 digests')
   sha1Expected, t = load(urlString + '.sha1').strip().split()
   if t != '*'+artifact:
     raise RuntimeError('SHA1 %s.sha1 lists artifact %s but expected *%s' % (urlString, t, artifact))
+
+  sha512Expected, t = load(urlString + '.sha512').strip().split()
+  if t != '*'+artifact:
+    raise RuntimeError('SHA512 %s.sha512 lists artifact %s but expected *%s' % (urlString, t, artifact))
   
-  m = hashlib.md5()
   s = hashlib.sha1()
+  s512 = hashlib.sha512()
   f = open('%s/%s' % (tmpDir, artifact), 'rb')
   while True:
     x = f.read(65536)
     if len(x) == 0:
       break
-    m.update(x)
     s.update(x)
+    s512.update(x)
   f.close()
-  md5Actual = m.hexdigest()
   sha1Actual = s.hexdigest()
-  if md5Actual != md5Expected:
-    raise RuntimeError('MD5 digest mismatch for %s: expected %s but got %s' % (artifact, md5Expected, md5Actual))
+  sha512Actual = s512.hexdigest()
   if sha1Actual != sha1Expected:
     raise RuntimeError('SHA1 digest mismatch for %s: expected %s but got %s' % (artifact, sha1Expected, sha1Actual))
+  if sha512Actual != sha512Expected:
+    raise RuntimeError('SHA512 digest mismatch for %s: expected %s but got %s' % (artifact, sha512Expected, sha512Actual))
 
 def getDirEntries(urlString):
   if urlString.startswith('file:/') and not urlString.startswith('file://'):
@@ -644,10 +644,14 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       textFiles.append('BUILD')
 
   for fileName in textFiles:
-    fileName += '.txt'
-    if fileName not in l:
-      raise RuntimeError('file "%s" is missing from artifact %s' % (fileName, artifact))
-    l.remove(fileName)
+    fileNameTxt = fileName + '.txt'
+    fileNameMd = fileName + '.md'
+    if fileNameTxt in l:
+      l.remove(fileNameTxt)
+    elif fileNameMd in l:
+      l.remove(fileNameMd)
+    else:
+      raise RuntimeError('file "%s".[txt|md] is missing from artifact %s' % (fileName, artifact))
 
   if project == 'lucene':
     if LUCENE_NOTICE is None:
@@ -722,6 +726,16 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       java.run_java8('ant javadocs', '%s/javadocs.log' % unpackPath)
       checkJavadocpathFull('%s/build/docs' % unpackPath)
 
+      if java.run_java9:
+        print("    run tests w/ Java 9 and testArgs='%s'..." % testArgs)
+        java.run_java9('ant clean test %s' % testArgs, '%s/test.log' % unpackPath)
+        java.run_java9('ant jar', '%s/compile.log' % unpackPath)
+        testDemo(java.run_java9, isSrc, version, '9')
+
+        #print('    generate javadocs w/ Java 9...')
+        #java.run_java9('ant javadocs', '%s/javadocs.log' % unpackPath)
+        #checkJavadocpathFull('%s/build/docs' % unpackPath)
+
     else:
       os.chdir('solr')
 
@@ -737,6 +751,18 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       java.run_java8('ant clean server', '%s/antexample.log' % unpackPath)
       testSolrExample(unpackPath, java.java8_home, True)
 
+      if java.run_java9:
+        print("    run tests w/ Java 9 and testArgs='%s'..." % testArgs)
+        java.run_java9('ant clean test -Dtests.slow=false %s' % testArgs, '%s/test.log' % unpackPath)
+
+        #print('    generate javadocs w/ Java 9...')
+        #java.run_java9('ant clean javadocs', '%s/javadocs.log' % unpackPath)
+        #checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+
+        print('    test solr example w/ Java 9...')
+        java.run_java9('ant clean server', '%s/antexample.log' % unpackPath)
+        testSolrExample(unpackPath, java.java9_home, True)
+
       os.chdir('..')
       print('    check NOTICE')
       testNotice(unpackPath)
@@ -747,6 +773,8 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
     if project == 'lucene':
       testDemo(java.run_java8, isSrc, version, '1.8')
+      if java.run_java9:
+        testDemo(java.run_java9, isSrc, version, '9')
 
       print('    check Lucene\'s javadoc JAR')
       checkJavadocpath('%s/docs' % unpackPath)
@@ -760,6 +788,16 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       os.chdir(java8UnpackPath)
       print('    test solr example w/ Java 8...')
       testSolrExample(java8UnpackPath, java.java8_home, False)
+
+      if java.run_java9:
+        print('    copying unpacked distribution for Java 9 ...')
+        java9UnpackPath = '%s-java9' % unpackPath
+        if os.path.exists(java9UnpackPath):
+          shutil.rmtree(java9UnpackPath)
+        shutil.copytree(unpackPath, java9UnpackPath)
+        os.chdir(java9UnpackPath)
+        print('    test solr example w/ Java 9...')
+        testSolrExample(java9UnpackPath, java.java9_home, False)
 
       os.chdir(unpackPath)
 
@@ -854,11 +892,11 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      run query...')
     s = load('http://localhost:8983/solr/techproducts/select/?q=video')
-    if s.find('<result name="response" numFound="3" start="0">') == -1:
+    if s.find('"numFound":3,"start":0') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
-    s = load('http://localhost:8983/v2/cores')
-    if s.find('"responseHeader":{"status":0') == -1:
+    s = load('http://localhost:8983/api/cores')
+    if s.find('"status":0,') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query api v2 on solr example instance failed')
   finally:
@@ -1214,7 +1252,7 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         downloadedFiles.append(path)
         sys.stdout.write('.')
 
-def make_java_config(parser, java8_home):
+def make_java_config(parser, java9_home):
   def _make_runner(java_home, version):
     print('Java %s JAVA_HOME=%s' % (version, java_home))
     if cygwin:
@@ -1223,7 +1261,7 @@ def make_java_config(parser, java8_home):
                  (java_home, java_home, java_home)
     s = subprocess.check_output('%s; java -version' % cmd_prefix,
                                 shell=True, stderr=subprocess.STDOUT).decode('utf-8')
-    if s.find(' version "%s.' % version) == -1:
+    if s.find(' version "%s' % version) == -1:
       parser.error('got wrong version for java %s:\n%s' % (version, s)) 
     def run_java(cmd, logfile):
       run('%s; %s' % (cmd_prefix, cmd), logfile)
@@ -1232,9 +1270,12 @@ def make_java_config(parser, java8_home):
   if java8_home is None:
     parser.error('JAVA_HOME must be set')
   run_java8 = _make_runner(java8_home, '1.8')
+  run_java9 = None
+  if java9_home is not None:
+    run_java9 = _make_runner(java9_home, '9')
 
-  jc = namedtuple('JavaConfig', 'run_java8 java8_home')
-  return jc(run_java8, java8_home)
+  jc = namedtuple('JavaConfig', 'run_java8 java8_home run_java9 java9_home')
+  return jc(run_java8, java8_home, run_java9, java9_home)
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
 revision_re = re.compile(r'rev([a-f\d]+)')
@@ -1254,8 +1295,8 @@ def parse_config():
                       help='GIT revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
                       help='Version of the release, defaults to that in URL')
-  parser.add_argument('--test-java8', metavar='JAVA8_HOME',
-                      help='Path to Java8 home directory, to run tests with if specified')
+  parser.add_argument('--test-java9', metavar='JAVA9_HOME',
+                      help='Path to Java9 home directory, to run tests with if specified')
   parser.add_argument('url', help='Url pointing to release to test')
   parser.add_argument('test_args', nargs=argparse.REMAINDER,
                       help='Arguments to pass to ant for testing, e.g. -Dwhat=ever.')
@@ -1277,7 +1318,7 @@ def parse_config():
     c.revision = revision_match.group(1)
     print('Revision: %s' % c.revision)
 
-  c.java = make_java_config(parser, c.test_java8)
+  c.java = make_java_config(parser, c.test_java9)
 
   if c.tmp_dir:
     c.tmp_dir = os.path.abspath(c.tmp_dir)
@@ -1426,6 +1467,9 @@ def main():
 def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
 
   startTime = datetime.datetime.now()
+
+  # disable flakey tests for smoke-tester runs:
+  testArgs = '-Dtests.badapples=false %s' % testArgs
   
   if FORCE_CLEAN:
     if os.path.exists(tmpDir):

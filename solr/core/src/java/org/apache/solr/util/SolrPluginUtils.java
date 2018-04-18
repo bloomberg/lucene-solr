@@ -35,7 +35,6 @@ import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -44,8 +43,6 @@ import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -91,17 +88,7 @@ import static org.apache.solr.core.PluginInfo.INVARIANTS;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 
 /**
- * <p>Utilities that may be of use to RequestHandlers.</p>
- *
- * <p>
- * Many of these functions have code that was stolen/mutated from
- * StandardRequestHandler.
- * </p>
- *
- * <p>:TODO: refactor StandardRequestHandler to use these utilities</p>
- *
- * <p>:TODO: Many "standard" functionality methods are not cognisant of
- * default parameter settings.
+ * Utilities that may be of use to RequestHandlers.
  */
 public class SolrPluginUtils {
 
@@ -1009,66 +996,6 @@ public class SolrPluginUtils {
     }
   }
 
-  /**
-   * Convert a DocList to a SolrDocumentList
-   *
-   * The optional param "ids" is populated with the lucene document id
-   * for each SolrDocument.
-   *
-   * @param docs The {@link org.apache.solr.search.DocList} to convert
-   * @param searcher The {@link org.apache.solr.search.SolrIndexSearcher} to use to load the docs from the Lucene index
-   * @param fields The names of the Fields to load
-   * @param ids A map to store the ids of the docs
-   * @return The new {@link org.apache.solr.common.SolrDocumentList} containing all the loaded docs
-   * @throws java.io.IOException if there was a problem loading the docs
-   * @since solr 1.4
-   * @deprecated TODO in 7.0 remove this. It was inlined into ClusteringComponent. DWS: 'ids' is ugly.
-   */
-  public static SolrDocumentList docListToSolrDocumentList(
-      DocList docs,
-      SolrIndexSearcher searcher,
-      Set<String> fields,
-      Map<SolrDocument, Integer> ids ) throws IOException
-  {
-    /*  DWS deprecation note:
-     It's only called by ClusteringComponent, and I think the "ids" param aspect is a bit messy and not worth supporting.
-     If someone wants a similar method they can speak up and we can add a method to SolrDocumentFetcher.
-     */
-    IndexSchema schema = searcher.getSchema();
-
-    SolrDocumentList list = new SolrDocumentList();
-    list.setNumFound(docs.matches());
-    list.setMaxScore(docs.maxScore());
-    list.setStart(docs.offset());
-
-    DocIterator dit = docs.iterator();
-
-    while (dit.hasNext()) {
-      int docid = dit.nextDoc();
-
-      Document luceneDoc = searcher.doc(docid, fields);
-      SolrDocument doc = new SolrDocument();
-
-      for( IndexableField field : luceneDoc) {
-        if (null == fields || fields.contains(field.name())) {
-          SchemaField sf = schema.getField( field.name() );
-          doc.addField( field.name(), sf.getType().toObject( field ) );
-        }
-      }
-      if (docs.hasScores() && (null == fields || fields.contains("score"))) {
-        doc.addField("score", dit.score());
-      }
-
-      list.add( doc );
-
-      if( ids != null ) {
-        ids.put( doc, new Integer(docid) );
-      }
-    }
-    return list;
-  }
-
-
   public static void invokeSetters(Object bean, Iterable<Map.Entry<String,Object>> initArgs) {
     invokeSetters(bean, initArgs, false);
   }
@@ -1090,6 +1017,10 @@ public class SolrPluginUtils {
           continue;
         }
         throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
+      }
+      catch (AssertionError ae) {
+        throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName()+
+            ". This might be a case of SOLR-12207", ae);
       }
     }
   }
@@ -1143,6 +1074,41 @@ public class SolrPluginUtils {
           return builder.toString();
       }
       return UNKNOWN_VALUE;
+  }
+
+  private static final String[] purposeUnknown = new String[] { UNKNOWN_VALUE };
+
+  /**
+   * Given the integer purpose of a request generates a readable value corresponding
+   * the request purposes (there can be more than one on a single request). If
+   * there is a purpose parameter present that's not known this method will
+   * return a 1-element array containing {@value #UNKNOWN_VALUE}
+   * @param reqPurpose Numeric request purpose
+   * @return an array of purpose names.
+   */
+  public static String[] getRequestPurposeNames(Integer reqPurpose) {
+    if (reqPurpose != null) {
+      int valid = 0;
+      for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
+        if ((reqPurpose & entry.getKey()) != 0) {
+          valid++;
+        }
+      }
+      if (valid == 0) {
+        return purposeUnknown;
+      } else {
+        String[] result = new String[valid];
+        int i = 0;
+        for (Map.Entry<Integer, String>entry : purposes.entrySet()) {
+          if ((reqPurpose & entry.getKey()) != 0) {
+            result[i] = entry.getValue();
+            i++;
+          }
+        }
+        return result;
+      }
+    }
+    return purposeUnknown;
   }
 
 }

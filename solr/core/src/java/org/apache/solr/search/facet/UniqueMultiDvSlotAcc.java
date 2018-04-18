@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -30,7 +31,7 @@ import org.apache.solr.schema.SchemaField;
 class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
   SortedSetDocValues topLevel;
   SortedSetDocValues[] subDvs;
-  MultiDocValues.OrdinalMap ordMap;
+  OrdinalMap ordMap;
   LongValues toGlobal;
   SortedSetDocValues subDv;
 
@@ -39,8 +40,7 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
   }
 
   @Override
-  public void reset() throws IOException {
-    super.reset();
+  public void resetIterators() throws IOException {
     topLevel = FieldUtil.getSortedSetDocValues(fcontext.qcontext, field, null);
     nTerms = (int) topLevel.getValueCount();
     if (topLevel instanceof MultiDocValues.MultiSortedSetDocValues) {
@@ -59,9 +59,6 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
 
   @Override
   public void setNextReader(LeafReaderContext readerContext) throws IOException {
-    if (topLevel == null) {
-      reset();
-    }
     super.setNextReader(readerContext);
     if (subDvs != null) {
       subDv = subDvs[readerContext.ord];
@@ -74,10 +71,7 @@ class UniqueMultiDvSlotAcc extends UniqueSlotAcc {
 
   @Override
   public void collect(int doc, int slotNum) throws IOException {
-    if (doc > subDv.docID()) {
-      subDv.advance(doc);
-    }
-    if (doc == subDv.docID()) {
+    if (subDv.advanceExact(doc)) {
 
       int segOrd = (int) subDv.nextOrd();
       assert segOrd >= 0;

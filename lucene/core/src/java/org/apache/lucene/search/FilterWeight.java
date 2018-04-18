@@ -47,12 +47,17 @@ public abstract class FilterWeight extends Weight {
   /**
    * Alternative constructor.
    * Use this variant only if the <code>weight</code> was not obtained
-   * via the {@link Query#createWeight(IndexSearcher, boolean, float)}
+   * via the {@link Query#createWeight(IndexSearcher, ScoreMode, float)}
    * method of the <code>query</code> object.
    */
   protected FilterWeight(Query query, Weight weight) {
     super(query);
     this.in = weight;
+  }
+
+  @Override
+  public boolean isCacheable(LeafReaderContext ctx) {
+    return in.isCacheable(ctx);
   }
 
   @Override
@@ -70,4 +75,8 @@ public abstract class FilterWeight extends Weight {
     return in.scorer(context);
   }
 
+  @Override
+  public Matches matches(LeafReaderContext context, int doc) throws IOException {
+    return in.matches(context, doc);
+  }
 }

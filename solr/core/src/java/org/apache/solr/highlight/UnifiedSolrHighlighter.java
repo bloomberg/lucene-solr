@@ -26,15 +26,16 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.postingshighlight.CustomSeparatorBreakIterator;
-import org.apache.lucene.search.postingshighlight.WholeBreakIterator;
+import org.apache.lucene.search.uhighlight.CustomSeparatorBreakIterator;
 import org.apache.lucene.search.uhighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.uhighlight.LengthGoalBreakIterator;
 import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
+import org.apache.lucene.search.uhighlight.WholeBreakIterator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
@@ -263,6 +264,12 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       }
     }
 
+    // optimization for Solr which keeps a FieldInfos on-hand
+    @Override
+    protected FieldInfo getFieldInfo(String field) {
+      return ((SolrIndexSearcher)searcher).getFieldInfos().fieldInfo(field);
+    }
+
     @Override
     public int getMaxNoHighlightPassages(String field) {
       boolean defaultSummary = params.getFieldBool(field, HighlightParams.DEFAULT_SUMMARY, false);
@@ -303,15 +310,19 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       String type = params.getFieldParam(field, HighlightParams.BS_TYPE);
       if (fragsize == 0 || "WHOLE".equals(type)) { // 0 is special value; no fragmenting
         return new WholeBreakIterator();
-      } else if ("SEPARATOR".equals(type)) {
-        char customSep = parseBiSepChar(params.getFieldParam(field, HighlightParams.BS_SEP));
-        return new CustomSeparatorBreakIterator(customSep);
       }
-      String language = params.getFieldParam(field, HighlightParams.BS_LANGUAGE);
-      String country = params.getFieldParam(field, HighlightParams.BS_COUNTRY);
-      String variant = params.getFieldParam(field, HighlightParams.BS_VARIANT);
-      Locale locale = parseLocale(language, country, variant);
-      BreakIterator baseBI = parseBreakIterator(type, locale);
+
+      BreakIterator baseBI;
+      if ("SEPARATOR".equals(type)) {
+        char customSep = parseBiSepChar(params.getFieldParam(field, HighlightParams.BS_SEP));
+        baseBI = new CustomSeparatorBreakIterator(customSep);
+      } else {
+        String language = params.getFieldParam(field, HighlightParams.BS_LANGUAGE);
+        String country = params.getFieldParam(field, HighlightParams.BS_COUNTRY);
+        String variant = params.getFieldParam(field, HighlightParams.BS_VARIANT);
+        Locale locale = parseLocale(language, country, variant);
+        baseBI = parseBreakIterator(type, locale);
+      }
 
       if (fragsize <= 1) { // no real minimum size
         return baseBI;

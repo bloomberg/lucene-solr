@@ -65,7 +65,12 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-/** @lucene.experimental */
+/**
+ * This class is useful for performing peer to peer synchronization of recently indexed update commands during
+ * recovery process.
+ *
+ * @lucene.experimental
+ */
 public class PeerSync implements SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean debug = log.isDebugEnabled();
@@ -166,7 +171,7 @@ public class PeerSync implements SolrMetricProducer {
   public static final String METRIC_SCOPE = "peerSync";
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String scope) {
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
     syncTime = manager.timer(null, registry, "time", scope, METRIC_SCOPE);
     syncErrors = manager.counter(null, registry, "errors", scope, METRIC_SCOPE);
     syncSkipped = manager.counter(null, registry, "skipped", scope, METRIC_SCOPE);
@@ -259,6 +264,14 @@ public class PeerSync implements SolrMetricProducer {
       // have newer stuff that we also had (assuming updates are going on and are being forwarded).
       for (String replica : replicas) {
         requestVersions(replica);
+      }
+
+      try {
+        // waiting a little bit, there are a chance that an update is sending from leader,
+        // so it will present in the response, but not in our recent updates (SOLR-10126)
+        Thread.sleep(300);
+      } catch (InterruptedException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
       try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
@@ -375,9 +388,13 @@ public class PeerSync implements SolrMetricProducer {
       ShardResponse srsp = shardHandler.takeCompletedOrError();
       if (srsp == null) break;
 
-      Object replicaFingerprint = srsp.getSolrResponse().getResponse().get("fingerprint");
+      Object replicaFingerprint = null;
+      if (srsp.getSolrResponse() != null && srsp.getSolrResponse().getResponse() != null) {
+        replicaFingerprint = srsp.getSolrResponse().getResponse().get("fingerprint");
+      }
+
       if (replicaFingerprint == null) {
-        log.warn("Replica did not return a fingerprint - possibly an older Solr version");
+        log.warn("Replica did not return a fingerprint - possibly an older Solr version or exception");
         continue;
       }
       
@@ -389,7 +406,7 @@ public class PeerSync implements SolrMetricProducer {
           return true;
         }
       } catch(IOException e) {
-        log.warn("Could not cofirm if we are already in sync. Continue with PeerSync");
+        log.warn("Could not confirm if we are already in sync. Continue with PeerSync");
       }
     }
     

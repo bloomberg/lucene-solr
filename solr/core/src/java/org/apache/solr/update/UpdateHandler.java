@@ -19,9 +19,9 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.DirectoryFactory;
@@ -58,7 +58,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
 
   protected final UpdateLog ulog;
 
-  protected Set<String> metricNames = new HashSet<>();
+  protected Set<String> metricNames = ConcurrentHashMap.newKeySet();
   protected MetricRegistry registry;
 
   private void parseEventListeners() {
@@ -115,7 +115,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
   public UpdateHandler(SolrCore core)  {
     this(core, null);
   }
-
+  
   public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
     this.core=core;
     idField = core.getLatestSchema().getUniqueKeyField();
@@ -124,7 +124,9 @@ public abstract class UpdateHandler implements SolrInfoBean {
     PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
 
 
-    if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled()) {
+    // If this is a replica of type PULL, don't create the update log
+    boolean skipUpdateLog = core.getCoreDescriptor().getCloudDescriptor() != null && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
+    if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
       String dataDir = (String)ulogPluginInfo.initArgs.get("dir");
 
       String ulogDir = core.getCoreDescriptor().getUlogDir();

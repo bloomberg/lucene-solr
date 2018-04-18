@@ -27,6 +27,7 @@ import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.mutable.MutableValue;
@@ -71,7 +72,8 @@ public class QueryValueSource extends ValueSource {
 
   @Override
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
-    Weight w = searcher.createNormalizedWeight(q, true);
+    Query rewritten = searcher.rewrite(q);
+    Weight w = searcher.createWeight(rewritten, ScoreMode.COMPLETE, 1);
     context.put(this, w);
   }
 }

@@ -69,12 +69,25 @@ public class MultiplyEvaluatorTest extends LuceneTestCase {
     Assert.assertEquals(2.31D, result);
   }
 
-  @Test(expected = IOException.class)
-  public void multOneField() throws Exception{
-    factory.constructEvaluator("mult(a)");
-  }
-  
   @Test
+  public void multOneField() throws Exception{
+    StreamEvaluator evaluator = factory.constructEvaluator("mult(a)");
+    Object result;
+    
+    values.clear();
+    values.put("a", 6);
+    result = evaluator.evaluate(new Tuple(values));
+    Assert.assertTrue(result instanceof Long);
+    Assert.assertEquals(6L, result);
+    
+    values.clear();
+    values.put("a", 6.5);
+    result = evaluator.evaluate(new Tuple(values));
+    Assert.assertTrue(result instanceof Double);
+    Assert.assertEquals(6.5D, result);
+  }
+
+  @Test(expected = IOException.class)
   public void multTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;
@@ -83,8 +96,8 @@ public class MultiplyEvaluatorTest extends LuceneTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
   }
-  
-  @Test
+
+  @Test(expected = IOException.class)
   public void multTwoFieldsWithNull() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;
@@ -108,7 +121,7 @@ public class MultiplyEvaluatorTest extends LuceneTestCase {
     Assert.assertNull(result);
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void multTwoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("mult(a,b)");
     Object result;

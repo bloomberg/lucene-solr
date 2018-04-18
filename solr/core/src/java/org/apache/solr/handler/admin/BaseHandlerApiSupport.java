@@ -28,10 +28,9 @@ import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.CollectionApiMapping;
+import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -73,7 +72,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
   private Api getApi(final V2EndPoint op) {
     final BaseHandlerApiSupport apiHandler = this;
-    return new Api(ApiBag.getSpec(op.getSpecName())) {
+    return new Api(Utils.getSpec(op.getSpecName())) {
       @Override
       public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
         SolrParams params = req.getParams();
@@ -120,7 +119,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
         } catch (SolrException e) {
           throw e;
         } catch (Exception e) {
-          throw new SolrException(BAD_REQUEST, e);
+          throw new SolrException(BAD_REQUEST, e); //TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to investigate how this happens in tests
         } finally {
           req.setParams(params);
         }
@@ -130,6 +129,9 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
   }
 
+  /**
+   * Wrapper for SolrParams that wraps V2 params and exposes them as V1 params.
+   */
   private static void wrapParams(final SolrQueryRequest req, final CommandOperation co, final ApiCommand cmd, final boolean useRequestParams) {
     final Map<String, String> pathValues = req.getPathTemplateValues();
     final Map<String, Object> map = co == null || !(co.getCommandData() instanceof Map) ?
@@ -149,7 +151,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
           }
 
           private Object getParams0(String param) {
-            param = cmd.meta().getParamSubstitute(param);
+            param = cmd.meta().getParamSubstitute(param); // v1 -> v2, possibly dotted path
             Object o = param.indexOf('.') > 0 ?
                 Utils.getObjectByPath(map, true, splitSmart(param, '.')) :
                 map.get(param);
@@ -173,44 +175,20 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
           @Override
           public Iterator<String> getParameterNamesIterator() {
-            return cmd.meta().getParamNames(co).iterator();
-
+            return cmd.meta().getParamNamesIterator(co);
           }
-
 
         });
 
   }
 
+  protected abstract Collection<ApiCommand> getCommands();
 
-  public static Collection<String> getParamNames(CommandOperation op, ApiCommand command) {
-    List<String> result = new ArrayList<>();
-    Object o = op.getCommandData();
-    if (o instanceof Map) {
-      Map map = (Map) o;
-      collectKeyNames(map, result, "");
-    }
-    return result;
-
-  }
-
-  public static void collectKeyNames(Map<String, Object> map, List<String> result, String prefix) {
-    for (Map.Entry<String, Object> e : map.entrySet()) {
-      if (e.getValue() instanceof Map) {
-        collectKeyNames((Map) e.getValue(), result, prefix + e.getKey() + ".");
-      } else {
-        result.add(prefix + e.getKey());
-      }
-    }
-  }
-
-  protected abstract List<ApiCommand> getCommands();
-
-  protected abstract List<V2EndPoint> getEndPoints();
+  protected abstract Collection<V2EndPoint> getEndPoints();
 
 
   public interface ApiCommand  {
-    CollectionApiMapping.CommandMeta meta();
+    CommandMeta meta();
 
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception;
   }

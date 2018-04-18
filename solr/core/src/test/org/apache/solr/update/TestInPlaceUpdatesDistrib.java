@@ -42,7 +42,7 @@ import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -59,7 +59,6 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -75,11 +74,6 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
-    System.setProperty("solr.tests.intClassName", random().nextBoolean()? "TrieIntField": "IntPointField");
-    System.setProperty("solr.tests.longClassName", random().nextBoolean()? "TrieLongField": "LongPointField");
-    System.setProperty("solr.tests.floatClassName", random().nextBoolean()? "TrieFloatField": "FloatPointField");
-    System.setProperty("solr.tests.doubleClassName", random().nextBoolean()? "TrieDoubleField": "DoublePointField");
-
     schemaString = "schema-inplace-updates.xml";
     configString = "solrconfig-tlog.xml";
 
@@ -87,9 +81,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     // asserting inplace updates happen by checking the internal [docid]
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
 
-    // HACK: Don't use a RandomMergePolicy, but only use the mergePolicyFactory that we've just set
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
-    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
+    randomizeUpdateLogImpl();
 
     initCore(configString, schemaString);
     
@@ -111,16 +103,8 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
   }
 
   @Override
-  protected int getRealtimeReplicas() {
-    return onlyLeaderIndexes? 1 : -1;
-  }
-
-  @After
-  public void after() {
-    System.clearProperty("solr.tests.intClassName");
-    System.clearProperty("solr.tests.longClassName");
-    System.clearProperty("solr.tests.floatClassName");
-    System.clearProperty("solr.tests.doubleClassName");
+  protected boolean useTlogReplicas() {
+    return onlyLeaderIndexes;
   }
 
   public TestInPlaceUpdatesDistrib() throws Exception {
@@ -162,6 +146,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     outOfOrderUpdatesIndividualReplicaTest();
     delayedReorderingFetchesMissingUpdateFromLeaderTest();
     updatingDVsInAVeryOldSegment();
+    updateExistingThenNonExistentDoc();
 
     // TODO Should we combine all/some of these into a single test, so as to cut down on execution time?
     reorderedDBQIndividualReplicaTest();
@@ -270,7 +255,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
   private void reorderedDBQIndividualReplicaTest() throws Exception {
     if (onlyLeaderIndexes) {
-      log.info("RTG with DBQs are not working in append replicas");
+      log.info("RTG with DBQs are not working in tlog replicas");
       return;
     }
     clearIndex();
@@ -427,6 +412,45 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     }
 
     log.info("updatingDVsInAVeryOldSegment: This test passed fine...");
+  }
+
+
+  /**
+   * Test scenario:
+   * <ul>
+   *   <li>Send a batch of documents to one node</li>
+   *   <li>Batch consist of an update for document which is existed and an update for documents which is not existed </li>
+   *   <li>Assumption which is made is that both updates will be applied: field for existed document will be updated,
+   *   new document will be created for a non existed one</li>
+   * </ul>
+   *
+   */
+  private void updateExistingThenNonExistentDoc() throws Exception {
+    clearIndex();
+    index("id", 1, "inplace_updatable_float", "1", "title_s", "newtitle");
+    commit();
+    SolrInputDocument existingDocUpdate = new SolrInputDocument();
+    existingDocUpdate.setField("id", 1);
+    existingDocUpdate.setField("inplace_updatable_float", map("set", "50"));
+
+    SolrInputDocument nonexistentDocUpdate = new SolrInputDocument();
+    nonexistentDocUpdate.setField("id", 2);
+    nonexistentDocUpdate.setField("inplace_updatable_float", map("set", "50"));
+    
+    SolrInputDocument docs[] = new SolrInputDocument[] {existingDocUpdate, nonexistentDocUpdate};
+
+    SolrClient solrClient = clients.get(random().nextInt(clients.size()));
+    add(solrClient, null, docs);
+    commit();
+    for (SolrClient client: new SolrClient[] {LEADER, NONLEADERS.get(0), NONLEADERS.get(1)}) {
+      for (SolrInputDocument expectDoc : docs) {
+        String docId = expectDoc.getFieldValue("id").toString();
+        SolrDocument actualDoc = client.getById(docId);
+        assertNotNull("expected to get doc by id:" + docId, actualDoc);
+        assertEquals("expected to update "+actualDoc, 
+            50.0f, actualDoc.get("inplace_updatable_float"));
+      }
+    }
   }
 
   /**
@@ -743,7 +767,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
    */
   private void reorderedDBQsResurrectionTest() throws Exception {
     if (onlyLeaderIndexes) {
-      log.info("RTG with DBQs are not working in append replicas");
+      log.info("RTG with DBQs are not working in tlog replicas");
       return;
     }
     clearIndex();
@@ -926,23 +950,20 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
       commit();
 
-      // TODO: Could try checking ZK for LIR flags to ensure LIR has not kicked in
-      // Check every 10ms, 100 times, for a replica to go down (& assert that it doesn't)
-      ZkController zkController = shardToLeaderJetty.get(SHARD1).jetty.getCoreContainer().getZkController();
-      String lirPath = zkController.getLeaderInitiatedRecoveryZnodePath(DEFAULT_TEST_COLLECTION_NAME, SHARD1);
-      assertFalse (zkController.getZkClient().exists(lirPath, true));
+      try (ZkShardTerms zkShardTerms = new ZkShardTerms(DEFAULT_COLLECTION, SHARD1, cloudClient.getZkStateReader().getZkClient())) {
+        for (int i=0; i<100; i++) {
+          Thread.sleep(10);
+          cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
+          ClusterState state = cloudClient.getZkStateReader().getClusterState();
 
-      for (int i=0; i<100; i++) {
-        Thread.sleep(10);
-        cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
-        ClusterState state = cloudClient.getZkStateReader().getClusterState();
-
-        int numActiveReplicas = 0;
-        for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())
-          if (rep.getState().equals(Replica.State.ACTIVE))
-            numActiveReplicas++;
-
-        assertEquals("The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);
+          int numActiveReplicas = 0;
+          for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas()) {
+            assertTrue(zkShardTerms.canBecomeLeader(rep.getName()));
+            if (rep.getState().equals(Replica.State.ACTIVE))
+              numActiveReplicas++;
+          }
+          assertEquals("The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);
+        }
       }
 
       for (SolrClient client: new SolrClient[] {LEADER, NONLEADERS.get(0), 
@@ -1145,7 +1166,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
    */
   private void reorderedDBQsUsingUpdatedValueFromADroppedUpdate() throws Exception {
     if (onlyLeaderIndexes) {
-      log.info("RTG with DBQs are not working in append replicas");
+      log.info("RTG with DBQs are not working in tlog replicas");
       return;
     }
     clearIndex();

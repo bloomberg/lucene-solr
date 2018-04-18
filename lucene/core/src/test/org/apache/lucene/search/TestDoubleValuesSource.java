@@ -92,6 +92,14 @@ public class TestDoubleValuesSource extends LuceneTestCase {
     assertEquals(vs1.hashCode(), vs2.hashCode());
     DoubleValuesSource v3 = DoubleValuesSource.fromLongField("long");
     assertFalse(vs1.equals(v3));
+
+    assertEquals(DoubleValuesSource.constant(5), DoubleValuesSource.constant(5));
+    assertEquals(DoubleValuesSource.constant(5).hashCode(), DoubleValuesSource.constant(5).hashCode());
+    assertFalse((DoubleValuesSource.constant(5).equals(DoubleValuesSource.constant(6))));
+
+    assertEquals(DoubleValuesSource.SCORES, DoubleValuesSource.SCORES);
+    assertFalse(DoubleValuesSource.constant(5).equals(DoubleValuesSource.SCORES));
+
   }
 
   public void testSimpleFieldSortables() throws Exception {
@@ -178,23 +186,18 @@ public class TestDoubleValuesSource extends LuceneTestCase {
 
   public void testExplanations() throws Exception {
     for (Query q : testQueries) {
+      testExplanations(q, DoubleValuesSource.fromQuery(new TermQuery(new Term("english", "one"))));
       testExplanations(q, DoubleValuesSource.fromIntField("int"));
       testExplanations(q, DoubleValuesSource.fromLongField("long"));
       testExplanations(q, DoubleValuesSource.fromFloatField("float"));
       testExplanations(q, DoubleValuesSource.fromDoubleField("double"));
       testExplanations(q, DoubleValuesSource.fromDoubleField("onefield"));
       testExplanations(q, DoubleValuesSource.constant(5.45));
-      testExplanations(q, DoubleValuesSource.function(
-          DoubleValuesSource.fromDoubleField("double"), "v * 4 + 73",
-          v -> v * 4 + 73
-      ));
-      testExplanations(q, DoubleValuesSource.scoringFunction(
-          DoubleValuesSource.fromDoubleField("double"), "v * score", (v, s) -> v * s
-      ));
     }
   }
 
   private void testExplanations(Query q, DoubleValuesSource vs) throws IOException {
+    DoubleValuesSource rewritten = vs.rewrite(searcher);
     searcher.search(q, new SimpleCollector() {
 
       DoubleValues v;
@@ -207,24 +210,58 @@ public class TestDoubleValuesSource extends LuceneTestCase {
 
       @Override
       public void setScorer(Scorer scorer) throws IOException {
-        this.v = vs.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
+        this.v = rewritten.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
       }
 
       @Override
       public void collect(int doc) throws IOException {
         Explanation scoreExpl = searcher.explain(q, ctx.docBase + doc);
         if (this.v.advanceExact(doc)) {
-          CheckHits.verifyExplanation("", doc, (float) v.doubleValue(), true, vs.explain(ctx, doc, scoreExpl));
+          CheckHits.verifyExplanation("", doc, (float) v.doubleValue(), true, rewritten.explain(ctx, doc, scoreExpl));
         }
         else {
-          assertFalse(vs.explain(ctx, doc, scoreExpl).isMatch());
+          assertFalse(rewritten.explain(ctx, doc, scoreExpl).isMatch());
         }
       }
 
       @Override
-      public boolean needsScores() {
-        return vs.needsScores();
+      public ScoreMode scoreMode() {
+        return vs.needsScores() ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
       }
     });
   }
+
+  public void testQueryDoubleValuesSource() throws Exception {
+    Query q = new TermQuery(new Term("english", "two"));
+    DoubleValuesSource vs = DoubleValuesSource.fromQuery(q).rewrite(searcher);
+    searcher.search(q, new SimpleCollector() {
+
+      DoubleValues v;
+      Scorer scorer;
+      LeafReaderContext ctx;
+
+      @Override
+      protected void doSetNextReader(LeafReaderContext context) throws IOException {
+        this.ctx = context;
+      }
+
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
+        this.v = vs.getValues(this.ctx, DoubleValuesSource.fromScorer(scorer));
+      }
+
+      @Override
+      public void collect(int doc) throws IOException {
+        assertTrue(v.advanceExact(doc));
+        assertEquals(scorer.score(), v.doubleValue(), 0.00001);
+      }
+
+      @Override
+      public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE;
+      }
+    });
+  }
+
 }

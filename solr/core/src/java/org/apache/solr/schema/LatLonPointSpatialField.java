@@ -18,18 +18,22 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Objects;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.document.LatLonPoint;
+import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
+import org.apache.lucene.search.DoubleValues;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -45,10 +49,12 @@ import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
+import static java.math.RoundingMode.CEILING;
+
 /**
  * A spatial implementation based on Lucene's {@code LatLonPoint} and {@code LatLonDocValuesField}. The
  * first is based on Lucene's "Points" API, which is a BKD Index.  This field type is strictly limited to
- * coordinates in lat/lon decimal degrees.  The accuracy is about a centimeter.
+ * coordinates in lat/lon decimal degrees.  The accuracy is about a centimeter (1.042cm).
  */
 // TODO once LLP & LLDVF are out of Lucene Sandbox, we should be able to javadoc reference them.
 public class LatLonPointSpatialField extends AbstractSpatialFieldType implements SchemaAware {
@@ -69,6 +75,28 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
   protected SpatialStrategy newSpatialStrategy(String fieldName) {
     SchemaField schemaField = schema.getField(fieldName); // TODO change AbstractSpatialFieldType so we get schemaField?
     return new LatLonPointSpatialStrategy(ctx, fieldName, schemaField.indexed(), schemaField.hasDocValues());
+  }
+  
+  /**
+   * Decodes the docValues number into latitude and longitude components, formatting as "lat,lon".
+   * The encoding is governed by {@code LatLonDocValuesField}.  The decimal output representation is reflective
+   * of the available precision.
+   * @param value Non-null; stored location field data
+   * @return Non-null; "lat, lon"
+   */
+  public static String decodeDocValueToString(long value) {
+    final double latDouble = GeoEncodingUtils.decodeLatitude((int) (value >> 32));
+    final double lonDouble = GeoEncodingUtils.decodeLongitude((int) (value & 0xFFFFFFFFL));
+    // This # decimal places gets us close to our available precision to 1.37cm; we have a test for it.
+    // CEILING round-trips (decode then re-encode then decode to get identical results). Others did not. It also
+    //   reverses the "floor" that occurred when we encoded.
+    final int DECIMAL_PLACES = 7;
+    final RoundingMode ROUND_MODE = CEILING;
+    BigDecimal latitudeDecoded = BigDecimal.valueOf(latDouble).setScale(DECIMAL_PLACES, ROUND_MODE);
+    BigDecimal longitudeDecoded = BigDecimal.valueOf(lonDouble).setScale(DECIMAL_PLACES, ROUND_MODE);
+    return latitudeDecoded.stripTrailingZeros().toPlainString() + ","
+        + longitudeDecoded.stripTrailingZeros().toPlainString();
+    // return ((float)latDouble) + "," + ((float)lonDouble);  crude but not quite as accurate
   }
 
   // TODO move to Lucene-spatial-extras once LatLonPoint & LatLonDocValuesField moves out of sandbox
@@ -156,16 +184,16 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
       if (shape instanceof Circle) {
         Circle circle = (Circle) shape;
         double radiusMeters = circle.getRadius() * DistanceUtils.DEG_TO_KM * 1000;
-        return LatLonDocValuesField.newDistanceQuery(getFieldName(),
+        return LatLonDocValuesField.newSlowDistanceQuery(getFieldName(),
             circle.getCenter().getY(), circle.getCenter().getX(),
             radiusMeters);
       } else if (shape instanceof Rectangle) {
         Rectangle rect = (Rectangle) shape;
-        return LatLonDocValuesField.newBoxQuery(getFieldName(),
+        return LatLonDocValuesField.newSlowBoxQuery(getFieldName(),
             rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
       } else if (shape instanceof Point) {
         Point point = (Point) shape;
-        return LatLonDocValuesField.newDistanceQuery(getFieldName(),
+        return LatLonDocValuesField.newSlowDistanceQuery(getFieldName(),
             point.getY(), point.getX(), 0);
       } else {
         throw new UnsupportedOperationException("Shape " + shape.getClass() + " is not supported by " + getClass());
@@ -177,7 +205,7 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
     }
 
     @Override
-    public ValueSource makeDistanceValueSource(Point queryPoint, double multiplier) {
+    public DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier) {
       if (!docValues) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             getFieldName() + " must have docValues enabled to support this feature");
@@ -191,7 +219,7 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
     /**
      * A {@link ValueSource} based around {@code LatLonDocValuesField#newDistanceSort(String, double, double)}.
      */
-    private static class DistanceSortValueSource extends ValueSource {
+    private static class DistanceSortValueSource extends DoubleValuesSource {
       private final String fieldName;
       private final Point queryPoint;
       private final double multiplier;
@@ -218,41 +246,48 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
       }
 
       @Override
-      public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-        return new DoubleDocValues(this) {
+      public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        return new DoubleValues() {
+
           @SuppressWarnings("unchecked")
           final FieldComparator<Double> comparator =
               (FieldComparator<Double>) getSortField(false).getComparator(1, 1);
-          final LeafFieldComparator leafComparator = comparator.getLeafComparator(readerContext);
+          final LeafFieldComparator leafComparator = comparator.getLeafComparator(ctx);
           final double mult = multiplier; // so it's a local field
 
-          // Since this computation is expensive, it's worth caching it just in case.
-          double cacheDoc = -1;
-          double cacheVal = Double.POSITIVE_INFINITY;
+          double value = Double.POSITIVE_INFINITY;
 
           @Override
-          public double doubleVal(int doc) {
-            if (cacheDoc != doc) {
-              try {
-                leafComparator.copy(0, doc);
-                cacheVal = comparator.value(0) * mult;
-                cacheDoc = doc;
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
-            }
-            return cacheVal;
+          public double doubleValue() throws IOException {
+            return value;
           }
 
           @Override
-          public boolean exists(int doc) {
-            return !Double.isInfinite(doubleVal(doc));
+          public boolean advanceExact(int doc) throws IOException {
+            leafComparator.copy(0, doc);
+            value = comparator.value(0) * mult;
+            return true;
           }
         };
       }
 
       @Override
-      public String description() {
+      public boolean needsScores() {
+        return false;
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return DocValues.isCacheable(ctx, fieldName);
+      }
+
+      @Override
+      public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
+        return this;
+      }
+
+      @Override
+      public String toString() {
         return "distSort(" + fieldName + ", " + queryPoint + ", mult:" + multiplier + ")";
       }
 

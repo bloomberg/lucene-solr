@@ -24,15 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.carrotsearch.hppc.IntHashSet;
-import com.carrotsearch.hppc.IntObjectHashMap;
-import com.carrotsearch.hppc.LongHashSet;
-import com.carrotsearch.hppc.LongObjectHashMap;
-import com.carrotsearch.hppc.LongObjectMap;
-import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.carrotsearch.hppc.cursors.LongCursor;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.carrotsearch.hppc.cursors.ObjectCursor;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -42,6 +33,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -50,6 +42,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermInSetQuery;
@@ -71,17 +64,10 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.DoublePointField;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.FloatPointField;
-import org.apache.solr.schema.IntPointField;
-import org.apache.solr.schema.LongPointField;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TrieDoubleField;
-import org.apache.solr.schema.TrieFloatField;
-import org.apache.solr.schema.TrieIntField;
-import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -94,6 +80,16 @@ import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+
+import com.carrotsearch.hppc.IntHashSet;
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongObjectHashMap;
+import com.carrotsearch.hppc.LongObjectMap;
+import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.LongCursor;
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -216,13 +212,14 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     FieldType fieldType = schemaField.getType();
 
     SortedDocValues values = null;
-    long nullValue = 0;
+    long nullValue = 0L;
 
     if(fieldType instanceof StrField) {
       //Get The Top Level SortedDocValues
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
         Map<String, UninvertingReader.Type> mapping = new HashMap();
         mapping.put(field, UninvertingReader.Type.SORTED);
+        @SuppressWarnings("resource")
         UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
@@ -231,21 +228,20 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     } else {
       //Get the nullValue for the numeric collapse field
       String defaultValue = searcher.getSchema().getField(field).getDefaultValue();
-      if(defaultValue != null) {
-        if(fieldType instanceof TrieIntField || fieldType instanceof TrieLongField ||
-            fieldType instanceof IntPointField || fieldType instanceof LongPointField) {
+      
+      final NumberType numType = fieldType.getNumberType();
+
+      // Since the expand component depends on the operation of the collapse component, 
+      // which validates that numeric field types are 32-bit,
+      // we don't need to handle invalid 64-bit field types here.
+      if (defaultValue != null) {
+        if (numType == NumberType.INTEGER) {
           nullValue = Long.parseLong(defaultValue);
-        } else if(fieldType instanceof TrieFloatField || fieldType instanceof FloatPointField){
+        } else if (numType == NumberType.FLOAT) {
           nullValue = Float.floatToIntBits(Float.parseFloat(defaultValue));
-        } else if(fieldType instanceof TrieDoubleField || fieldType instanceof DoublePointField){
-          nullValue = Double.doubleToLongBits(Double.parseDouble(defaultValue));
         }
-      } else {
-        if(fieldType instanceof TrieFloatField || fieldType instanceof FloatPointField){
-          nullValue = Float.floatToIntBits(0.0f);
-        } else if(fieldType instanceof TrieDoubleField || fieldType instanceof DoublePointField){
-          nullValue = Double.doubleToLongBits(0.0f);
-        }
+      } else if (NumberType.FLOAT.equals(numType)) { // Integer case already handled by nullValue defaulting to 0
+        nullValue = Float.floatToIntBits(0.0f);
       }
     }
 
@@ -281,7 +277,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     IntObjectHashMap<BytesRef> ordBytes = null;
     if(values != null) {
       groupBits = new FixedBitSet(values.getValueCount());
-      MultiDocValues.OrdinalMap ordinalMap = null;
+      OrdinalMap ordinalMap = null;
       SortedDocValues[] sortedDocValues = null;
       LongValues segmentOrdinalMap = null;
       SortedDocValues currentValues = null;
@@ -394,6 +390,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
         Map<String, UninvertingReader.Type> mapping = new HashMap();
         mapping.put(field, UninvertingReader.Type.SORTED);
+        @SuppressWarnings("resource")
         UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
@@ -526,7 +523,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   private static class GroupExpandCollector implements Collector, GroupCollector {
     private SortedDocValues docValues;
-    private MultiDocValues.OrdinalMap ordinalMap;
+    private OrdinalMap ordinalMap;
     private SortedDocValues segmentValues;
     private LongValues segmentOrdinalMap;
     private MultiDocValues.MultiSortedDocValues multiSortedDocValues;
@@ -541,7 +538,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       DocIdSetIterator iterator = new BitSetIterator(groupBits, 0); // cost is not useful here
       int group;
       while ((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false, true);
         groups.put(group, collector);
       }
 
@@ -555,8 +552,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     @Override
-    public boolean needsScores() {
-      return true; // TODO: is this always true?
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE; // TODO: is this always true?
     }
 
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
@@ -594,10 +591,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
               ord = -1;
             }
           } else {
-            if (globalDoc > docValues.docID()) {
-              docValues.advance(globalDoc);
-            }
-            if (globalDoc == docValues.docID()) {
+            if (docValues.advanceExact(globalDoc)) {
               ord = docValues.ordValue();
             } else {
               ord = -1;
@@ -633,7 +627,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       Iterator<LongCursor> iterator = groupSet.iterator();
       while (iterator.hasNext()) {
         LongCursor cursor = iterator.next();
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false, true);
         groups.put(cursor.value, collector);
       }
 
@@ -642,8 +636,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
     
     @Override
-    public boolean needsScores() {
-      return true; // TODO: is this always true?
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE; // TODO: is this always true?
     }
 
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
@@ -667,12 +661,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
         @Override
         public void collect(int docId) throws IOException {
-          int valuesDocID = docValues.docID();
-          if (valuesDocID < docId) {
-            valuesDocID = docValues.advance(docId);
-          }
           long value;
-          if (valuesDocID == docId) {
+          if (docValues.advanceExact(docId)) {
             value = docValues.longValue();
           } else {
             value = 0;
@@ -742,6 +732,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           return Float.toString(Float.intBitsToFloat((int)val));
         case DOUBLE:
           return Double.toString(Double.longBitsToDouble(val));
+        case DATE:
+          break;
       }
     }
     throw new IllegalArgumentException("FieldType must be INT,LONG,FLOAT,DOUBLE found " + fieldType);

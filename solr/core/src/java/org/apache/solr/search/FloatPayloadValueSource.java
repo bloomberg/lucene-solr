@@ -20,7 +20,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -28,10 +27,10 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
+import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.util.PayloadDecoder;
 
 public class FloatPayloadValueSource extends ValueSource {
   protected final String field;
@@ -56,8 +55,7 @@ public class FloatPayloadValueSource extends ValueSource {
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
 
-    Fields fields = readerContext.reader().fields();
-    final Terms terms = fields.terms(indexedField);
+    final Terms terms = readerContext.reader().terms(indexedField);
 
     FunctionValues defaultValues = defaultValueSource.getValues(context, readerContext);
 
@@ -66,6 +64,7 @@ public class FloatPayloadValueSource extends ValueSource {
       PostingsEnum docs ;
       int atDoc;
       int lastDocRequested = -1;
+      float docScore = 0.f;
 
       { reset(); }
 
@@ -143,6 +142,10 @@ public class FloatPayloadValueSource extends ValueSource {
             // out-of-order access.... reset
             reset();
           }
+          else if (doc == lastDocRequested) {
+            return docScore;
+          }
+          
           lastDocRequested = doc;
 
           if (atDoc < doc) {
@@ -152,7 +155,8 @@ public class FloatPayloadValueSource extends ValueSource {
           if (atDoc > doc) {
             // term doesn't match this document... either because we hit the
             // end, or because the next doc is after this doc.
-            return defaultValues.floatVal(doc);
+            docScore =  defaultValues.floatVal(doc);
+            return docScore;
           }
 
           // a match!
@@ -163,7 +167,7 @@ public class FloatPayloadValueSource extends ValueSource {
             docs.nextPosition();
             BytesRef payload = docs.getPayload();
             if (payload != null) {
-              float payloadVal = decoder.decode(atDoc, docs.startOffset(), docs.endOffset(), payload);
+              float payloadVal = decoder.computePayloadFactor(payload);
 
               // payloadFunction = null represents "first"
               if (payloadFunction == null) return payloadVal;
@@ -174,8 +178,8 @@ public class FloatPayloadValueSource extends ValueSource {
 
             }
           }
-
-          return (numPayloadsSeen > 0) ? payloadFunction.docScore(doc, indexedField, numPayloadsSeen, currentScore) : defaultValues.floatVal(doc);
+          docScore =  (numPayloadsSeen > 0) ? payloadFunction.docScore(doc, indexedField, numPayloadsSeen, currentScore) : defaultValues.floatVal(doc);
+          return docScore;
         } catch (IOException e) {
           throw new RuntimeException("caught exception in function "+description()+" : doc="+doc, e);
         }

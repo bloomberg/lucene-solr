@@ -88,7 +88,7 @@ public class ReRankTopGroupsCollector<T> extends TopGroupsCollector<T> {
       this.needsScores = getScores || getMaxScores || withinGroupSort.needsScores();
       this.supplier = withinGroupSort == Sort.RELEVANCE ?
           () -> TopScoreDocCollector.create(maxDocsPerGroup) :
-          () -> TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, getScores, getMaxScores);
+          () -> TopFieldCollector.create(withinGroupSort, maxDocsPerGroup, fillSortFields, getScores, getMaxScores, true  /* track total hits */); //
       this.query = query;
       this.searcher = searcher;
       this.groupSort = withinGroupSort;

@@ -51,7 +51,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     index();
   }
   
-   public static void index() throws Exception {
+  public static void index() throws Exception {
     assertU(adoc("id", "42", "trait_ss", "Tool", "trait_ss", "Obnoxious",
             "name", "Zapp Brannigan"));
     assertU(adoc("id", "43" ,
@@ -96,6 +96,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "71", "text_sw", "ties"));
     assertU(adoc("id", "72", "text_sw", "wifi ATM"));
     assertU(adoc("id", "73", "shingle23", "A B X D E"));
+    assertU(adoc("id", "74", "isocharfilter", "niño"));
+//    assertU(adoc("id", "74", "text_pick_best", "tabby"));
+//    assertU(adoc("id", "74", "text_as_distinct", "persian"));
+
     assertU(commit());
   }
 
@@ -189,6 +193,14 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
               "defType", "edismax")
           , "*[count(//doc)=0]");
 
+      assertQ("The default for lowercaseOperators should not allow lower case and",
+          req("q", "Zapp and Brannigan",
+              "qf", "name",
+              "q.op", "AND",
+              "sow", sow,
+              "defType", "edismax")
+          , "*[count(//doc)=0]");
+
       assertQ("Lower case operator, allow lower case operators",
           req("q", "Zapp and Brannigan",
               "qf", "name",
@@ -199,7 +211,23 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
           , "*[count(//doc)=1]");
     }
   }
-    
+
+  public void testCharFilter() throws Exception {
+    // test that charfilter was applied by the indexer
+    assertQ(req("defType", "edismax",
+        "stopwords","false",
+        "qf", "isocharfilter",
+        "q","nino"), "*[count(//doc)=1]"
+    );
+
+    // test that charfilter was applied to the query
+    assertQ(req("defType", "edismax",
+        "stopwords","false",
+        "qf", "isocharfilter",
+        "q","niño"), "*[count(//doc)=1]"
+    );
+  }
+
   // test the edismax query parser based on the dismax parser
   public void testFocusQueryParser() {
     String allq = "id:[42 TO 51]";
@@ -284,7 +312,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                "q","Order AND op"), oner
     );
    assertQ(req("defType", "edismax", "qf", "name title subject text",
-               "q","Order and op"), oner
+               "q","Order and op"), twor
     );
     assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","+Order op"), oner
@@ -385,13 +413,22 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     
     // special psuedo-fields like _query_ and _val_
 
-    // special fields (and real field id) should be included by default
+    // _query_ should be excluded by default
     assertQ(req("defType", "edismax", 
                 "mm", "100%",
                 "fq", "id:51",
-                "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
-            oner);
-    // should also work when explicitly allowed
+                "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\"",
+                "debugQuery", "true"),
+            nor,
+        "//str[@name='parsedquery_toString'][.='+(((text:queri) (text:\"geofilt d 20 sfield store pt 12 34 56 78\"))~2)']");
+    // again; this time use embedded local-params style
+    assertQ(req("defType", "edismax",
+        "mm", "100%",
+        "fq", "id:51",
+        "q", " {!geofilt d=20 sfield=store pt=12.34,-56.78}"),//notice leading space
+        nor);
+
+    // should work when explicitly allowed
     assertQ(req("defType", "edismax", 
                 "mm", "100%",
                 "fq", "id:51",
@@ -405,6 +442,14 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "uf", "_query_",
                 "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
             oner);
+    // again; this time use embedded local-params style
+    assertQ(req("defType", "edismax",
+        "mm", "100%",
+        "fq", "id:51",
+        "uf", "id",
+        "uf", "_query_",
+        "q", " {!geofilt d=20 sfield=store pt=12.34,-56.78}"),//notice leading space
+        oner);
 
     // should fail when prohibited
     assertQ(req("defType", "edismax", 
@@ -416,7 +461,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType", "edismax", 
                 "mm", "100%",
                 "fq", "id:51",
-                "uf", "id", // excluded by ommision
+                "uf", "id", // excluded by omission
                 "q", "_query_:\"{!geofilt d=20 sfield=store pt=12.34,-56.78}\""),
             nor);
 
@@ -1787,7 +1832,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       try (SolrQueryRequest req = req(params)) {
         QParser qParser = QParser.getParser("text:grackle", "edismax", req); // "text" has autoGeneratePhraseQueries="true"
         Query q = qParser.getQuery();
-        assertEquals("+(text:\"crow blackbird\" text:grackl)", q.toString());
+        assertEquals("+((text:\"crow blackbird\" text:grackl))", q.toString());
       }
     }
     try (SolrQueryRequest req = req(sowTrueParams)) {
@@ -1799,7 +1844,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       try (SolrQueryRequest req = req(params)) {
         QParser qParser = QParser.getParser("text_sw:grackle", "edismax", req); // "text_sw" doesn't specify autoGeneratePhraseQueries => default false
         Query q = qParser.getQuery();
-        assertEquals("+((+text_sw:crow +text_sw:blackbird) text_sw:grackl)", q.toString());
+        assertEquals("+(((+text_sw:crow +text_sw:blackbird) text_sw:grackl))", q.toString());
       }
     }
 
@@ -1809,8 +1854,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       try (SolrQueryRequest req = req(params)) {
         QParser qParser = QParser.getParser("grackle", "edismax", req);
         Query q = qParser.getQuery();
-        assertEquals("+((text:\"crow blackbird\" text:grackl)"
-                + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl))",
+        assertEquals("+(((text:\"crow blackbird\" text:grackl))"
+                + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl)))",
             q.toString());
 
         qParser = QParser.getParser("grackle wi fi", "edismax", req);
@@ -1825,13 +1870,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       QParser qParser = QParser.getParser("grackle", "edismax", req);
       Query q = qParser.getQuery();
       assertEquals("+(spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])"
-              + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl))",
+              + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl)))",
           q.toString());
 
       qParser = QParser.getParser("grackle wi fi", "edismax", req);
       q = qParser.getQuery();
       assertEquals("+((spanOr([spanNear([text:crow, text:blackbird], 0, true), text:grackl])"
-              + " | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl)) (text:wi | text_sw:wi) (text:fi | text_sw:fi))",
+              + " | (((+text_sw:crow +text_sw:blackbird) text_sw:grackl))) (text:wi | text_sw:wi) (text:fi | text_sw:fi))",
           q.toString());
     }
   }
@@ -1993,10 +2038,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
        **/
       @Override
       protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
-                                    boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries)
+                                    boolean quoted, boolean fieldAutoGenPhraseQueries,
+                                    boolean fieldEnableGraphQueries, SynonymQueryStyle synonymQueryStyle)
           throws SyntaxError {
         Query q = super.newFieldQuery
-            (analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries);
+            (analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
         if (q instanceof BooleanQuery) {
           boolean rewrittenSubQ = false; // dirty flag: rebuild the repacked query?
           BooleanQuery.Builder builder = newBooleanQuery();
@@ -2038,4 +2084,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
   }
+
+  /** SOLR-11512 */
+  @Test(expected=SolrException.class)
+  public void killInfiniteRecursionParse() throws Exception {
+    assertJQ(req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}"));
+  }
+
 }

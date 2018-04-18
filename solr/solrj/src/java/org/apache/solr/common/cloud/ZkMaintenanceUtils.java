@@ -26,8 +26,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -244,6 +247,33 @@ public class ZkMaintenanceUtils {
       }
     });
   }
+
+  /**
+   * Delete a path and all of its sub nodes
+   * @param filter for node to be deleted
+   */
+  public static void clean(SolrZkClient zkClient, String path, Predicate<String> filter) throws InterruptedException, KeeperException {
+    if (filter == null) {
+      clean(zkClient, path);
+      return;
+    }
+
+    TreeSet<String> paths = new TreeSet<>(Comparator.comparingInt(String::length).reversed());
+
+    traverseZkTree(zkClient, path, VISIT_ORDER.VISIT_POST, znode -> {
+      if (!znode.equals("/") && filter.test(znode)) paths.add(znode);
+    });
+
+    for (String subpath : paths) {
+      if (!subpath.equals("/")) {
+        try {
+          zkClient.delete(subpath, -1, true);
+        } catch (KeeperException.NotEmptyException | KeeperException.NoNodeException e) {
+          // expected
+        }
+      }
+    }
+  }
   
   public static void uploadToZK(SolrZkClient zkClient, final Path fromPath, final String zkPath,
                                 final Pattern filenameExclusions) throws IOException {
@@ -308,13 +338,13 @@ public class ZkMaintenanceUtils {
   public static void downloadFromZK(SolrZkClient zkClient, String zkPath, Path file) throws IOException {
     try {
       List<String> children = zkClient.getChildren(zkPath, null, true);
-      // If it has no children, it's a leaf node, write the assoicated data from the ZNode. 
+      // If it has no children, it's a leaf node, write the associated data from the ZNode.
       // Otherwise, continue recursing, but write the associated data to a special file if any
       if (children.size() == 0) {
         // If we didn't copy data down, then we also didn't create the file. But we still need a marker on the local
-        // disk so create a dir.
+        // disk so create an empty file.
         if (copyDataDown(zkClient, zkPath, file.toFile()) == 0) {
-          Files.createDirectories(file);
+          Files.createFile(file);
         }
       } else {
         Files.createDirectories(file); // Make parent dir.

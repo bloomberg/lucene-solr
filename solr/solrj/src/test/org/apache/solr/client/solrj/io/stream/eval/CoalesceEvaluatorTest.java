@@ -40,9 +40,9 @@ public class CoalesceEvaluatorTest extends LuceneTestCase {
       .withFunctionName("coalesce", CoalesceEvaluator.class);
     values = new HashMap<String,Object>();
   }
-    
-  @Test
-  public void twoFieldsWithValues() throws Exception{
+  /*
+  @Test(expected = IOException.class)
+  public void twoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("coalesce(a,b)");
     Object result;
     
@@ -50,7 +50,7 @@ public class CoalesceEvaluatorTest extends LuceneTestCase {
     values.put("a", null);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(2, result);
+    Assert.assertEquals(2L, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -83,19 +83,19 @@ public class CoalesceEvaluatorTest extends LuceneTestCase {
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
   }
-  
 
-  @Test
-  public void twoFieldsWithMissingField() throws Exception{
+
+  @Test(expected = IOException.class)
+  public void twoFieldsWithValues() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("coalesce(a,b)");
     Object result;
     
     values.clear();
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertNull(result);
-    
   }
-  
+  */
+
   @Test
   public void manyFieldsWithSubcoalesces() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("coalesce(a,b,coalesce(c,d))");
@@ -107,6 +107,6 @@ public class CoalesceEvaluatorTest extends LuceneTestCase {
     values.put("c", null);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1, result);
+    Assert.assertEquals(1L, result);
   }
 }

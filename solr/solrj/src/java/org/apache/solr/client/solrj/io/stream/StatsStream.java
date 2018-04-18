@@ -42,11 +42,13 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
+/**
+* @since 6.0.0
+*/
 public class StatsStream extends TupleStream implements Expressible  {
 
   private static final long serialVersionUID = 1;
@@ -62,15 +64,6 @@ public class StatsStream extends TupleStream implements Expressible  {
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
   protected StreamContext streamContext;
-
-  // Use StatsStream(String, String, SolrParams, Metric[]
-  @Deprecated
-  public StatsStream(String zkHost,
-                     String collection,
-                     Map<String, String> props,
-                     Metric[] metrics) {
-    init(zkHost, collection, new MapSolrParams(props), metrics);
-  }
 
   public StatsStream(String zkHost,
                      String collection,
