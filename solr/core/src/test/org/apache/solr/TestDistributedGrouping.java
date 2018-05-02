@@ -313,18 +313,18 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     simpleQuery("q", "*:*", "rows", 10, "fl", "id," + i1, "group", "true", "group.field", i1, "debug", "true");
 
     // SOLR-8776
-//    rsp = query("q", "{!func}id_i1", "rows", 10, "fl",  "id," + i1, "group", "true",
+//    rsp = query("q", "{!func}id_i1", "rows", 10, "fl",  "id," + i1+",score", "group", "true",
 //        "group.field", i1, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
-//            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func}mul(-1,id_i1)");
-//
-//
-//    rsp = query("q", "{!func}id", "rows", 100, "fl",  "id," + i1, "group", "true",
-//        "group.field", i1, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
-//            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", t1+":eggs");
-//
-//    rsp = query("q", "{!func}id", "rows", 3, "fl",  "id," + i1, "group", "true",
-//        "group.field", i1dv, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
-//            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func }field("+i1dv+")");
+//            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func}"+i1);
+
+
+    rsp = query("q", "{!func}id_i1", "rows", 100, "fl",  "id," + i1, "group", "true",
+        "group.field", i1, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", t1+":eggs");
+
+    rsp = query("q", "{!func}id_i1", "rows", 2, "fl",  "id,score," + i1, "group", "true",
+        "group.field", i1dv, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func }"+i1);
   }
 
   private QueryResponse simpleQuery(Object... queryParams) throws SolrServerException, IOException {

@@ -41,6 +41,7 @@ import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
@@ -164,8 +165,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
           docsPerGroup += subTopGroups.totalGroupedHitCount;
         }
       }
-      rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
+
       if (rb.getRankQuery() != null){
+        docsPerGroup = Math.max(docsPerGroupDefault, ((AbstractReRankQuery)rb.getRankQuery()).getReRankDocs());
+        rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
+
         TopGroups<BytesRef> group = rb.mergedTopGroups.get(groupField);
         for (int i = 0; i < group.groups.length; i++){
           GroupDocs g = group.groups[i];
@@ -177,6 +181,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
               return 0;
             }
           });
+          ScoreDoc[] scoreDocs = g.scoreDocs;
+          if (scoreDocs.length > docsPerGroupDefault) {
+            scoreDocs = Arrays.copyOf(g.scoreDocs, docsPerGroupDefault);
+          }
+          group.groups[i] = new GroupDocs(g.scoreDocs[0].score, g.scoreDocs[0].score, g.totalHits, scoreDocs, g.groupValue, g.groupSortValues);
           float maxScore = g.scoreDocs[0].score;
           group.groups[i] = new GroupDocs(maxScore, maxScore, g.totalHits, g.scoreDocs, g.groupValue, g.groupSortValues);
         }
@@ -191,6 +200,9 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         int topN = Math.min(group.groups.length, rb.getSortSpec().getCount());
         group = new TopGroups<BytesRef>(group.groupSort, group.withinGroupSort, group.totalHitCount, group.totalGroupedHitCount, Arrays.copyOfRange(group.groups, 0, topN), group.maxScore);
         rb.mergedTopGroups.put(groupField, group);
+      }
+      else {
+        rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
       }
     }
 

@@ -16,12 +16,6 @@
  */
 package org.apache.lucene.validation.ivyde;
 
-import org.apache.ivy.core.module.id.ModuleId;
-import org.apache.ivy.core.module.id.ModuleRevisionId;
-import org.apache.ivy.core.report.ResolveReport;
-import org.apache.ivy.core.resolve.IvyNode;
-import org.apache.ivy.core.resolve.IvyNodeCallers;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,6 +23,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.ivy.core.module.id.ModuleId;
+import org.apache.ivy.core.module.id.ModuleRevisionId;
+import org.apache.ivy.core.report.ResolveReport;
+import org.apache.ivy.core.resolve.IvyNode;
+import org.apache.ivy.core.resolve.IvyNodeCallers;
 
 /**
  * This class is copied from org/apache/ivyde/eclipse/resolvevisualizer/model/IvyNodeElementAdapter.java at 
