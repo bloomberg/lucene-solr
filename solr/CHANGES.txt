@@ -69,6 +69,9 @@ Upgrade Notes
 New Features
 ----------------------
 
+* SOLR-11200: A new CMS config option 'ioThrottle' to manually enable/disable 
+  ConcurrentMergeSchedule.doAutoIOThrottle. (Amrit Sarkar, Nawab Zada Asad iqbal via Dawid Weiss)
+
 * SOLR-11670: Implement a periodic house-keeping task. This uses a scheduled autoscaling trigger and
   currently performs cleanup of old inactive shards. (ab, shalin)
 
@@ -101,6 +104,11 @@ New Features
 
 * SOLR-11924: Added the ability to listen to changes in the set of active collections in a cloud
   in the ZkStateReader, through the CloudCollectionsListener. (Houston Putman, Dennis Gove)
+
+* SOLR-8998: introducing uniqueBlock(_root_) aggregation as faster alternative to unique(_root_) for counting
+  child value facets in parents via json.facet on block index (Dr Oleg Savrasov, Mikhail Khludnev)
+
+* SOLR-11278: Add IgnoreLargeDocumentProcessFactory (Cao Manh Dat, David Smiley)
 
 Bug Fixes
 ----------------------
@@ -144,7 +152,8 @@ Bug Fixes
 * SOLR-12207: Just rethrowing AssertionError caused by jdk bug in reflection with invocation details.
  (ab, Dawid Weiss, Mikhail Khludnev)
 
-* SOLR-12155: Exception from UnInvertedField constructor puts threads to infinite wait. (Mikhail Khludnev)
+* SOLR-12155: Exception from UnInvertedField constructor puts threads to infinite wait.
+ (Andrey Kudryavtsev, Mikhail Khludnev)
 
 * SOLR-12201: TestReplicationHandler.doTestIndexFetchOnMasterRestart(): handle unexpected replication failures
   (Steve Rowe)
@@ -168,6 +177,32 @@ Bug Fixes
 * SOLR-10169: PeerSync will hit an NPE on no response errors when looking for fingerprint. (Erick Erickson)
 
 * SOLR-12187: Replica should watch clusterstate and unload itself if its entry is removed (Cao Manh Dat)
+
+* SOLR-6286: TestReplicationHandler.doTestReplicateAfterCoreReload(): stop checking for identical
+  commits before/after master core reload; and make non-nightly mode test 10 docs instead of 0.
+  (shalin, hossman, Mark Miller, Steve Rowe)
+
+* SOLR-9304: Fix Solr's HTTP handling to respect '-Dsolr.ssl.checkPeerName=false' aka SOLR_SSL_CHECK_PEER_NAME
+  (Shawn Heisey, Carlton Findley, Robby Pond, hossman)
+
+* SOLR-12250: NegativeArraySizeException on TransactionLog if previous document more than 1.9GB (Cao Manh Dat)
+
+* SOLR-12253: Remove optimize button from the core admin page (Erick Erickson)
+
+* SOLR-11833: Allow searchRate trigger to delete replicas. Improve configurability of the trigger by specifying
+  upper / lower thresholds and respective actions (ab)
+
+* SOLR-12261: If you attempt to delete a collection immediately after deleting an alias it used to be a part of, you may
+  get an error that's it's a member of that alias.  This check now ensures the alias state is sync()'ed with ZK first.
+  (David Smiley)
+
+* SOLR-12275: wrong caching for {!filters} as well as for `filters` local param in {!parent} and {!child}
+  (David Smiley, Mikhail Khluldnev)
+  
+* SOLR-12284: WordBreakSolrSpellchecker will no longer add parenthesis in collations when breaking words in 
+  non-boolean queries. (James Dyer)
+
+* SOLR-12202: Fix errors in solr-exporter.cmd. (Minoru Osuka via koji)
 
 Optimizations
 ----------------------
@@ -228,6 +263,36 @@ Other Changes
 
 * SOLR-12134: ref-guide 'bare-bones html' validation is now part of 'ant documentation' and validates
   javadoc links locally. (hossman)
+
+* SOLR-12142: EmbeddedSolrServer should use req.getContentWriter (noble)
+
+* SOLR-12252: Fix minor compiler and intellij warnings in autoscaling policy framework. (shalin)
+
+* SOLR-11914: The following SolrParams methods are now deprecated: toSolrParams (use NamedList.toSolrParams instead),
+  toMap, toMultiMap, toFilteredSolrParams, getAll.  The latter ones have no direct replacement but are easy to
+  implement yourself as-needed. (David Smiley)
+
+* SOLR-10036: Upgrade jackson from 2.5.4 to 2.9.5 (Shashank Pedamallu, Shawn Heisey, Varun Thacker)
+
+==================  7.3.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.17
+Carrot2 3.15.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.11
+Jetty 9.4.8.v20171121
+
+Bug Fixes
+----------------------
+
+* SOLR-12204: Upgrade commons-fileupload dependency to 1.3.3 to address CVE-2016-1000031.  (Steve Rowe)
+
+* SOLR-12256: Fixed some eventual-consistency issues with collection aliases by using ZooKeeper.sync(). (David Smiley)
 
 ==================  7.3.0 ==================
 

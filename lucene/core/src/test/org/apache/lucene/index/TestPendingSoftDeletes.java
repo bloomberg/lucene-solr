@@ -32,6 +32,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
@@ -152,7 +153,10 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testUpdateAppliedOnlyOnce() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig().setSoftDeletesField("_soft_deletes"));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
+        .setSoftDeletesField("_soft_deletes")
+        .setMaxBufferedDocs(3) // make sure we write one segment
+        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
     writer.softUpdateDocument(new Term("id", "1"), doc,
@@ -198,7 +202,18 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
   private DocValuesFieldUpdates singleUpdate(List<Integer> docsDeleted, int maxDoc) {
     return new DocValuesFieldUpdates(maxDoc, 0, "_soft_deletes", DocValuesType.NUMERIC) {
       @Override
-      public void add(int doc, Object value) {
+      public void add(int doc, long value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int doc, BytesRef value) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public void add(int docId, Iterator iterator) {
+        throw new UnsupportedOperationException();
       }
 
       @Override
@@ -208,18 +223,23 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
           int doc = -1;
 
           @Override
-          int nextDoc() {
+          public int nextDoc() {
             return doc = iter.next();
           }
 
           @Override
-          int doc() {
-            return doc;
+          long longValue() {
+            return 1;
           }
 
           @Override
-          Object value() {
-            return 1;
+          BytesRef binaryValue() {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public int docID() {
+            return doc;
           }
 
           @Override
@@ -227,25 +247,6 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
             return 0;
           }
         };
-      }
-
-      @Override
-      public void finish() {
-      }
-
-      @Override
-      public boolean any() {
-        return true;
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
-
-      @Override
-      public int size() {
-        return 1;
       }
     };
   }
