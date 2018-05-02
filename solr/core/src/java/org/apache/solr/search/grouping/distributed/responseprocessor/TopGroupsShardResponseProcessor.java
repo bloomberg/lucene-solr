@@ -69,7 +69,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
     } else {
       groupOffsetDefault = rb.getGroupingSpec().getWithinGroupOffset();
     }
-    int docsPerGroupDefault = rb.getGroupingSpec().getWithinGroupLimit();
+    final int docsPerGroupDefault = rb.getGroupingSpec().getWithinGroupLimit();
 
     Map<String, List<TopGroups<BytesRef>>> commandTopGroups = new HashMap<>();
     for (String field : fields) {
@@ -186,8 +186,6 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
             scoreDocs = Arrays.copyOf(g.scoreDocs, docsPerGroupDefault);
           }
           group.groups[i] = new GroupDocs(g.scoreDocs[0].score, g.scoreDocs[0].score, g.totalHits, scoreDocs, g.groupValue, g.groupSortValues);
-          float maxScore = g.scoreDocs[0].score;
-          group.groups[i] = new GroupDocs(maxScore, maxScore, g.totalHits, g.scoreDocs, g.groupValue, g.groupSortValues);
         }
         Arrays.sort(group.groups, new Comparator<GroupDocs<BytesRef>>() {
           @Override

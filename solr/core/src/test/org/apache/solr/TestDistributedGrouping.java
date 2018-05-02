@@ -313,9 +313,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     simpleQuery("q", "*:*", "rows", 10, "fl", "id," + i1, "group", "true", "group.field", i1, "debug", "true");
 
     // SOLR-8776
-//    rsp = query("q", "{!func}id_i1", "rows", 10, "fl",  "id," + i1+",score", "group", "true",
-//        "group.field", i1, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
-//            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func}"+i1);
+    rsp = query("q", "{!func}id_i1", "rows", 10, "fl",  "id," + i1+",score", "group", "true",
+        "group.field", i1, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func}"+i1);
 
 
     rsp = query("q", "{!func}id_i1", "rows", 100, "fl",  "id," + i1, "group", "true",

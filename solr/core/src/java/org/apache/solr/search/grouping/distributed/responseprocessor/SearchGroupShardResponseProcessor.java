@@ -143,14 +143,14 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
     rb.firstPhaseElapsedTime = maxElapsedTime;
     for (String groupField : commandSearchGroups.keySet()) {
       List<Collection<SearchGroup<BytesRef>>> topGroups = commandSearchGroups.get(groupField);
-      final int maxSize;
+      final int topN;
       RankQuery rq = rb.getRankQuery();
       if (rq instanceof AbstractReRankQuery){
-        maxSize = ((AbstractReRankQuery) rq).getReRankDocs();
+        topN = ((AbstractReRankQuery) rq).getReRankDocs();
       } else {
-        maxSize = rb.getSortSpec().getCount();
+        topN = rb.getSortSpec().getCount();
       }
-      Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, groupSortSpec.getOffset(), groupSortSpec.getCount(), groupSort);
+      Collection<SearchGroup<BytesRef>> mergedTopGroups = SearchGroup.merge(topGroups, groupSortSpec.getOffset(), topN, groupSort);
       if (mergedTopGroups == null) {
         continue;
       }
