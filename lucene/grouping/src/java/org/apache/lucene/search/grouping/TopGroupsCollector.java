@@ -39,8 +39,7 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
   private final Sort withinGroupSort;
   private final int maxDocsPerGroup;
 
-  protected TopGroupsCollector(GroupReducer<T, TopDocsCollector<?>> groupReducer, GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups, Sort groupSort, Sort withinGroupSort,
-                            int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) {
+  protected TopGroupsCollector(GroupReducer<T, TopDocsCollector<?>> groupReducer, GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup) {
     super(groupSelector, groups, groupReducer);
     this.groupSort = Objects.requireNonNull(groupSort);
     this.withinGroupSort = Objects.requireNonNull(withinGroupSort);
@@ -60,7 +59,7 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
    */
   public TopGroupsCollector(GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups, Sort groupSort, Sort withinGroupSort,
                             int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields) {
-    this(new TopDocsReducer<>(withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields), groupSelector, groups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
+    this(new TopDocsReducer<>(withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields), groupSelector, groups, groupSort, withinGroupSort, maxDocsPerGroup);
   }
 
   private static class TopDocsReducer<T> extends GroupReducer<T, TopDocsCollector<?>> {

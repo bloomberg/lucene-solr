@@ -66,7 +66,7 @@ public class ReRankTopGroupsCollector<T> extends TopGroupsCollector<T> {
   public ReRankTopGroupsCollector(GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups, Sort groupSort, Sort withinGroupSort,
                                   int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields, RankQuery query, IndexSearcher searcher) {
     super(new ReRankTopGroupsCollector.TopDocsReducer<T>(withinGroupSort, maxDocsPerGroup, getScores, getMaxScores,
-        fillSortFields, query, searcher), groupSelector, groups, groupSort,groupSort,maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
+        fillSortFields, query, searcher), groupSelector, groups, groupSort, withinGroupSort, maxDocsPerGroup);
     this.groupSort = Objects.requireNonNull(groupSort);
     this.withinGroupSort = Objects.requireNonNull(withinGroupSort);
     this.maxDocsPerGroup = maxDocsPerGroup;
