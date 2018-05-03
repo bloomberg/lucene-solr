@@ -917,7 +917,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (System.getProperty("remove.version.field") != null) {
       // we don't care if one has a version and the other doesnt -
       // control vs distrib
-      // TODO: this should prob be done by adding an ignore on _version_ rather than mutating the responses
+      // TODO: this should prob be done by adding an ignore on _version_ rather than mutating the responses?
       if (a.getResults() != null) {
         for (SolrDocument doc : a.getResults()) {
           doc.removeFields("_version_");
@@ -937,8 +937,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         b.getHeader().remove("warnings");
       }
     }
-    System.out.println("a "+a);
-    System.out.println("b "+b);
     compareSolrResponses(a, b);
   }
 

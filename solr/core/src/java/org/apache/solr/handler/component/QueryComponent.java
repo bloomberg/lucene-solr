@@ -1270,7 +1270,7 @@ public class QueryComponent extends SearchComponent
       final int topNGroups;
       Query query = cmd.getQuery();
       if (query instanceof AbstractReRankQuery){
-        topNGroups = cmd.getOffset() + ((AbstractReRankQuery)query).getReRankDocs();
+        topNGroups = Math.max(((AbstractReRankQuery)query).getReRankDocs(), cmd.getOffset() + cmd.getLen());
       } else {
         topNGroups = cmd.getOffset() + cmd.getLen();
       }
@@ -1399,7 +1399,9 @@ public class QueryComponent extends SearchComponent
         .setGetGroupedDocSet(groupingSpec.isTruncateGroups());
 
     if (cmd.getQuery() instanceof AbstractReRankQuery) {
-      grouping.reRankGroups(((AbstractReRankQuery) cmd.getQuery()).getReRankDocs());
+      AbstractReRankQuery rankQuery = (AbstractReRankQuery) cmd.getQuery();
+      final int reRankGroups =  rankQuery.getReRankDocs();
+      grouping.reRankGroups(reRankGroups);
     }
 
     if (groupingSpec.getFields() != null) {

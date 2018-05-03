@@ -73,8 +73,13 @@ public class ReRankCollector extends TopDocsCollector {
       this.mainCollector = TopScoreDocCollector.create(Math.max(this.reRankDocs, length));
     } else {
       sort = sort.rewrite(searcher);
-      //FIXME diego TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), ? ->false ??????, true, true, true);
-      this.mainCollector = TopFieldCollector.create(sort, Math.max(this.reRankDocs, length), true, true, true, true);
+      // if we are sorting, fillField has to be true in order to retrieve the sorting fields
+      this.mainCollector = TopFieldCollector.create(sort,
+          Math.max(this.reRankDocs, length),
+          true /* fillField */ ,
+          true /* trackScore */,
+          true /* trackMaxScore */ ,
+          true /* trackTotalHits */);
     }
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;

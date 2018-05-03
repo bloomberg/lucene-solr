@@ -317,23 +317,30 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "group.field", i1, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func}"+i1);
 
+    int groupLimit = 1;
 
     rsp = query("q", "{!func}id_i1", "rows", 100, "fl",  "id," + i1, "group", "true",
-        "group.field", i1, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+        "group.field", i1, "group.limit", groupLimit, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", t1+":eggs");
 
     rsp = query("q", "{!func}id_i1", "rows", 2, "fl",  "id,score," + i1, "group", "true",
-        "group.field", i1dv, "group.limit", 1, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+        "group.field", i1dv, "group.limit", groupLimit, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func }"+i1);
+
+    // test random limit between [2..5]
+    groupLimit = random().nextInt(3)+2;
+    rsp = query("q", "{!func}id_i1", "rows", 2, "fl",  "id,score," + i1, "group", "true",
+        "group.field", i1dv, "group.limit", groupLimit, "rq", "{!" + ReRankQParserPlugin.NAME + " " + ReRankQParserPlugin.RERANK_QUERY + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS + "=1000}", "rqq", "{!func }"+i1);
   }
 
-  private QueryResponse simpleQuery(Object... queryParams) throws SolrServerException, IOException {
+  private void simpleQuery(Object... queryParams) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int i = 0; i < queryParams.length; i += 2) {
       params.add(queryParams[i].toString(), queryParams[i + 1].toString());
     }
     params.set("shards", shards);
-    return queryServer(params);
+    queryServer(params);
   }
 
 }

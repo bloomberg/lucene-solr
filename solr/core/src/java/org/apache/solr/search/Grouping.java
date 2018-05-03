@@ -66,7 +66,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrFieldSource;
-import org.apache.solr.search.grouping.collector.*;
+import org.apache.solr.search.grouping.collector.FilterCollector;
+import org.apache.solr.search.grouping.collector.ReRankTopGroupsCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

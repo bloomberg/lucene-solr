@@ -39,6 +39,14 @@ public class TopGroupsCollector<T> extends SecondPassGroupingCollector<T> {
   private final Sort withinGroupSort;
   private final int maxDocsPerGroup;
 
+  /**
+   * Create a new TopGroupsCollector
+   * @param groupReducer      the group reducer used to collect the groups
+   * @param groups            the groups to collect TopDocs for
+   * @param groupSort         the order in which groups are returned
+   * @param withinGroupSort   the order in which documents are sorted in each group
+   * @param maxDocsPerGroup   the maximum number of docs to collect for each group
+   */
   protected TopGroupsCollector(GroupReducer<T, TopDocsCollector<?>> groupReducer, GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups, Sort groupSort, Sort withinGroupSort, int maxDocsPerGroup) {
     super(groupSelector, groups, groupReducer);
     this.groupSort = Objects.requireNonNull(groupSort);

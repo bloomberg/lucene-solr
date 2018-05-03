@@ -59,7 +59,6 @@ public abstract class AbstractReRankQuery extends RankQuery {
       return getTopDocsCollector(len, cmd.getSort(), searcher);
   }
 
-
   public TopDocsCollector getTopDocsCollector(int len, Sort sort, IndexSearcher searcher) throws IOException {
 
     if(this.boostedPriority == null) {
@@ -69,7 +68,6 @@ public abstract class AbstractReRankQuery extends RankQuery {
         this.boostedPriority = (Map<BytesRef, Integer>)context.get(QueryElevationComponent.BOOSTED_PRIORITY);
       }
     }
-
     return new ReRankCollector(reRankDocs, len, sort, reRankQueryRescorer, searcher, boostedPriority);
   }
 
