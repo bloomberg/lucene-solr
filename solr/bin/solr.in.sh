@@ -36,12 +36,12 @@
 
 # Enable verbose GC logging...
 #  * If this is unset, various default options will be selected depending on which JVM version is in use
-#  * For java8 or lower: if this is set, additional params will be added to specify the log file & rotation
-#  * For java9 or higher: each included opt param that starts with '-Xlog:gc', but does not include an output
-#    specifier, will have a 'file' output specifier (as well as formatting & rollover options) appended,
-#    using the effective value of the SOLR_LOGS_DIR.
+#  * For Java 8: if this is set, additional params will be added to specify the log file & rotation
+#  * For Java 9 or higher: each included opt param that starts with '-Xlog:gc', but does not include an
+#    output specifier, will have a 'file' output specifier (as well as formatting & rollover options)
+#    appended, using the effective value of the SOLR_LOGS_DIR.
 #
-#GC_LOG_OPTS='-Xlog:gc*'  # (java9)
+#GC_LOG_OPTS='-Xlog:gc*'  # (Java 9+)
 #GC_LOG_OPTS="-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails \
 #  -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime"
 
@@ -59,6 +59,9 @@
 # By default the start script uses "localhost"; override the hostname here
 # for production SolrCloud environments to control the hostname exposed to cluster state
 #SOLR_HOST="192.168.1.1"
+
+# By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
+#SOLR_WAIT_FOR_ZK="30"
 
 # By default the start script uses UTC; override the timezone if needed
 #SOLR_TIMEZONE="UTC"
@@ -85,6 +88,10 @@
 # Path to a directory for Solr to store cores and their data. By default, Solr will use server/solr
 # If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
 #SOLR_HOME=
+
+# Path to a directory that Solr will use as root for data folders for each core.
+# If not set, defaults to <instance_dir>/data. Overridable per core through 'dataDir' core property
+#SOLR_DATA_HOME=
 
 # Solr provides a default Log4J configuration properties file in server/resources
 # however, you may want to customize the log settings and file appender location
@@ -141,4 +148,15 @@
 #  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD \
 #  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD"
 #SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
+
+
+# Settings for common system values that may cause operational imparement when system defaults are used.
+# Solr can use many processes and many file handles. On modern operating systems the savings by leaving
+# these settings low is minuscule, while the consequence can be Solr instability. To turn these checks off, set
+# SOLR_ULIMIT_CHECKS=false either here or as part of your profile.
+
+# Different limits can be set in solr.in.sh or your profile if you prefer as well.
+#SOLR_RECOMMENDED_OPEN_FILES=
+#SOLR_RECOMMENDED_MAX_PROCESSES=
+#SOLR_ULIMIT_CHECKS=
 

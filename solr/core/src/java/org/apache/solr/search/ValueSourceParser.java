@@ -27,28 +27,29 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.BoostedQuery;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.*;
+import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spell.JaroWinklerDistance;
-import org.apache.lucene.search.spell.LevensteinDistance;
+import org.apache.lucene.search.spell.LevenshteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.schema.CurrencyField;
+import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TextField;
@@ -64,6 +65,7 @@ import org.apache.solr.search.facet.SumsqAgg;
 import org.apache.solr.search.facet.UniqueAgg;
 import org.apache.solr.search.facet.VarianceAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
+import org.apache.solr.search.function.ConcatStringFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
 import org.apache.solr.search.function.SolrComparisonBoolFunction;
@@ -76,7 +78,6 @@ import org.apache.solr.search.function.distance.StringDistanceFunction;
 import org.apache.solr.search.function.distance.VectorDistanceFunction;
 import org.apache.solr.search.join.ChildFieldValueSourceParser;
 import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.PayloadDecoder;
 import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -324,8 +325,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         Query q = fp.parseNestedQuery();
         ValueSource vs = fp.parseValueSource();
-        BoostedQuery bq = new BoostedQuery(q, vs);
-        return new QueryValueSource(bq, 0.0f);
+        return new QueryValueSource(BoostQParserPlugin.boostQuery(q, vs), 0.0f);
       }
     });
     addParser("joindf", new ValueSourceParser() {
@@ -404,7 +404,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         if (distClass.equalsIgnoreCase("jw")) {
           dist = new JaroWinklerDistance();
         } else if (distClass.equalsIgnoreCase("edit")) {
-          dist = new LevensteinDistance();
+          dist = new LevenshteinDistance();
         } else if (distClass.equalsIgnoreCase("ngram")) {
           int ngram = 2;
           if (fp.hasMoreArguments()) {
@@ -443,11 +443,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
         String fieldName = fp.parseArg();
         SchemaField f = fp.getReq().getSchema().getField(fieldName);
-        if (! (f.getType() instanceof CurrencyField)) {
+        if (! (f.getType() instanceof CurrencyFieldType)) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                  "Currency function input must be the name of a CurrencyField: " + fieldName);
+                                  "Currency function input must be the name of a CurrencyFieldType: " + fieldName);
         }
-        CurrencyField ft = (CurrencyField) f.getType();
+        CurrencyFieldType ft = (CurrencyFieldType) f.getType();
         String code = fp.hasMoreArguments() ? fp.parseArg() : null;
         return ft.getConvertedValueSource(code, ft.getValueSource(f, fp));
       }
@@ -736,8 +736,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + func);
         }
 
-        FieldType fieldType = fp.getReq().getCore().getLatestSchema().getFieldTypeNoEx(tinfo.field);
-        PayloadDecoder decoder = PayloadUtils.getPayloadDecoder(fieldType);
+        IndexSchema schema = fp.getReq().getCore().getLatestSchema();
+        PayloadDecoder decoder = schema.getPayloadDecoder(tinfo.field);
 
         if (decoder==null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No payload decoder found for field: " + tinfo.field);
@@ -932,6 +932,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
+    addParser("concat", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        List<ValueSource> sources = fp.parseValueSourceList();
+        return new ConcatStringFunction(sources.toArray(new ValueSource[sources.size()]));
+      }
+    });
+
 
     addParser("agg", new ValueSourceParser() {
       @Override
@@ -1008,14 +1016,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("agg_min", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new MinMaxAgg("min", fp.parseValueSource());
+        return new MinMaxAgg("min", fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
       }
     });
 
     addParser("agg_max", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new MinMaxAgg("max", fp.parseValueSource());
+        return new MinMaxAgg("max", fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
       }
     });
 

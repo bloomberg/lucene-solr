@@ -26,9 +26,11 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.AggregateMetric;
+import org.apache.solr.metrics.SolrCoreContainerReporter;
+import org.apache.solr.metrics.SolrCoreReporter;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
-import org.apache.solr.util.JmxUtil;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,13 +41,13 @@ import org.junit.Test;
 public class SolrCloudReportersTest extends SolrCloudTestCase {
   int leaderRegistries;
   int clusterRegistries;
-  static int jmxReporter;
+  int jmxReporter;
+
 
 
   @BeforeClass
   public static void configureDummyCluster() throws Exception {
     configureCluster(0).configure();
-    jmxReporter = JmxUtil.findFirstMBeanServer() != null ? 1 : 0;
   }
 
   @Before
@@ -77,8 +79,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
           String leaderRegistryName = core.getCoreMetricManager().getLeaderRegistryName();
           String coreName = core.getName();
           String collectionName = core.getCoreDescriptor().getCollectionName();
-          String coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
-          String replicaName = coreName.split("_")[3];
+          String replicaName = coreName.substring(coreName.indexOf("_replica_") + 1);
           String shardId = core.getCoreDescriptor().getCloudDescriptor().getShardId();
 
           assertEquals("solr.core." + collectionName + "." + shardId + "." + replicaName, registryName);
@@ -96,10 +97,18 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
       SolrMetricReporter reporter = reporters.get("test");
       assertNotNull(reporter);
       assertTrue(reporter.toString(), reporter instanceof SolrClusterReporter);
-      SolrClusterReporter sor = (SolrClusterReporter)reporter;
-      assertEquals(5, sor.getPeriod());
+      assertEquals(5, reporter.getPeriod());
+      assertTrue(reporter.toString(), reporter instanceof SolrCoreContainerReporter);
+      SolrCoreContainerReporter solrCoreContainerReporter = (SolrCoreContainerReporter)reporter;
+      assertNotNull(solrCoreContainerReporter.getCoreContainer());
       for (String registryName : metricManager.registryNames(".*\\.shard[0-9]\\.replica.*")) {
         reporters = metricManager.getReporters(registryName);
+        jmxReporter = 0;
+        reporters.forEach((k, v) -> {
+          if (v instanceof SolrJmxReporter) {
+            jmxReporter++;
+          }
+        });
         assertEquals(reporters.toString(), 1 + jmxReporter, reporters.size());
         reporter = null;
         for (String name : reporters.keySet()) {
@@ -109,8 +118,10 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
         }
         assertNotNull(reporter);
         assertTrue(reporter.toString(), reporter instanceof SolrShardReporter);
-        SolrShardReporter srr = (SolrShardReporter)reporter;
-        assertEquals(5, srr.getPeriod());
+        assertEquals(5, reporter.getPeriod());
+        assertTrue(reporter.toString(), reporter instanceof SolrCoreReporter);
+        SolrCoreReporter solrCoreReporter = (SolrCoreReporter)reporter;
+        assertNotNull(solrCoreReporter.getCore());
       }
       for (String registryName : metricManager.registryNames(".*\\.leader")) {
         leaderRegistries++;
@@ -159,6 +170,12 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
       assertEquals(reporters.toString(), 0, reporters.size());
       for (String registryName : metricManager.registryNames(".*\\.shard[0-9]\\.replica.*")) {
         reporters = metricManager.getReporters(registryName);
+        jmxReporter = 0;
+        reporters.forEach((k, v) -> {
+          if (v instanceof SolrJmxReporter) {
+            jmxReporter++;
+          }
+        });
         assertEquals(reporters.toString(), 0 + jmxReporter, reporters.size());
       }
     });

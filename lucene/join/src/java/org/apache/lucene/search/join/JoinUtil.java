@@ -34,8 +34,8 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -104,7 +104,7 @@ public final class JoinUtil {
       termsWithScoreCollector = GenericTermsCollector.createCollectorSV(svFunction, scoreMode);
     }
     
-    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromSearcher, scoreMode, termsWithScoreCollector);
+    return createJoinQuery(multipleValuesPerDocument, toField, fromQuery, fromField, fromSearcher, scoreMode, termsWithScoreCollector);
   }
   
   /**
@@ -224,8 +224,8 @@ public final class JoinUtil {
         }
 
         @Override
-        public boolean needsScores() {
-          return needsScore;
+        public org.apache.lucene.search.ScoreMode scoreMode() {
+          return needsScore ? org.apache.lucene.search.ScoreMode.COMPLETE : org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
         }
       };
     } else {
@@ -274,8 +274,8 @@ public final class JoinUtil {
         }
 
         @Override
-        public boolean needsScores() {
-          return needsScore;
+        public org.apache.lucene.search.ScoreMode scoreMode() {
+          return needsScore ? org.apache.lucene.search.ScoreMode.COMPLETE : org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES;
         }
       };
     }
@@ -362,7 +362,7 @@ public final class JoinUtil {
     encoded.length = bytesPerDim;
 
     if (needsScore) {
-      return new PointInSetIncludingScoreQuery(fromQuery, multipleValuesPerDocument, toField, bytesPerDim, stream) {
+      return new PointInSetIncludingScoreQuery(scoreMode, fromQuery, multipleValuesPerDocument, toField, bytesPerDim, stream) {
 
         @Override
         protected String toString(byte[] value) {
@@ -379,25 +379,26 @@ public final class JoinUtil {
     }
   }
 
-  private static Query createJoinQuery(boolean multipleValuesPerDocument, String toField, Query fromQuery,
-      IndexSearcher fromSearcher, ScoreMode scoreMode, final GenericTermsCollector collector)
-          throws IOException {
+  private static Query createJoinQuery(boolean multipleValuesPerDocument, String toField, Query fromQuery, String fromField,
+      IndexSearcher fromSearcher, ScoreMode scoreMode, final GenericTermsCollector collector) throws IOException {
     
     fromSearcher.search(fromQuery, collector);
-    
     switch (scoreMode) {
       case None:
-        return new TermsQuery(toField, fromQuery, collector.getCollectedTerms());
+        return new TermsQuery(toField, collector.getCollectedTerms(), fromField, fromQuery, fromSearcher.getTopReaderContext().id());
       case Total:
       case Max:
       case Min:
       case Avg:
         return new TermsIncludingScoreQuery(
+            scoreMode,
             toField,
             multipleValuesPerDocument,
             collector.getCollectedTerms(),
             collector.getScoresPerTerm(),
-            fromQuery
+            fromField,
+            fromQuery,
+            fromSearcher.getTopReaderContext().id()
         );
       default:
         throw new IllegalArgumentException(String.format(Locale.ROOT, "Score mode %s isn't supported.", scoreMode));
@@ -406,7 +407,7 @@ public final class JoinUtil {
 
 
   /**
-   * Delegates to {@link #createJoinQuery(String, Query, Query, IndexSearcher, ScoreMode, MultiDocValues.OrdinalMap, int, int)},
+   * Delegates to {@link #createJoinQuery(String, Query, Query, IndexSearcher, ScoreMode, OrdinalMap, int, int)},
    * but disables the min and max filtering.
    *
    * @param joinField   The {@link SortedDocValues} field containing the join values
@@ -424,7 +425,7 @@ public final class JoinUtil {
                                       Query toQuery,
                                       IndexSearcher searcher,
                                       ScoreMode scoreMode,
-                                      MultiDocValues.OrdinalMap ordinalMap) throws IOException {
+                                      OrdinalMap ordinalMap) throws IOException {
     return createJoinQuery(joinField, fromQuery, toQuery, searcher, scoreMode, ordinalMap, 0, Integer.MAX_VALUE);
   }
 
@@ -463,7 +464,7 @@ public final class JoinUtil {
                                       Query toQuery,
                                       IndexSearcher searcher,
                                       ScoreMode scoreMode,
-                                      MultiDocValues.OrdinalMap ordinalMap,
+                                      OrdinalMap ordinalMap,
                                       int min,
                                       int max) throws IOException {
     int numSegments = searcher.getIndexReader().leaves().size();
@@ -507,7 +508,8 @@ public final class JoinUtil {
         if (min <= 0 && max == Integer.MAX_VALUE) {
           GlobalOrdinalsCollector globalOrdinalsCollector = new GlobalOrdinalsCollector(joinField, ordinalMap, valueCount);
           searcher.search(rewrittenFromQuery, globalOrdinalsCollector);
-          return new GlobalOrdinalsQuery(globalOrdinalsCollector.getCollectorOrdinals(), joinField, ordinalMap, rewrittenToQuery, rewrittenFromQuery, searcher.getTopReaderContext());
+          return new GlobalOrdinalsQuery(globalOrdinalsCollector.getCollectorOrdinals(), joinField, ordinalMap, rewrittenToQuery,
+              rewrittenFromQuery, searcher.getTopReaderContext().id());
         } else {
           globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.NoScore(joinField, ordinalMap, valueCount, min, max);
           break;
@@ -516,7 +518,8 @@ public final class JoinUtil {
         throw new IllegalArgumentException(String.format(Locale.ROOT, "Score mode %s isn't supported.", scoreMode));
     }
     searcher.search(rewrittenFromQuery, globalOrdinalsWithScoreCollector);
-    return new GlobalOrdinalsWithScoreQuery(globalOrdinalsWithScoreCollector, joinField, ordinalMap, rewrittenToQuery, rewrittenFromQuery, min, max, searcher.getTopReaderContext());
+    return new GlobalOrdinalsWithScoreQuery(globalOrdinalsWithScoreCollector, scoreMode, joinField, ordinalMap, rewrittenToQuery,
+        rewrittenFromQuery, min, max, searcher.getTopReaderContext().id());
   }
 
 }

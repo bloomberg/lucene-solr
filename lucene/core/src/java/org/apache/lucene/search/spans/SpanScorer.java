@@ -106,7 +106,7 @@ public class SpanScorer extends Scorer {
         freq = 1;
         return;
       }
-      freq += docScorer.computeSlopFactor(spans.width());
+      freq += (1.0 / (1.0 + spans.width()));
       spans.doCurrentSpans();
       prevStartPos = startPos;
       prevEndPos = endPos;
@@ -135,9 +135,8 @@ public class SpanScorer extends Scorer {
   }
 
   @Override
-  public final int freq() throws IOException {
-    ensureFreq();
-    return numMatches;
+  public float maxScore() {
+    return Float.POSITIVE_INFINITY;
   }
 
   /** Returns the intermediate "sloppy freq" adjusted for edit distance

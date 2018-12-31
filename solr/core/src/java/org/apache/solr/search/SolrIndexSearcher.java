@@ -25,11 +25,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -137,7 +137,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final String path;
   private boolean releaseDirectory;
 
-  private Set<String> metricNames = new HashSet<>();
+  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
                                            String path) throws IOException {
@@ -367,7 +367,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public CollectionStatistics localCollectionStatistics(String field) throws IOException {
-    return super.collectionStatistics(field);
+    // Could call super.collectionStatistics(field); but we can use a cached MultiTerms
+    assert field != null;
+    // SlowAtomicReader has a cache of MultiTerms
+    Terms terms = getSlowAtomicReader().terms(field);
+    if (terms == null) {
+      return null;
+    }
+    return new CollectionStatistics(field, reader.maxDoc(),
+        terms.getDocCount(), terms.getSumTotalTermFreq(), terms.getSumDocFreq());
   }
 
   public boolean isCachingEnabled() {
@@ -1051,7 +1059,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       List<Weight> weights = new ArrayList<>(notCached.size());
       for (Query q : notCached) {
         Query qq = QueryUtils.makeQueryable(q);
-        weights.add(createNormalizedWeight(qq, true));
+        weights.add(createNormalizedWeight(qq, ScoreMode.COMPLETE));
       }
       pf.filter = new FilterImpl(answer, weights);
       pf.hasDeletedDocs = (answer == null);  // if all clauses were uncached, the resulting filter may match deleted docs
@@ -1510,7 +1518,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // ... see comments in populateNextCursorMarkFromTopDocs for cache issues (SOLR-5595)
       final boolean fillFields = (null != cursor);
       final FieldDoc searchAfter = (null != cursor ? cursor.getSearchAfterFieldDoc() : null);
-      return TopFieldCollector.create(weightedSort, len, searchAfter, fillFields, needScores, needScores);
+      return TopFieldCollector.create(weightedSort, len, searchAfter, fillFields, needScores, needScores, true);
     }
   }
 
@@ -1549,8 +1557,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           }
 
           @Override
-          public boolean needsScores() {
-            return false;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
           }
         };
       } else {
@@ -1570,8 +1578,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           }
 
           @Override
-          public boolean needsScores() {
-            return true;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE;
           }
         };
       }
@@ -1659,8 +1667,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           }
 
           @Override
-          public boolean needsScores() {
-            return true;
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE;
           }
         };
 
@@ -2033,6 +2041,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *           If there is a low-level I/O error.
    */
   public int numDocs(Query a, DocSet b) throws IOException {
+    if (b.size() == 0) {
+      return 0;
+    }
     if (filterCache != null) {
       // Negative query if absolute value different from original
       Query absQ = QueryUtils.getAbs(a);

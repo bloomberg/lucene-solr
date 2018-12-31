@@ -1,10 +1,24 @@
 = Blob Store API
-:page-shortname: blob-store-api
-:page-permalink: blob-store-api.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 The Blob Store REST API provides REST methods to store, retrieve or list files in a Lucene index.
 
-It can be used to upload a jar file which contains standard solr components such as RequestHandlers, SearchComponents, or other custom code you have written for Solr. Schema components _do not_ yet support the Blob Store.
+It can be used to upload a jar file which contains standard Solr components such as RequestHandlers, SearchComponents, or other custom code you have written for Solr. Schema components _do not_ yet support the Blob Store.
 
 When using the blob store, note that the API does not delete or overwrite a previous object if a new one is uploaded with the same name. It always adds a new version of the blob to the index. Deletes can be performed with standard REST delete commands.
 
@@ -12,7 +26,6 @@ When using the blob store, note that the API does not delete or overwrite a prev
 
 The blob store API is implemented as a requestHandler. A special collection named ".system" is used to store the blobs. This collection can be created in advance, but if it does not exist it will be created automatically.
 
-[[BlobStoreAPI-Aboutthe.systemCollection]]
 == About the .system Collection
 
 Before uploading blobs to the blob store, a special collection must be created and it must be named `.system`. Solr will automatically create this collection if it does not already exist, but you can also create it manually if you choose.
@@ -23,14 +36,31 @@ If you do not use the `-shards` or `-replicationFactor` options, then defaults o
 
 You can create the `.system` collection with the <<collections-api.adoc#collections-api,Collections API>>, as in this example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1create]
+====
+[.tab-label]*V1 API*
+
 [source,bash]
 ----
 curl http://localhost:8983/solr/admin/collections?action=CREATE&name=.system&replicationFactor=2
 ----
+====
+
+[example.tab-pane#v2create]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{"create":{"name":".system", "replicationFactor": 2}}' http://localhost:8983/api/collections
+----
+====
+--
 
 IMPORTANT: The `bin/solr` script cannot be used to create the `.system` collection.
 
-[[BlobStoreAPI-UploadFilestoBlobStore]]
 == Upload Files to Blob Store
 
 After the `.system` collection has been created, files can be uploaded to the blob store with a request similar to the following:
@@ -116,7 +146,6 @@ For the latest version of a blob, the \{version} can be omitted,
 curl http://localhost:8983/solr/.system/blob/{blobname}?wt=filestream > {outputfilename}
 ----
 
-[[BlobStoreAPI-UseaBlobinaHandlerorComponent]]
 == Use a Blob in a Handler or Component
 
 To use the blob as the class for a request handler or search component, you create a request handler in `solrconfig.xml` as usual. You will need to define the following parameters:
@@ -133,3 +162,5 @@ For example, to use a blob named test, you would configure `solrconfig.xml` like
 ----
 
 If there are parameters available in the custom handler, you can define them in the same way as any other request handler definition.
+
+NOTE: Blob store can only be used to dynamically load components configured in `solrconfig.xml`. Components specified in `schema.xml` cannot be loaded from blob store.

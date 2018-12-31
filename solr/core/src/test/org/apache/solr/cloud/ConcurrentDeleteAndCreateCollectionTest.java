@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -140,7 +141,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     
     @Override
     public void run() {
-      final TimeOut timeout = new TimeOut(timeToRunSec, TimeUnit.SECONDS);
+      final TimeOut timeout = new TimeOut(timeToRunSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       while (! timeout.hasTimedOut() && failure.get() == null) {
         doWork();
       }
@@ -164,11 +165,8 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     
     private void createCollection() {
       try {
-        final CollectionAdminResponse response = new CollectionAdminRequest.Create()
-                .setCollectionName(collectionName)
-                .setNumShards(1)
-                .setReplicationFactor(1)
-                .setConfigName(configName).process(solrClient);
+        final CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName,configName,1,1)
+                .process(solrClient);
         if (response.getStatus() != 0) {
           addFailure(new RuntimeException("failed to create collection " + collectionName));
         }
@@ -180,9 +178,8 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     
     private void deleteCollection() {
       try {
-        final CollectionAdminRequest.Delete deleteCollectionRequest = new CollectionAdminRequest.Delete()
-                .setCollectionName(collectionName);
-        
+        final CollectionAdminRequest.Delete deleteCollectionRequest
+          = CollectionAdminRequest.deleteCollection(collectionName);
         final CollectionAdminResponse response = deleteCollectionRequest.process(solrClient);
         if (response.getStatus() != 0) {
           addFailure(new RuntimeException("failed to delete collection " + collectionName));

@@ -55,7 +55,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public boolean needsScores() {
+    public ScoreMode scoreMode() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }
@@ -176,7 +176,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public int freq() {
+    public float maxScore() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -236,7 +236,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public boolean needsScores() {
+    public ScoreMode scoreMode() {
       throw new UnsupportedOperationException( UNSUPPORTED_MSG );
     }
   }
@@ -259,6 +259,11 @@ final class JustCompileSearch {
 
     @Override
     public Scorer scorer(LeafReaderContext context) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

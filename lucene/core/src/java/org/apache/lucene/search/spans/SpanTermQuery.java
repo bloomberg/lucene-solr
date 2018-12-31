@@ -33,6 +33,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreMode;
 
 /** Matches spans containing a term.
  * This should not be used for terms that are indexed at position Integer.MAX_VALUE.
@@ -64,7 +65,7 @@ public class SpanTermQuery extends SpanQuery {
   public String getField() { return term.field(); }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final TermContext context;
     final IndexReaderContext topContext = searcher.getTopReaderContext();
     if (termContext == null || termContext.wasBuiltFor(topContext) == false) {
@@ -73,7 +74,7 @@ public class SpanTermQuery extends SpanQuery {
     else {
       context = termContext;
     }
-    return new SpanTermWeight(context, searcher, needsScores ? Collections.singletonMap(term, context) : null, boost);
+    return new SpanTermWeight(context, searcher, scoreMode.needsScores() ? Collections.singletonMap(term, context) : null, boost);
   }
 
   public class SpanTermWeight extends SpanWeight {
@@ -89,6 +90,11 @@ public class SpanTermQuery extends SpanQuery {
     @Override
     public void extractTerms(Set<Term> terms) {
       terms.add(term);
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
     }
 
     @Override
@@ -135,7 +141,6 @@ public class SpanTermQuery extends SpanQuery {
   /** Returns an expected cost in simple operations
    *  of processing the occurrences of a term
    *  in a document that contains the term.
-   *  <br>This may be inaccurate when {@link TermsEnum#totalTermFreq()} is not available.
    *  @param termsEnum The term is the term at which this TermsEnum is positioned.
    *  <p>
    *  This is a copy of org.apache.lucene.search.PhraseQuery.termPositionsCost().
@@ -146,8 +151,9 @@ public class SpanTermQuery extends SpanQuery {
   static float termPositionsCost(TermsEnum termsEnum) throws IOException {
     int docFreq = termsEnum.docFreq();
     assert docFreq > 0;
-    long totalTermFreq = termsEnum.totalTermFreq(); // -1 when not available
-    float expOccurrencesInMatchingDoc = (totalTermFreq < docFreq) ? 1 : (totalTermFreq / (float) docFreq);
+    long totalTermFreq = termsEnum.totalTermFreq();
+    assert totalTermFreq > 0;
+    float expOccurrencesInMatchingDoc = totalTermFreq / (float) docFreq;
     return TERM_POSNS_SEEK_OPS_PER_DOC + expOccurrencesInMatchingDoc * TERM_OPS_PER_POS;
   }
 

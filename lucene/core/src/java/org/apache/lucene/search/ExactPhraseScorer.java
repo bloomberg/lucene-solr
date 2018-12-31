@@ -90,8 +90,7 @@ final class ExactPhraseScorer extends Scorer {
     return "ExactPhraseScorer(" + weight + ")";
   }
 
-  @Override
-  public int freq() {
+  final int freq() {
     return freq;
   }
 
@@ -103,6 +102,11 @@ final class ExactPhraseScorer extends Scorer {
   @Override
   public float score() throws IOException {
     return docScorer.score(docID(), freq);
+  }
+
+  @Override
+  public float maxScore() {
+    return docScorer.maxScore(Integer.MAX_VALUE);
   }
 
   /** Advance the given pos enum to the first doc on or after {@code target}.

@@ -138,7 +138,7 @@
         'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
         'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
         'properties', 'mdtext',
-        'template',
+        'template', 'adoc', 'json',
       ];
       def invalidPatterns = [
         (~$/@author\b/$) : '@author javadoc tag',
@@ -170,10 +170,15 @@
       def javaCommentPattern = ~$/(?sm)^\Q/*\E(.*?)\Q*/\E/$;
       def xmlCommentPattern = ~$/(?sm)\Q<!--\E(.*?)\Q-->\E/$;
       def lineSplitter = ~$/[\r\n]+/$;
+      def singleLineSplitter = ~$/\n\r?/$;
       def licenseMatcher = Defaults.createDefaultMatcher();
       def validLoggerPattern = ~$/(?s)\b(private\s|static\s|final\s){3}+\s*Logger\s+\p{javaJavaIdentifierStart}+\s+=\s+\QLoggerFactory.getLogger(MethodHandles.lookup().lookupClass());\E/$;
       def packagePattern = ~$/(?m)^\s*package\s+org\.apache.*;/$;
       def xmlTagPattern = ~$/(?m)\s*<[a-zA-Z].*/$;
+      def sourceHeaderPattern = ~$/\[source\b.*/$;
+      def blockBoundaryPattern = ~$/----\s*/$;
+      def blockTitlePattern = ~$/\..*/$;
+      def unescapedSymbolPattern = ~$/(?<=[^\\]|^)([-=]>|<[-=])/$; // SOLR-10883
       
       def isLicense = { matcher, ratDocument ->
         licenseMatcher.reset();
@@ -181,20 +186,53 @@
       }
 
       def checkLicenseHeaderPrecedes = { f, description, contentPattern, commentPattern, text, ratDocument ->
-          def contentMatcher = contentPattern.matcher(text);
-          if (contentMatcher.find()) {
-            def contentStartPos = contentMatcher.start();
-            def commentMatcher = commentPattern.matcher(text);
-            while (commentMatcher.find()) {
-              if (isLicense(commentMatcher, ratDocument)) {
-                if (commentMatcher.start() < contentStartPos) {
-                  break; // This file is all good, so break loop: license header precedes 'description' definition
-                } else {
-                  reportViolation(f, description+' declaration precedes license header');
+        def contentMatcher = contentPattern.matcher(text);
+        if (contentMatcher.find()) {
+          def contentStartPos = contentMatcher.start();
+          def commentMatcher = commentPattern.matcher(text);
+          while (commentMatcher.find()) {
+            if (isLicense(commentMatcher, ratDocument)) {
+              if (commentMatcher.start() < contentStartPos) {
+                break; // This file is all good, so break loop: license header precedes 'description' definition
+              } else {
+                reportViolation(f, description+' declaration precedes license header');
+              }
+            }
+          }
+        }
+      }
+
+      def checkMockitoAssume = { f, text ->
+        if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
+          reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call');
+        }
+      }
+
+      def checkForUnescapedSymbolSubstitutions = { f, text ->
+        def inCodeBlock = false;
+        def underSourceHeader = false;
+        def lineNumber = 0;
+        singleLineSplitter.split(text).each {
+          ++lineNumber;
+          if (underSourceHeader) { // This line is either a single source line, or the boundary of a code block
+            inCodeBlock = blockBoundaryPattern.matcher(it).matches();
+            if ( ! blockTitlePattern.matcher(it).matches()) {
+              underSourceHeader = false;
+            }
+          } else {
+            if (inCodeBlock) {
+              inCodeBlock = ! blockBoundaryPattern.matcher(it).matches();
+            } else {
+              underSourceHeader = sourceHeaderPattern.matcher(it).lookingAt();
+              if ( ! underSourceHeader) {
+                def unescapedSymbolMatcher = unescapedSymbolPattern.matcher(it);
+                if (unescapedSymbolMatcher.find()) {
+                  reportViolation(f, 'Unescaped symbol "' + unescapedSymbolMatcher.group(1) + '" on line #' + lineNumber);
                 }
               }
             }
           }
+        }
       }
 
       ant.fileScanner{
@@ -233,16 +271,22 @@
               ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
           }
         }
-        if (f.toString().endsWith('.java')) {
+        if (f.name.endsWith('.java')) {
           if (text.contains('org.slf4j.LoggerFactory')) {
             if (!validLoggerPattern.matcher(text).find()) {
               reportViolation(f, 'invalid logging pattern [not private static final, uses static class name]');
             }
           }
           checkLicenseHeaderPrecedes(f, 'package', packagePattern, javaCommentPattern, text, ratDocument);
+          if (f.name.contains("Test")) {
+            checkMockitoAssume(f, text);
+          }
         }
-        if (f.toString().endsWith('.xml') || f.toString().endsWith('.xml.template')) {
+        if (f.name.endsWith('.xml') || f.name.endsWith('.xml.template')) {
           checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
+        }
+        if (f.name.endsWith('.adoc')) {
+          checkForUnescapedSymbolSubstitutions(f, text);
         }
       };
       
@@ -339,7 +383,23 @@
     </subant>
   </target>
 
-  <target name="validate-maven-dependencies" depends="generate-maven-artifacts"
+  <target name="-install-maven-artifacts" depends="resolve,resolve-groovy,resolve-markdown,install-maven-tasks">
+    <ant dir="lucene" inheritall="false">
+      <target name="-unpack-lucene-tgz"/>
+      <target name="-filter-pom-templates"/>
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <ant dir="solr" target="-unpack-solr-tgz" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <subant target="-install-to-maven-local-repo" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </subant>
+  </target>
+
+  <target name="validate-maven-dependencies" depends="-install-maven-artifacts"
           description="Validates maven dependencies, licenses, etc.">
     <subant target="-validate-maven-dependencies" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml"/>

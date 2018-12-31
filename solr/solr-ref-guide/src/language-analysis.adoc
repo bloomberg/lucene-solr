@@ -1,6 +1,20 @@
 = Language Analysis
-:page-shortname: language-analysis
-:page-permalink: language-analysis.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 This section contains information about tokenizers and filters related to character set conversion or for use with specific languages.
 
@@ -10,7 +24,6 @@ In other languages the tokenization rules are often not so simple. Some European
 
 For information about language detection at index time, see <<detecting-languages-during-indexing.adoc#detecting-languages-during-indexing,Detecting Languages During Indexing>>.
 
-[[LanguageAnalysis-KeywordMarkerFilterFactory]]
 == KeywordMarkerFilterFactory
 
 Protects words from being modified by stemmers. A customized protected word list may be specified with the "protected" attribute in the schema. Any words in the protected word list will not be modified by any stemmer in Solr.
@@ -28,7 +41,6 @@ A sample Solr `protwords.txt` with comments can be found in the `sample_techprod
 </fieldtype>
 ----
 
-[[LanguageAnalysis-KeywordRepeatFilterFactory]]
 == KeywordRepeatFilterFactory
 
 Emits each token twice, one with the `KEYWORD` attribute and once without.
@@ -53,8 +65,6 @@ A sample fieldType configuration could look like this:
 
 IMPORTANT: When adding the same token twice, it will also score twice (double), so you may have to re-tune your ranking rules.
 
-
-[[LanguageAnalysis-StemmerOverrideFilterFactory]]
 == StemmerOverrideFilterFactory
 
 Overrides stemming algorithms by applying a custom mapping, then protecting these terms from being modified by stemmers.
@@ -74,7 +84,6 @@ A sample http://svn.apache.org/repos/asf/lucene/dev/trunk/solr/core/src/test-fil
 </fieldtype>
 ----
 
-[[LanguageAnalysis-DictionaryCompoundWordTokenFilter]]
 == Dictionary Compound Word Token Filter
 
 This filter splits, or _decompounds_, compound words into individual words using a dictionary of the component words. Each input token is passed through unchanged. If it can also be decompounded into subwords, each subword is also added to the stream at the same logical position.
@@ -113,7 +122,6 @@ Assume that `germanwords.txt` contains at least the following words: `dumm kopf 
 
 *Out:* "Donaudampfschiff"(1), "Donau"(1), "dampf"(1), "schiff"(1), "dummkopf"(2), "dumm"(2), "kopf"(2)
 
-[[LanguageAnalysis-UnicodeCollation]]
 == Unicode Collation
 
 Unicode Collation is a language-sensitive method of sorting text that can also be used for advanced search purposes.
@@ -155,11 +163,10 @@ Expert options:
 
 `caseFirst`:: Valid values are `lower` or `upper`. Useful to control which is sorted first when case is not ignored.
 
-`numeric`:: (true/false) If true, digits are sorted according to numeric value, e.g. foobar-9 sorts before foobar-10. The default is false.
+`numeric`:: (true/false) If true, digits are sorted according to numeric value, e.g., foobar-9 sorts before foobar-10. The default is false.
 
 `variableTop`:: Single character or contraction. Controls what is variable for `alternate`.
 
-[[LanguageAnalysis-SortingTextforaSpecificLanguage]]
 === Sorting Text for a Specific Language
 
 In this example, text is sorted according to the default German rules provided by ICU4J.
@@ -207,7 +214,6 @@ An example using the "city_sort" field to sort:
 q=*:*&fl=city&sort=city_sort+asc
 ----
 
-[[LanguageAnalysis-SortingTextforMultipleLanguages]]
 === Sorting Text for Multiple Languages
 
 There are two approaches to supporting multiple languages: if there is a small list of languages you wish to support, consider defining collated fields for each language and using `copyField`. However, adding a large number of sort fields can increase disk and indexing costs. An alternative approach is to use the Unicode `default` collator.
@@ -221,7 +227,6 @@ The Unicode `default` or `ROOT` locale has rules that are designed to work well 
            strength="primary" />
 ----
 
-[[LanguageAnalysis-SortingTextwithCustomRules]]
 === Sorting Text with Custom Rules
 
 You can define your own set of sorting rules. It's easiest to take existing rules that are close to what you want and customize them.
@@ -261,7 +266,6 @@ This rule set can now be used for custom collation in Solr:
            strength="primary" />
 ----
 
-[[LanguageAnalysis-JDKCollation]]
 === JDK Collation
 
 As mentioned above, ICU Unicode Collation is better in several ways than JDK Collation, but if you cannot use ICU4J for some reason, you can use `solr.CollationField`.
@@ -305,7 +309,6 @@ Using a Tailored ruleset:
 
 == ASCII & Decimal Folding Filters
 
-[[LanguageAnalysis-AsciiFolding]]
 === ASCII Folding
 
 This filter converts alphabetic, numeric, and symbolic Unicode characters which are not in the first 127 ASCII characters (the "Basic Latin" Unicode block) into their ASCII equivalents, if one exists. Only those characters with reasonable ASCII alternatives are converted.
@@ -332,7 +335,6 @@ This can increase recall by causing more matches. On the other hand, it can redu
 
 *Out:* "Bjorn", "Angstrom"
 
-[[LanguageAnalysis-DecimalDigitFolding]]
 === Decimal Digit Folding
 
 This filter converts any character in the Unicode "Decimal Number" general category (`Nd`) into their equivalent Basic Latin digits (0-9).
@@ -353,7 +355,214 @@ This can increase recall by causing more matches. On the other hand, it can redu
 </analyzer>
 ----
 
-[[LanguageAnalysis-Language-SpecificFactories]]
+== OpenNLP Integration
+
+The `lucene/analysis/opennlp` module provides OpenNLP integration via several analysis components: a tokenizer, a part-of-speech tagging filter, a phrase chunking filter, and a lemmatization filter.  In addition to these analysis components, Solr also provides an update request processor to extract named entities - see <<update-request-processors.adoc#update-processor-factories-that-can-be-loaded-as-plugins,Update Processor Factories That Can Be Loaded as Plugins>>.
+
+NOTE: The <<OpenNLP Tokenizer>> must be used with all other OpenNLP analysis components, for two reasons: first, the OpenNLP Tokenizer detects and marks the sentence boundaries required by all the OpenNLP filters; and second, since the pre-trained OpenNLP models used by these filters were trained using the corresponding language-specific sentence-detection/tokenization models, the same tokenization, using the same models, must be used at runtime for optimal performance.
+
+See `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
+
+=== OpenNLP Tokenizer
+
+The OpenNLP Tokenizer takes two language-specific binary model files as parameters: a sentence detector model and a tokenizer model.  The last token in each sentence is flagged, so that following OpenNLP-based filters can use this information to apply operations to tokens one sentence at a time. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+
+*Factory class:* `solr.OpenNLPTokenizerFactory`
+
+*Arguments:*
+
+`sentenceModel`:: (required) The path of a language-specific OpenNLP sentence detection model file. This path may be an absolute path, or path relative to the Solr config directory.
+
+`tokenizerModel`:: (required) The path of a language-specific OpenNLP tokenization model file. This path may be an absolute path, or path relative to the Solr config directory.
+
+*Example:*
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+</analyzer>
+----
+
+=== OpenNLP Part-Of-Speech Filter
+
+This filter sets each token's type attribute to the part of speech (POS) assigned by the configured model. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+
+NOTE: Lucene currently does not index token types, so if you want to keep this information, you have to preserve it either in a payload or as a synonym; see the examples below.
+
+*Factory class:* `solr.OpenNLPPOSFilterFactory`
+
+*Arguments:*
+
+`posTaggerModel`:: (required) The path of a language-specific OpenNLP POS tagger model file. This path may be an absolute path, or path relative to the Solr config directory.
+
+*Examples:*
+
+The OpenNLP tokenizer will tokenize punctuation, which is useful for following token filters, but ordinarily you don't want to include punctuation in your index, so the `TypeTokenFilter` (<<filter-descriptions.adoc#type-token-filter,described here>>) is included in the examples below, with `stop.pos.txt` containing the following:
+
+.stop.pos.txt
+[source,text]
+----
+#
+$
+''
+``
+,
+-LRB-
+-RRB-
+:
+.
+----
+
+Index the POS for each token as a payload:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.TypeAsPayloadFilterFactory"/>
+  <filter class="solr.TypeTokenFilterFactory" types="stop.pos.txt"/>
+</analyzer>
+----
+
+Index the POS for each token as a synonym, after prefixing the POS with "@" (see the <<filter-descriptions.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.TypeAsSynonymFilterFactory" prefix="@"/>
+  <filter class="solr.TypeTokenFilterFactory" types="stop.pos.txt"/>
+</analyzer>
+----
+
+Only index nouns - the `keep.pos.txt` file contains lines `NN`, `NNS`, `NNP` and `NNPS`:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.TypeTokenFilterFactory" types="keep.pos.txt" useWhitelist="true"/>
+</analyzer>
+----
+
+=== OpenNLP Phrase Chunking Filter
+
+This filter sets each token's type attribute based on the output of an OpenNLP phrase chunking model.  The chunk labels replace the POS tags that previously were in each token's type attribute. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+
+Prerequisite: the <<OpenNLP Tokenizer>> and the <<OpenNLP Part-Of-Speech Filter>> must precede this filter.
+
+NOTE: Lucene currently does not index token types, so if you want to keep this information, you have to preserve it either in a payload or as a synonym; see the examples below.
+
+*Factory class:* `solr.OpenNLPChunkerFilter`
+
+*Arguments:*
+
+`chunkerModel`:: (required) The path of a language-specific OpenNLP phrase chunker model file. This path may be an absolute path, or path relative to the Solr config directory.
+
+*Examples*:
+
+Index the phrase chunk label for each token as a payload:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.OpenNLPChunkerFactory" chunkerModel="en-chunker.bin"/>
+  <filter class="solr.TypeAsPayloadFilterFactory"/>
+</analyzer>
+----
+
+Index the phrase chunk label for each token as a synonym, after prefixing it with "#" (see the <<filter-descriptions.adoc#type-as-synonym-filter,TypeAsSynonymFilter description>>):
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.OpenNLPChunkerFactory" chunkerModel="en-chunker.bin"/>
+  <filter class="solr.TypeAsSynonymFilterFactory" prefix="#"/>
+</analyzer>
+----
+
+=== OpenNLP Lemmatizer Filter
+
+This filter replaces the text of each token with its lemma. Both a dictionary-based lemmatizer and a model-based lemmatizer are supported. If both are configured, the dictionary-based lemmatizer is tried first, and then the model-based lemmatizer is consulted for out-of-vocabulary tokens. See the http://opennlp.apache.org/models.html[OpenNLP website] for information on downloading pre-trained models.
+
+*Factory class:* `solr.OpenNLPLemmatizerFilter`
+
+*Arguments:*
+
+Either `dictionary` or `lemmatizerModel` must be provided, and both may be provided - see the examples below:
+
+`dictionary`:: (optional) The path of a lemmatization dictionary file. This path may be an absolute path, or path relative to the Solr config directory. The dictionary file must be encoded as UTF-8, with one entry per line, in the form `word[tab]lemma[tab]part-of-speech`, e.g. `wrote[tab]write[tab]VBD`.
+
+`lemmatizerModel`:: (optional) The path of a language-specific OpenNLP lemmatizer model file. This path may be an absolute path, or path relative to the Solr config directory.
+
+*Examples:*
+
+Perform dictionary-based lemmatization, and fall back to model-based lemmatization for out-of-vocabulary tokens (see the <<OpenNLP Part-Of-Speech Filter>> section above for information about using `TypeTokenFilter` to avoid indexing punctuation):
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.OpenNLPLemmatizerFilterFactory"
+          dictionary="lemmas.txt"
+          lemmatizerModel="en-lemmatizer.bin"/>
+  <filter class="solr.TypeTokenFilterFactory" types="stop.pos.txt"/>
+</analyzer>
+----
+
+Perform dictionary-based lemmatization only:
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.OpenNLPLemmatizerFilterFactory" dictionary="lemmas.txt"/>
+  <filter class="solr.TypeTokenFilterFactory" types="stop.pos.txt"/>
+</analyzer>
+----
+
+Perform model-based lemmatization only, preserving the original token and emitting the lemma as a synonym (see the <<KeywordRepeatFilterFactory,KeywordRepeatFilterFactory description>>)):
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.OpenNLPTokenizerFactory"
+             sentenceModel="en-sent.bin"
+             tokenizerModel="en-tokenizer.bin"/>
+  <filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="en-pos-maxent.bin"/>
+  <filter class="solr.KeywordRepeatFilterFactory"/>
+  <filter class="solr.OpenNLPLemmatizerFilterFactory" lemmatizerModel="en-lemmatizer.bin"/>
+  <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+  <filter class="solr.TypeTokenFilterFactory" types="stop.pos.txt"/>
+</analyzer>
+----
+
 == Language-Specific Factories
 
 These factories are each designed to work with specific languages. The languages covered here are:
@@ -362,11 +571,10 @@ These factories are each designed to work with specific languages. The languages
 * <<Brazilian Portuguese>>
 * <<Bulgarian>>
 * <<Catalan>>
-* <<Chinese>>
+* <<Traditional Chinese>>
 * <<Simplified Chinese>>
-* <<CJK>>
-* <<LanguageAnalysis-Czech,Czech>>
-* <<LanguageAnalysis-Danish,Danish>>
+* <<Czech>>
+* <<Danish>>
 
 * <<Dutch>>
 * <<Finnish>>
@@ -374,7 +582,7 @@ These factories are each designed to work with specific languages. The languages
 * <<Galician>>
 * <<German>>
 * <<Greek>>
-* <<LanguageAnalysis-Hebrew_Lao_Myanmar_Khmer,Hebrew, Lao, Myanmar, Khmer>>
+* <<hebrew-lao-myanmar-khmer,Hebrew, Lao, Myanmar, Khmer>>
 * <<Hindi>>
 * <<Indonesian>>
 * <<Italian>>
@@ -395,7 +603,6 @@ These factories are each designed to work with specific languages. The languages
 * <<Turkish>>
 * <<Ukrainian>>
 
-[[LanguageAnalysis-Arabic]]
 === Arabic
 
 Solr provides support for the http://www.mtholyoke.edu/~lballest/Pubs/arab_stem05.pdf[Light-10] (PDF) stemming algorithm, and Lucene includes an example stopword list.
@@ -417,7 +624,6 @@ This algorithm defines both character normalization and stemming, so these are s
 </analyzer>
 ----
 
-[[LanguageAnalysis-BrazilianPortuguese]]
 === Brazilian Portuguese
 
 This is a Java filter written specifically for stemming the Brazilian dialect of the Portuguese language. It uses the Lucene class `org.apache.lucene.analysis.br.BrazilianStemmer`. Although that stemmer can be configured to use a list of protected words (which should not be stemmed), this factory does not accept any arguments to specify such a list.
@@ -442,7 +648,6 @@ This is a Java filter written specifically for stemming the Brazilian dialect of
 
 *Out:* "pra", "pra"
 
-[[LanguageAnalysis-Bulgarian]]
 === Bulgarian
 
 Solr includes a light stemmer for Bulgarian, following http://members.unine.ch/jacques.savoy/Papers/BUIR.pdf[this algorithm] (PDF), and Lucene includes an example stopword list.
@@ -462,7 +667,6 @@ Solr includes a light stemmer for Bulgarian, following http://members.unine.ch/j
 </analyzer>
 ----
 
-[[LanguageAnalysis-Catalan]]
 === Catalan
 
 Solr can stem Catalan using the Snowball Porter Stemmer with an argument of `language="Catalan"`. Solr includes a set of contractions for Catalan, which can be stripped using `solr.ElisionFilterFactory`.
@@ -492,50 +696,97 @@ Solr can stem Catalan using the Snowball Porter Stemmer with an argument of `lan
 
 *Out:* "llengu"(1), "llengu"(2)
 
-[[LanguageAnalysis-Chinese]]
-=== Chinese
+=== Traditional Chinese
 
-[[LanguageAnalysis-ChineseTokenizer]]
-==== Chinese Tokenizer
+The default configuration of the <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>> is suitable for Traditional Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
 
-The Chinese Tokenizer is deprecated as of Solr 3.4. Use the <<tokenizers.adoc#Tokenizers-StandardTokenizer,`solr.StandardTokenizerFactory`>> instead.
+<<tokenizers.adoc#standard-tokenizer,Standard Tokenizer>> can also be used to tokenize Traditional Chinese text.  Following the Word Break rules from the Unicode Text Segmentation algorithm, it produces one token per Chinese character.  When combined with <<CJK Bigram Filter>>, overlapping bigrams of Chinese characters are formed.
 
-*Factory class:* `solr.ChineseTokenizerFactory`
+<<CJK Width Filter>> folds fullwidth ASCII variants into the equivalent Basic Latin forms.
 
-*Arguments:* None
-
-*Example:*
+*Examples:*
 
 [source,xml]
 ----
-<analyzer type="index">
-  <tokenizer class="solr.ChineseTokenizerFactory"/>
+<analyzer>
+  <tokenizer class="solr.ICUTokenizerFactory"/>
+  <filter class="solr.CJKWidthFilterFactory"/>
+  <filter class="solr.LowerCaseFilterFactory"/>
 </analyzer>
 ----
 
-[[LanguageAnalysis-ChineseFilterFactory]]
-==== Chinese Filter Factory
-
-The Chinese Filter Factory is deprecated as of Solr 3.4. Use the <<filter-descriptions.adoc#FilterDescriptions-StopFilter,`solr.StopFilterFactory`>> instead.
-
-*Factory class:* `solr.ChineseFilterFactory`
-
-*Arguments:* None
-
-*Example:*
-
 [source,xml]
 ----
-<analyzer type="index">
+<analyzer>
   <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.ChineseFilterFactory"/>
+  <filter class="solr.CJKBigramFilterFactory"/>
+  <filter class="solr.CJKWidthFilterFactory"/>
+  <filter class="solr.LowerCaseFilterFactory"/>
 </analyzer>
 ----
 
-[[LanguageAnalysis-SimplifiedChinese]]
+=== CJK Bigram Filter
+
+Forms bigrams (overlapping 2-character sequences) of CJK characters that are generated from <<tokenizers.adoc#standard-tokenizer,Standard Tokenizer>> or <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>>.
+
+By default, all CJK characters produce bigrams, but finer grained control is available by specifying orthographic type arguments `han`, `hiragana`, `katakana`, and `hangul`.  When set to `false`, characters of the corresponding type will be passed through as unigrams, and will not be included in any bigrams.
+
+When a CJK character has no adjacent characters to form a bigram, it is output in unigram form. If you want to always output both unigrams and bigrams, set the `outputUnigrams` argument to `true`.
+
+In all cases, all non-CJK input is passed through unmodified.
+
+*Arguments:*
+
+`han`:: (true/false) If false, Han (Chinese) characters will not form bigrams. Default is true.
+
+`hiragana`:: (true/false) If false, Hiragana (Japanese) characters will not form bigrams. Default is true.
+
+`katakana`:: (true/false) If false, Katakana (Japanese) characters will not form bigrams. Default is true.
+
+`hangul`:: (true/false) If false, Hangul (Korean) characters will not form bigrams. Default is true.
+
+`outputUnigrams`:: (true/false) If true, in addition to forming bigrams, all characters are also passed through as unigrams. Default is false.
+
+See the example under <<Traditional Chinese>>.
+
 === Simplified Chinese
 
-For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the `solr.HMMChineseTokenizerFactory` in the `analysis-extras` contrib module. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
+For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the <<HMM Chinese Tokenizer>>. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
+
+The default configuration of the <<tokenizers.adoc#icu-tokenizer,ICU Tokenizer>> is also suitable for Simplified Chinese text.  It follows the Word Break rules from the Unicode Text Segmentation algorithm for non-Chinese text, and uses a dictionary to segment Chinese words.  To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<lib-directives-in-solrconfig.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add to your `SOLR_HOME/lib`.
+
+Also useful for Chinese analysis:
+
+<<CJK Width Filter>> folds fullwidth ASCII variants into the equivalent Basic Latin forms, and folds halfwidth Katakana variants into their equivalent fullwidth forms.
+
+*Examples:*
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.HMMChineseTokenizerFactory"/>
+  <filter class="solr.CJKWidthFilterFactory"/>
+  <filter class="solr.StopFilterFactory"
+          words="org/apache/lucene/analysis/cn/smart/stopwords.txt"/>
+  <filter class="solr.PorterStemFilterFactory"/>
+  <filter class="solr.LowerCaseFilterFactory"/>
+</analyzer>
+----
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer class="solr.ICUTokenizerFactory"/>
+  <filter class="solr.CJKWidthFilterFactory"/>
+  <filter class="solr.StopFilterFactory"
+          words="org/apache/lucene/analysis/cn/smart/stopwords.txt"/>
+  <filter class="solr.LowerCaseFilterFactory"/>
+</analyzer>
+----
+
+=== HMM Chinese Tokenizer
+
+For Simplified Chinese, Solr provides support for Chinese sentence and word segmentation with the `solr.HMMChineseTokenizerFactory` in the `analysis-extras` contrib module. This component includes a large dictionary and segments Chinese text into words with the Hidden Markov Model. To use this tokenizer, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
 
 *Factory class:* `solr.HMMChineseTokenizerFactory`
 
@@ -547,37 +798,8 @@ To use the default setup with fallback to English Porter stemmer for English wor
 
 `<analyzer class="org.apache.lucene.analysis.cn.smart.SmartChineseAnalyzer"/>`
 
-Or to configure your own analysis setup, use the `solr.HMMChineseTokenizerFactory` along with your custom filter setup.
+Or to configure your own analysis setup, use the `solr.HMMChineseTokenizerFactory` along with your custom filter setup.  See an example of this in the <<Simplified Chinese>> section.
 
-[source,xml]
-----
-<analyzer>
-  <tokenizer class="solr.HMMChineseTokenizerFactory"/>
-  <filter class="solr.StopFilterFactory"
-          words="org/apache/lucene/analysis/cn/smart/stopwords.txt"/>
-  <filter class="solr.PorterStemFilterFactory"/>
-</analyzer>
-----
-
-[[LanguageAnalysis-CJK]]
-=== CJK
-
-This tokenizer breaks Chinese, Japanese and Korean language text into tokens. These are not whitespace delimited languages. The tokens generated by this tokenizer are "doubles", overlapping pairs of CJK characters found in the field text.
-
-*Factory class:* `solr.CJKTokenizerFactory`
-
-*Arguments:* None
-
-*Example:*
-
-[source,xml]
-----
-<analyzer type="index">
-  <tokenizer class="solr.CJKTokenizerFactory"/>
-</analyzer>
-----
-
-[[LanguageAnalysis-Czech]]
 === Czech
 
 Solr includes a light stemmer for Czech, following https://dl.acm.org/citation.cfm?id=1598600[this algorithm], and Lucene includes an example stopword list.
@@ -603,12 +825,11 @@ Solr includes a light stemmer for Czech, following https://dl.acm.org/citation.c
 
 *Out:* "preziden", "preziden", "preziden"
 
-[[LanguageAnalysis-Danish]]
 === Danish
 
 Solr can stem Danish using the Snowball Porter Stemmer with an argument of `language="Danish"`.
 
-Also relevant are the <<LanguageAnalysis-Scandinavian,Scandinavian normalization filters>>.
+Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
 
 *Factory class:* `solr.SnowballPorterFilterFactory`
 
@@ -633,8 +854,6 @@ Also relevant are the <<LanguageAnalysis-Scandinavian,Scandinavian normalization
 
 *Out:* "undersøg"(1), "undersøg"(2)
 
-
-[[LanguageAnalysis-Dutch]]
 === Dutch
 
 Solr can stem Dutch using the Snowball Porter Stemmer with an argument of `language="Dutch"`.
@@ -662,7 +881,6 @@ Solr can stem Dutch using the Snowball Porter Stemmer with an argument of `langu
 
 *Out:* "kanal", "kanal"
 
-[[LanguageAnalysis-Finnish]]
 === Finnish
 
 Solr includes support for stemming Finnish, and Lucene includes an example stopword list.
@@ -688,10 +906,8 @@ Solr includes support for stemming Finnish, and Lucene includes an example stopw
 *Out:* "kala", "kala"
 
 
-[[LanguageAnalysis-French]]
 === French
 
-[[LanguageAnalysis-ElisionFilter]]
 ==== Elision Filter
 
 Removes article elisions from a token stream. This filter can be useful for languages such as French, Catalan, Italian, and Irish.
@@ -722,7 +938,6 @@ Removes article elisions from a token stream. This filter can be useful for lang
 
 *Out:* "histoire", "art"
 
-[[LanguageAnalysis-FrenchLightStemFilter]]
 ==== French Light Stem Filter
 
 Solr includes three stemmers for French: one in the `solr.SnowballPorterFilterFactory`, a lighter stemmer called `solr.FrenchLightStemFilterFactory`, and an even less aggressive stemmer called `solr.FrenchMinimalStemFilterFactory`. Lucene includes an example stopword list.
@@ -762,7 +977,6 @@ Solr includes three stemmers for French: one in the `solr.SnowballPorterFilterFa
 *Out:* "le", "chat", "le", "chat"
 
 
-[[LanguageAnalysis-Galician]]
 === Galician
 
 Solr includes a stemmer for Galician following http://bvg.udc.es/recursos_lingua/stemming.jsp[this algorithm], and Lucene includes an example stopword list.
@@ -788,8 +1002,6 @@ Solr includes a stemmer for Galician following http://bvg.udc.es/recursos_lingua
 
 *Out:* "feliz", "luz"
 
-
-[[LanguageAnalysis-German]]
 === German
 
 Solr includes four stemmers for German: one in the `solr.SnowballPorterFilterFactory language="German"`, a stemmer called `solr.GermanStemFilterFactory`, a lighter stemmer called `solr.GermanLightStemFilterFactory`, and an even less aggressive stemmer called `solr.GermanMinimalStemFilterFactory`. Lucene includes an example stopword list.
@@ -830,8 +1042,6 @@ Solr includes four stemmers for German: one in the `solr.SnowballPorterFilterFac
 
 *Out:* "haus", "haus"
 
-
-[[LanguageAnalysis-Greek]]
 === Greek
 
 This filter converts uppercase letters in the Greek character set to the equivalent lowercase character.
@@ -855,7 +1065,6 @@ Use of custom charsets is no longer supported as of Solr 3.1. If you need to ind
 </analyzer>
 ----
 
-[[LanguageAnalysis-Hindi]]
 === Hindi
 
 Solr includes support for stemming Hindi following http://computing.open.ac.uk/Sites/EACLSouthAsia/Papers/p6-Ramanathan.pdf[this algorithm] (PDF), support for common spelling differences through the `solr.HindiNormalizationFilterFactory`, support for encoding differences through the `solr.IndicNormalizationFilterFactory` following http://ldc.upenn.edu/myl/IndianScriptsUnicode.html[this algorithm], and Lucene includes an example stopword list.
@@ -876,8 +1085,6 @@ Solr includes support for stemming Hindi following http://computing.open.ac.uk/S
 </analyzer>
 ----
 
-
-[[LanguageAnalysis-Indonesian]]
 === Indonesian
 
 Solr includes support for stemming Indonesian (Bahasa Indonesia) following http://www.illc.uva.nl/Publications/ResearchReports/MoL-2003-02.text.pdf[this algorithm] (PDF), and Lucene includes an example stopword list.
@@ -903,7 +1110,6 @@ Solr includes support for stemming Indonesian (Bahasa Indonesia) following http:
 
 *Out:* "bagai", "bagai"
 
-[[LanguageAnalysis-Italian]]
 === Italian
 
 Solr includes two stemmers for Italian: one in the `solr.SnowballPorterFilterFactory language="Italian"`, and a lighter stemmer called `solr.ItalianLightStemFilterFactory`. Lucene includes an example stopword list.
@@ -931,7 +1137,6 @@ Solr includes two stemmers for Italian: one in the `solr.SnowballPorterFilterFac
 
 *Out:* "propag", "propag", "propag"
 
-[[LanguageAnalysis-Irish]]
 === Irish
 
 Solr can stem Irish using the Snowball Porter Stemmer with an argument of `language="Irish"`. Solr includes `solr.IrishLowerCaseFilterFactory`, which can handle Irish-specific constructs. Solr also includes a set of contractions for Irish which can be stripped using `solr.ElisionFilterFactory`.
@@ -961,22 +1166,20 @@ Solr can stem Irish using the Snowball Porter Stemmer with an argument of `langu
 
 *Out:* "siopadóir", "síceapaite", "fearr", "athair"
 
-[[LanguageAnalysis-Japanese]]
 === Japanese
 
 Solr includes support for analyzing Japanese, via the Lucene Kuromoji morphological analyzer, which includes several analysis components - more details on each below:
 
-* `JapaneseIterationMarkCharFilter` normalizes Japanese horizontal iteration marks (odoriji) to their expanded form.
-* `JapaneseTokenizer` tokenizes Japanese using morphological analysis, and annotates each term with part-of-speech, base form (a.k.a. lemma), reading and pronunciation.
-* `JapaneseBaseFormFilter` replaces original terms with their base forms (a.k.a. lemmas).
-* `JapanesePartOfSpeechStopFilter` removes terms that have one of the configured parts-of-speech.
-* `JapaneseKatakanaStemFilter` normalizes common katakana spelling variations ending in a long sound character (U+30FC) by removing the long sound character.
+* <<Japanese Iteration Mark CharFilter,`JapaneseIterationMarkCharFilter`>> normalizes Japanese horizontal iteration marks (odoriji) to their expanded form.
+* <<Japanese Tokenizer,`JapaneseTokenizer`>> tokenizes Japanese using morphological analysis, and annotates each term with part-of-speech, base form (a.k.a. lemma), reading and pronunciation.
+* <<Japanese Base Form Filter,`JapaneseBaseFormFilter`>> replaces original terms with their base forms (a.k.a. lemmas).
+* <<Japanese Part Of Speech Stop Filter,`JapanesePartOfSpeechStopFilter`>> removes terms that have one of the configured parts-of-speech.
+* <<Japanese Katakana Stem Filter,`JapaneseKatakanaStemFilter`>> normalizes common katakana spelling variations ending in a long sound character (U+30FC) by removing the long sound character.
 
 Also useful for Japanese analysis, from lucene-analyzers-common:
 
-* `CJKWidthFilter` folds fullwidth ASCII variants into the equivalent Basic Latin forms, and folds halfwidth Katakana variants into their equivalent fullwidth forms.
+* <<CJK Width Filter,`CJKWidthFilter`>> folds fullwidth ASCII variants into the equivalent Basic Latin forms, and folds halfwidth Katakana variants into their equivalent fullwidth forms.
 
-[[LanguageAnalysis-JapaneseIterationMarkCharFilter]]
 ==== Japanese Iteration Mark CharFilter
 
 Normalizes horizontal Japanese iteration marks (odoriji) to their expanded form. Vertical iteration marks are not supported.
@@ -989,7 +1192,6 @@ Normalizes horizontal Japanese iteration marks (odoriji) to their expanded form.
 
 `normalizeKana`:: set to `false` to not normalize kana iteration marks (default is `true`)
 
-[[LanguageAnalysis-JapaneseTokenizer]]
 ==== Japanese Tokenizer
 
 Tokenizer for Japanese that uses morphological analysis, and annotates each term with part-of-speech, base form (a.k.a. lemma), reading and pronunciation.
@@ -1014,7 +1216,6 @@ For some applications it might be good to use `search` mode for indexing and `no
 
 `discardPunctuation`:: set to `false` to keep punctuation, `true` to discard (the default)
 
-[[LanguageAnalysis-JapaneseBaseFormFilter]]
 ==== Japanese Base Form Filter
 
 Replaces original terms' text with the corresponding base form (lemma). (`JapaneseTokenizer` annotates each term with its base form.)
@@ -1023,7 +1224,6 @@ Replaces original terms' text with the corresponding base form (lemma). (`Japane
 
 (no arguments)
 
-[[LanguageAnalysis-JapanesePartOfSpeechStopFilter]]
 ==== Japanese Part Of Speech Stop Filter
 
 Removes terms with one of the configured parts-of-speech. `JapaneseTokenizer` annotates terms with parts-of-speech.
@@ -1036,12 +1236,11 @@ Removes terms with one of the configured parts-of-speech. `JapaneseTokenizer` an
 
 `enablePositionIncrements`:: if `luceneMatchVersion` is `4.3` or earlier and `enablePositionIncrements="false"`, no position holes will be left by this filter when it removes tokens. *This argument is invalid if `luceneMatchVersion` is `5.0` or later.*
 
-[[LanguageAnalysis-JapaneseKatakanaStemFilter]]
 ==== Japanese Katakana Stem Filter
 
 Normalizes common katakana spelling variations ending in a long sound character (U+30FC) by removing the long sound character.
 
-`CJKWidthFilterFactory` should be specified prior to this filter to normalize half-width katakana to full-width.
+<<CJK Width Filter,`solr.CJKWidthFilterFactory`>> should be specified prior to this filter to normalize half-width katakana to full-width.
 
 *Factory class:* `JapaneseKatakanaStemFilterFactory`
 
@@ -1049,7 +1248,6 @@ Normalizes common katakana spelling variations ending in a long sound character 
 
 `minimumLength`:: terms below this length will not be stemmed. Default is 4, value must be 2 or more.
 
-[[LanguageAnalysis-CJKWidthFilter]]
 ==== CJK Width Filter
 
 Folds fullwidth ASCII variants into the equivalent Basic Latin forms, and folds halfwidth Katakana variants into their equivalent fullwidth forms.
@@ -1077,14 +1275,13 @@ Example:
 </fieldType>
 ----
 
-[[LanguageAnalysis-Hebrew_Lao_Myanmar_Khmer]]
+[[hebrew-lao-myanmar-khmer]]
 === Hebrew, Lao, Myanmar, Khmer
 
 Lucene provides support, in addition to UAX#29 word break rules, for Hebrew's use of the double and single quote characters, and for segmenting Lao, Myanmar, and Khmer into syllables with the `solr.ICUTokenizerFactory` in the `analysis-extras` contrib module. To use this tokenizer, see `solr/contrib/analysis-extras/README.txt for` instructions on which jars you need to add to your `solr_home/lib`.
 
-See <<tokenizers.adoc#Tokenizers-ICUTokenizer,the ICUTokenizer>> for more information.
+See <<tokenizers.adoc#icu-tokenizer,the ICUTokenizer>> for more information.
 
-[[LanguageAnalysis-Latvian]]
 === Latvian
 
 Solr includes support for stemming Latvian, and Lucene includes an example stopword list.
@@ -1112,16 +1309,14 @@ Solr includes support for stemming Latvian, and Lucene includes an example stopw
 
 *Out:* "tirg", "tirg"
 
-[[LanguageAnalysis-Norwegian]]
 === Norwegian
 
 Solr includes two classes for stemming Norwegian, `NorwegianLightStemFilterFactory` and `NorwegianMinimalStemFilterFactory`. Lucene includes an example stopword list.
 
 Another option is to use the Snowball Porter Stemmer with an argument of language="Norwegian".
 
-Also relevant are the <<LanguageAnalysis-Scandinavian,Scandinavian normalization filters>>.
+Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
 
-[[LanguageAnalysis-NorwegianLightStemmer]]
 ==== Norwegian Light Stemmer
 
 The `NorwegianLightStemFilterFactory` requires a "two-pass" sort for the -dom and -het endings. This means that in the first pass the word "kristendom" is stemmed to "kristen", and then all the general rules apply so it will be further stemmed to "krist". The effect of this is that "kristen," "kristendom," "kristendommen," and "kristendommens" will all be stemmed to "krist."
@@ -1171,7 +1366,6 @@ The second pass is to pick up -dom and -het endings. Consider this example:
 
 *Out:* "forelske"
 
-[[LanguageAnalysis-NorwegianMinimalStemmer]]
 ==== Norwegian Minimal Stemmer
 
 The `NorwegianMinimalStemFilterFactory` stems plural forms of Norwegian nouns only.
@@ -1206,10 +1400,8 @@ The `NorwegianMinimalStemFilterFactory` stems plural forms of Norwegian nouns on
 
 *Out:* "bil"
 
-[[LanguageAnalysis-Persian]]
 === Persian
 
-[[LanguageAnalysis-PersianFilterFactories]]
 ==== Persian Filter Factories
 
 Solr includes support for normalizing Persian, and Lucene includes an example stopword list.
@@ -1229,7 +1421,6 @@ Solr includes support for normalizing Persian, and Lucene includes an example st
 </analyzer>
 ----
 
-[[LanguageAnalysis-Polish]]
 === Polish
 
 Solr provides support for Polish stemming with the `solr.StempelPolishStemFilterFactory`, and `solr.MorphologikFilterFactory` for lemmatization, in the `contrib/analysis-extras` module. The `solr.StempelPolishStemFilterFactory` component includes an algorithmic stemmer with tables for Polish. To use either of these filters, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.
@@ -1270,7 +1461,6 @@ Note the lower case filter is applied _after_ the Morfologik stemmer; this is be
 
 The Morfologik dictionary parameter value is a constant specifying which dictionary to choose. The dictionary resource must be named `path/to/_language_.dict` and have an associated `.info` metadata file. See http://morfologik.blogspot.com/[the Morfologik project] for details. If the dictionary attribute is not provided, the Polish dictionary is loaded and used by default.
 
-[[LanguageAnalysis-Portuguese]]
 === Portuguese
 
 Solr includes four stemmers for Portuguese: one in the `solr.SnowballPorterFilterFactory`, an alternative stemmer called `solr.PortugueseStemFilterFactory`, a lighter stemmer called `solr.PortugueseLightStemFilterFactory`, and an even less aggressive stemmer called `solr.PortugueseMinimalStemFilterFactory`. Lucene includes an example stopword list.
@@ -1314,8 +1504,6 @@ Solr includes four stemmers for Portuguese: one in the `solr.SnowballPorterFilte
 
 *Out:* "pra", "pra"
 
-
-[[LanguageAnalysis-Romanian]]
 === Romanian
 
 Solr can stem Romanian using the Snowball Porter Stemmer with an argument of `language="Romanian"`.
@@ -1337,11 +1525,8 @@ Solr can stem Romanian using the Snowball Porter Stemmer with an argument of `la
 </analyzer>
 ----
 
-
-[[LanguageAnalysis-Russian]]
 === Russian
 
-[[LanguageAnalysis-RussianStemFilter]]
 ==== Russian Stem Filter
 
 Solr includes two stemmers for Russian: one in the `solr.SnowballPorterFilterFactory language="Russian"`, and a lighter stemmer called `solr.RussianLightStemFilterFactory`. Lucene includes an example stopword list.
@@ -1361,21 +1546,18 @@ Solr includes two stemmers for Russian: one in the `solr.SnowballPorterFilterFac
 </analyzer>
 ----
 
-
-[[LanguageAnalysis-Scandinavian]]
 === Scandinavian
 
-Scandinavian is a language group spanning three languages <<LanguageAnalysis-Norwegian,Norwegian>>, <<LanguageAnalysis-Swedish,Swedish>> and <<LanguageAnalysis-Danish,Danish>> which are very similar.
+Scandinavian is a language group spanning three languages <<Norwegian>>, <<Swedish>> and <<Danish>> which are very similar.
 
 Swedish å, ä, ö are in fact the same letters as Norwegian and Danish å, æ, ø and thus interchangeable when used between these languages. They are however folded differently when people type them on a keyboard lacking these characters.
 
 In that situation almost all Swedish people use a, a, o instead of å, ä, ö. Norwegians and Danes on the other hand usually type aa, ae and oe instead of å, æ and ø. Some do however use a, a, o, oo, ao and sometimes permutations of everything above.
 
-There are two filters for helping with normalization between Scandinavian languages: one is `solr.ScandinavianNormalizationFilterFactory` trying to preserve the special characters (æäöå) and another `solr.ScandinavianFoldingFilterFactory` which folds these to the more broad ø/ö->o etc.
+There are two filters for helping with normalization between Scandinavian languages: one is `solr.ScandinavianNormalizationFilterFactory` trying to preserve the special characters (æäöå) and another `solr.ScandinavianFoldingFilterFactory` which folds these to the more broad ø/ö\->o etc.
 
 See also each language section for other relevant filters.
 
-[[LanguageAnalysis-ScandinavianNormalizationFilter]]
 ==== Scandinavian Normalization Filter
 
 This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØ and folded variants (aa, ao, ae, oe and oo) by transforming them to åÅæÆøØ.
@@ -1403,10 +1585,9 @@ It's a semantically less destructive solution than `ScandinavianFoldingFilter`, 
 
 *Out:* "blåbærsyltetøj", "blåbærsyltetøj", "blåbærsyltetøj", "blabarsyltetoj"
 
-[[LanguageAnalysis-ScandinavianFoldingFilter]]
 ==== Scandinavian Folding Filter
 
-This filter folds Scandinavian characters åÅäæÄÆ->a and öÖøØ->o. It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
+This filter folds Scandinavian characters åÅäæÄÆ\->a and öÖøØ\->o. It also discriminate against use of double vowels aa, ae, ao, oe and oo, leaving just the first one.
 
 It's a semantically more destructive solution than `ScandinavianNormalizationFilter`, but can in addition help with matching raksmorgas as räksmörgås.
 
@@ -1431,10 +1612,8 @@ It's a semantically more destructive solution than `ScandinavianNormalizationFil
 
 *Out:* "blabarsyltetoj", "blabarsyltetoj", "blabarsyltetoj", "blabarsyltetoj"
 
-[[LanguageAnalysis-Serbian]]
 === Serbian
 
-[[LanguageAnalysis-SerbianNormalizationFilter]]
 ==== Serbian Normalization Filter
 
 Solr includes a filter that normalizes Serbian Cyrillic and Latin characters. Note that this filter only works with lowercased input.
@@ -1445,7 +1624,7 @@ See the Solr wiki for tips & advice on using this filter: https://wiki.apache.or
 
 *Arguments:*
 
-`haircut` :: Select the extend of normalization. Valid values are:
+`haircut`:: Select the extend of normalization. Valid values are:
 +
 * `bald`: (Default behavior) Cyrillic characters are first converted to Latin; then, Latin characters have their diacritics removed, with the exception of https://en.wikipedia.org/wiki/D_with_stroke[LATIN SMALL LETTER D WITH STROKE] (U+0111) which is converted to "```dj```"
 * `regular`: Only Cyrillic to Latin normalization will be applied, preserving the Latin diatrics
@@ -1461,7 +1640,6 @@ See the Solr wiki for tips & advice on using this filter: https://wiki.apache.or
 </analyzer>
 ----
 
-[[LanguageAnalysis-Spanish]]
 === Spanish
 
 Solr includes two stemmers for Spanish: one in the `solr.SnowballPorterFilterFactory language="Spanish"`, and a lighter stemmer called `solr.SpanishLightStemFilterFactory`. Lucene includes an example stopword list.
@@ -1488,15 +1666,13 @@ Solr includes two stemmers for Spanish: one in the `solr.SnowballPorterFilterFac
 *Out:* "tor", "tor", "tor"
 
 
-[[LanguageAnalysis-Swedish]]
 === Swedish
 
-[[LanguageAnalysis-SwedishStemFilter]]
 ==== Swedish Stem Filter
 
 Solr includes two stemmers for Swedish: one in the `solr.SnowballPorterFilterFactory language="Swedish"`, and a lighter stemmer called `solr.SwedishLightStemFilterFactory`. Lucene includes an example stopword list.
 
-Also relevant are the <<LanguageAnalysis-Scandinavian,Scandinavian normalization filters>>.
+Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
 
 *Factory class:* `solr.SwedishStemFilterFactory`
 
@@ -1519,8 +1695,6 @@ Also relevant are the <<LanguageAnalysis-Scandinavian,Scandinavian normalization
 
 *Out:* "klok", "klok", "klok"
 
-
-[[LanguageAnalysis-Thai]]
 === Thai
 
 This filter converts sequences of Thai characters into individual Thai words. Unlike European languages, Thai does not use whitespace to delimit words.
@@ -1539,7 +1713,6 @@ This filter converts sequences of Thai characters into individual Thai words. Un
 </analyzer>
 ----
 
-[[LanguageAnalysis-Turkish]]
 === Turkish
 
 Solr includes support for stemming Turkish with the `solr.SnowballPorterFilterFactory`; support for case-insensitive search with the `solr.TurkishLowerCaseFilterFactory`; support for stripping apostrophes and following suffixes with `solr.ApostropheFilterFactory` (see http://www.ipcsit.com/vol57/015-ICNI2012-M021.pdf[Role of Apostrophes in Turkish Information Retrieval]); support for a form of stemming that truncating tokens at a configurable maximum length through the `solr.TruncateTokenFilterFactory` (see http://www.users.muohio.edu/canf/papers/JASIST2008offPrint.pdf[Information Retrieval on Turkish Texts]); and Lucene includes an example stopword list.
@@ -1575,10 +1748,6 @@ Solr includes support for stemming Turkish with the `solr.SnowballPorterFilterFa
 </analyzer>
 ----
 
-[[LanguageAnalysis-BacktoTop#main]]
-===
-
-[[LanguageAnalysis-Ukrainian]]
 === Ukrainian
 
 Solr provides support for Ukrainian lemmatization with the `solr.MorphologikFilterFactory`, in the `contrib/analysis-extras` module. To use this filter, see `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add to your `solr_home/lib`.

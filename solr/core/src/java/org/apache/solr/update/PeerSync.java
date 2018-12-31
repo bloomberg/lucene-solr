@@ -65,7 +65,12 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-/** @lucene.experimental */
+/**
+ * This class is useful for performing peer to peer synchronization of recently indexed update commands during
+ * recovery process.
+ *
+ * @lucene.experimental
+ */
 public class PeerSync implements SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean debug = log.isDebugEnabled();
@@ -259,6 +264,14 @@ public class PeerSync implements SolrMetricProducer {
       // have newer stuff that we also had (assuming updates are going on and are being forwarded).
       for (String replica : replicas) {
         requestVersions(replica);
+      }
+
+      try {
+        // waiting a little bit, there are a chance that an update is sending from leader,
+        // so it will present in the response, but not in our recent updates (SOLR-10126)
+        Thread.sleep(300);
+      } catch (InterruptedException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
       try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {

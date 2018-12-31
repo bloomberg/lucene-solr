@@ -16,22 +16,17 @@
  */
 package org.apache.solr.search.similarities;
 
-import java.util.HashMap;
-
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SimilarityFactory;
-import org.apache.solr.util.PayloadDecoder;
-import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
@@ -114,9 +109,7 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
       Similarity defaultSim = null;
       if (null == defaultSimFromFieldType) {
         // nothing configured, choose a sensible implicit default...
-        defaultSim = this.core.getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_6_0_0)
-          ? new BM25Similarity()
-          : new ClassicSimilarity();
+        defaultSim = new BM25Similarity();
       } else {
         FieldType defSimFT = core.getLatestSchema().getFieldTypeByName(defaultSimFromFieldType);
         if (null == defSimFT) {
@@ -140,7 +133,6 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
   
   private class SchemaSimilarity extends PerFieldSimilarityWrapper {
     private Similarity defaultSimilarity;
-    private HashMap<FieldType,PayloadDecoder> decoders;  // cache to avoid scanning token filters repeatedly, unnecessarily
 
     public SchemaSimilarity(Similarity defaultSimilarity) {
       this.defaultSimilarity = defaultSimilarity;
@@ -153,19 +145,7 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
         return defaultSimilarity;
       } else {
         Similarity similarity = fieldType.getSimilarity();
-        similarity = similarity == null ? defaultSimilarity : similarity;
-
-        // Payload score handling: if field type has index-time payload encoding, wrap and computePayloadFactor accordingly
-        if (decoders == null) decoders = new HashMap<>();
-        PayloadDecoder decoder;
-        if (!decoders.containsKey(fieldType)) {
-          decoders.put(fieldType, PayloadUtils.getPayloadDecoder(fieldType));
-        }
-        decoder = decoders.get(fieldType);
-
-        if (decoder != null) similarity = new PayloadScoringSimilarityWrapper(similarity, decoder);
-
-        return similarity;
+        return similarity == null ? defaultSimilarity : similarity;
       }
     }
 

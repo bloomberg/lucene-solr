@@ -31,7 +31,6 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -116,6 +115,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
 
     @Override
     public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
+
       return new SimScorer() {
 
         @Override
@@ -124,12 +124,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
         }
 
         @Override
-        public float computeSlopFactor(int distance) {
-          return 0;
-        }
-
-        @Override
-        public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
+        public float maxScore(float maxFreq) {
           return 0;
         }
       };

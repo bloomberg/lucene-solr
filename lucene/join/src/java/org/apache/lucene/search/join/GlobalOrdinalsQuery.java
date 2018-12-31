@@ -20,9 +20,8 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -42,7 +41,7 @@ final class GlobalOrdinalsQuery extends Query {
   // All the ords of matching docs found with OrdinalsCollector.
   private final LongBitSet foundOrds;
   private final String joinField;
-  private final MultiDocValues.OrdinalMap globalOrds;
+  private final OrdinalMap globalOrds;
   // Is also an approximation of the docs that will match. Can be all docs that have toField or something more specific.
   private final Query toQuery;
 
@@ -51,21 +50,22 @@ final class GlobalOrdinalsQuery extends Query {
   // id of the context rather than the context itself in order not to hold references to index readers
   private final Object indexReaderContextId;
 
-  GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, MultiDocValues.OrdinalMap globalOrds, Query toQuery, Query fromQuery, IndexReaderContext context) {
+  GlobalOrdinalsQuery(LongBitSet foundOrds, String joinField, OrdinalMap globalOrds, Query toQuery,
+                      Query fromQuery, Object indexReaderContextId) {
     this.foundOrds = foundOrds;
     this.joinField = joinField;
     this.globalOrds = globalOrds;
     this.toQuery = toQuery;
     this.fromQuery = fromQuery;
-    this.indexReaderContextId = context.id();
+    this.indexReaderContextId = indexReaderContextId;
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
     if (searcher.getTopReaderContext().id() != indexReaderContextId) {
       throw new IllegalStateException("Creating the weight against a different index reader than this query has been built for.");
     }
-    return new W(this, toQuery.createWeight(searcher, false, 1f), boost);
+    return new W(this, toQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f), boost);
   }
 
   @Override
@@ -152,6 +152,14 @@ final class GlobalOrdinalsQuery extends Query {
       } {
         return new SegmentOrdinalScorer(this, score(), foundOrds, values, approximationScorer.iterator());
       }
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      // disable caching because this query relies on a top reader context
+      // and holds a bitset of matching ordinals that cannot be accounted in
+      // the memory used by the cache
+      return false;
     }
 
   }

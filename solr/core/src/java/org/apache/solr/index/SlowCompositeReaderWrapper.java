@@ -22,7 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
-import org.apache.lucene.index.MultiDocValues.OrdinalMap;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 
@@ -69,12 +69,16 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     if (reader.leaves().isEmpty()) {
       metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
     } else {
-      Version minVersion = reader.leaves().stream()
-          .map(LeafReaderContext::reader)
-          .map(LeafReader::getMetaData)
-          .map(LeafMetaData::getMinVersion)
-          .reduce((v1, v2) -> v1 == null ? null : v2 == null ? null : v2.onOrAfter(v1) ? v1 : v2)
-          .get();
+      Version minVersion = Version.LATEST;
+      for (LeafReaderContext leafReaderContext : reader.leaves()) {
+        Version leafVersion = leafReaderContext.reader().getMetaData().getMinVersion();
+        if (leafVersion == null) {
+          minVersion = null;
+          break;
+        } else if (minVersion.onOrAfter(leafVersion)) {
+          minVersion = leafVersion;
+        }
+      }
       metaData = new LeafMetaData(reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor(), minVersion, null);
     }
   }
@@ -98,9 +102,9 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public Fields fields() {
+  public Terms terms(String field) throws IOException {
     ensureOpen();
-    return fields;
+    return fields.terms(field);
   }
 
   @Override

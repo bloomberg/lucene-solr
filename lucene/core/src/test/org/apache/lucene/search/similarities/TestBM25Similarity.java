@@ -17,26 +17,9 @@
 package org.apache.lucene.search.similarities;
 
 
-import java.io.IOException;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.Random;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
-
-public class TestBM25Similarity extends LuceneTestCase {
+public class TestBM25Similarity extends BaseSimilarityTestCase {
   
   public void testIllegalK1() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
@@ -77,43 +60,51 @@ public class TestBM25Similarity extends LuceneTestCase {
     assertTrue(expected.getMessage().contains("illegal b value"));
   }
 
-  public void testLengthEncodingBackwardCompatibility() throws IOException {
-    Similarity similarity = new BM25Similarity();
-    for (int indexCreatedVersionMajor : new int[] { Version.LUCENE_6_0_0.major, Version.LATEST.major}) {
-      for (int length : new int[] {1, 2, 4}) { // these length values are encoded accurately on both cases
-        Directory dir = newDirectory();
-        // set the version on the directory
-        new SegmentInfos(indexCreatedVersionMajor).commit(dir);
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setSimilarity(similarity));
-        Document doc = new Document();
-        String value = IntStream.range(0, length).mapToObj(i -> "b").collect(Collectors.joining(" "));
-        doc.add(new TextField("foo", value, Store.NO));
-        w.addDocument(doc);
-        IndexReader reader = DirectoryReader.open(w);
-        IndexSearcher searcher = newSearcher(reader);
-        searcher.setSimilarity(similarity);
-        Explanation expl = searcher.explain(new TermQuery(new Term("foo", "b")), 0);
-        Explanation docLen = findExplanation(expl, "fieldLength");
-        assertNotNull(docLen);
-        assertEquals(docLen.toString(), length, (int) docLen.getValue());
-        w.close();
-        reader.close();
-        dir.close();
-      }
+  @Override
+  protected Similarity getSimilarity(Random random) {
+    // term frequency normalization parameter k1
+    final float k1;
+    switch (random.nextInt(4)) {
+      case 0:
+        // minimum value
+        k1 = 0;
+        break;
+      case 1:
+        // tiny value
+        k1 = Float.MIN_VALUE;
+        break;
+      case 2:
+        // maximum value
+        // upper bounds on individual term's score is 43.262806 * (k1 + 1) * boost
+        // we just limit the test to "reasonable" k1 values but don't enforce this anywhere.
+        k1 = Integer.MAX_VALUE;
+        break;
+      default:
+        // random value
+        k1 = Integer.MAX_VALUE * random.nextFloat();
+        break;
     }
-  }
-
-  private static Explanation findExplanation(Explanation expl, String text) {
-    if (expl.getDescription().equals(text)) {
-      return expl;
-    } else {
-      for (Explanation sub : expl.getDetails()) {
-        Explanation match = findExplanation(sub, text);
-        if (match != null) {
-          return match;
-        }
-      }
+    
+    // length normalization parameter b [0 .. 1]
+    final float b;
+    switch (random.nextInt(4)) {
+      case 0:
+        // minimum value
+        b = 0;
+        break;
+      case 1:
+        // tiny value
+        b = Float.MIN_VALUE;
+        break;
+      case 2:
+        // maximum value
+        b = 1;
+        break;
+      default:
+        // random value
+        b = random.nextFloat();
+        break;
     }
-    return null;
+    return new BM25Similarity(k1, b);
   }
 }

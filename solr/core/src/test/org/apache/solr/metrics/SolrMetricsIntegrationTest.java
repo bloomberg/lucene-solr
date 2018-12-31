@@ -22,8 +22,12 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Random;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
@@ -43,7 +47,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 20;
   private static final String CORE_NAME = "metrics_integration";
   private static final String METRIC_NAME = "requestTimes";
-  private static final String HANDLER_NAME = "standard";
+  private static final String HANDLER_NAME = "/select";
   private static final String[] REPORTER_NAMES = {"reporter1", "reporter2"};
   private static final String UNIVERSAL = "universal";
   private static final String SPECIFIC = "specific";
@@ -148,6 +152,39 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
       assertTrue("Reporter " + reporterName + " was not initialized: " + mockReporter, mockReporter.didInit);
       assertTrue("Reporter " + reporterName + " was not validated: " + mockReporter, mockReporter.didValidate);
       assertFalse("Reporter " + reporterName + " was incorrectly closed: " + mockReporter, mockReporter.didClose);
+    }
+  }
+
+  @Test
+  public void testCoreContainerMetrics() throws Exception {
+    String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
+    assertTrue(cc.getMetricManager().registryNames().toString(), cc.getMetricManager().registryNames().contains(registryName));
+    MetricRegistry registry = cc.getMetricManager().registry(registryName);
+    Map<String, Metric> metrics = registry.getMetrics();
+    assertTrue(metrics.containsKey("CONTAINER.cores.loaded"));
+    assertTrue(metrics.containsKey("CONTAINER.cores.lazy"));
+    assertTrue(metrics.containsKey("CONTAINER.cores.unloaded"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.totalSpace"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.usableSpace"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.path"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.spins"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.totalSpace"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.usableSpace"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.path"));
+    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.spins"));
+    assertTrue(metrics.containsKey("CONTAINER.version.specification"));
+    assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
+    Gauge<?> g = (Gauge<?>)metrics.get("CONTAINER.fs.path");
+    assertEquals(g.getValue(), cc.getResourceLoader().getInstancePath().toAbsolutePath().toString());
+    boolean spins = IOUtils.spins(cc.getCoreRootDirectory());
+    g = (Gauge<?>)metrics.get("CONTAINER.fs.coreRoot.spins");
+    assertEquals(spins, g.getValue());
+    g = (Gauge<?>)metrics.get("CONTAINER.fs.spins");
+    if (cc.getConfig().getSolrDataHome() != null) {
+      spins = IOUtils.spins(cc.getConfig().getSolrDataHome());
+      assertEquals(spins, g.getValue());
+    } else {
+      assertEquals(spins, g.getValue());
     }
   }
 }

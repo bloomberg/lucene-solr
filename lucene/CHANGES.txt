@@ -3,6 +3,381 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 8.0.0 =======================
+
+API Changes
+
+* LUCENE-8039: Introduce a "delta distance" method set to GeoDistance.  This
+  allows distance calculations, especially for paths, to take into account an
+  "excursion" to include the specified point.
+
+* LUCENE-8007: Index statistics Terms.getSumDocFreq(), Terms.getDocCount() are
+  now required to be stored by codecs. Additionally, TermsEnum.totalTermFreq()
+  and Terms.getSumTotalTermFreq() are now required: if frequencies are not
+  stored they are equal to TermsEnum.docFreq() and Terms.getSumDocFreq(),
+  respectively, because all freq() values equal 1. (Adrien Grand, Robert Muir)
+
+* LUCENE-8038: Deprecated PayloadScoreQuery constructors have been removed (Alan
+  Woodward)
+
+* LUCENE-8014: Similarity.computeSlopFactor() and
+  Similarity.computePayloadFactor() have been removed (Alan Woodward)
+
+* LUCENE-7996: Queries are now required to produce positive scores.
+  (Adrien Grand)
+
+* LUCENE-8099: CustomScoreQuery, BoostedQuery and BoostingQuery have been
+  removed (Alan Woodward)
+
+Changes in Runtime Behavior
+
+* LUCENE-7837: Indices that were created before the previous major version
+  will now fail to open even if they have been merged with the previous major
+  version. (Adrien Grand)
+
+* LUCENE-8020: Similarities are no longer passed terms that don't exist by
+  queries such as SpanOrQuery, so scoring formulas no longer require
+  divide-by-zero hacks.  IndexSearcher.termStatistics/collectionStatistics return null
+  instead of returning bogus values for a non-existent term or field. (Robert Muir)
+
+* LUCENE-7996: FunctionQuery and FunctionScoreQuery now return a score of 0
+  when the function produces a negative value. (Adrien Grand)
+
+Improvements
+
+* LUCENE-7997: Add BaseSimilarityTestCase to sanity check similarities.
+  SimilarityBase switches to 64-bit doubles internally to help avoid common numeric issues.
+  Add missing range checks for similarity parameters.
+  Improve BM25 and ClassicSimilarity's explanations. (Robert Muir)
+
+* LUCENE-8011: Improved similarity explanations.
+  (Mayya Sharipova via Adrien Grand)
+
+Optimizations
+
+* LUCENE-8040: Optimize IndexSearcher.collectionStatistics, avoiding MultiFields/MultiTerms
+  (David Smiley, Robert Muir)
+
+* LUCENE-4100: Disjunctions now support faster collection of top hits when the
+  total hit count is not required. (Stefan Pohl, Adrien Grand, Robert Muir)
+
+======================= Lucene 7.3.0 =======================
+
+API Changes
+
+* LUCENE-8051: LevensteinDistance renamed to LevenshteinDistance.
+  (Pulak Ghosh via Adrien Grand)
+
+* LUCENE-8099: Deprecate CustomScoreQuery, BoostedQuery and BoostingQuery.
+  Users should instead use FunctionScoreQuery, possibly combined with
+  a lucene expression (Alan Woodward)
+
+* LUCENE-8104: Remove facets module compile-time dependency on queries
+  (Alan Woodward)
+
+New Features
+
+* LUCENE-2899: Add new module analysis/opennlp, with analysis components
+  to perform tokenization, part-of-speech tagging, lemmatization and phrase
+  chunking by invoking the corresponding OpenNLP tools. Named entity
+  recognition is also provided as a Solr update request processor.
+  (Lance Norskog, Grant Ingersoll, Joern Kottmann, Em, Kai Gülzau,
+  Rene Nederhand, Robert Muir, Steven Bower, Steve Rowe)
+
+Improvements
+
+* LUCENE-8081: Allow IndexWriter to opt out of flushing on indexing threads
+  Index/Update Threads try to help out flushing pending document buffers to
+  disk. This change adds an expert setting to opt ouf of this behavior unless
+  flusing is falling behind. (Simon Willnauer)
+
+* LUCENE-8086: spatial-extras Geo3dFactory: Use GeoExactCircle with
+  configurable precision for non-spherical planet models.
+  (Ignacio Vera via David Smiley)
+
+* LUCENE-8093: TrimFilterFactory implements MultiTermAwareComponent (Alan Woodward)
+
+* LUCENE-8094: TermInSetQuery.toString now returns "field:(A B C)" (Mike McCandless)
+
+Bug Fixes
+
+* LUCENE-8077: Fixed bug in how CheckIndex verifies doc-value iterators.
+  (Xiaoshan Sun via Adrien Grand)
+
+======================= Lucene 7.2.0 =======================
+
+API Changes
+
+* LUCENE-8017, LUCENE-8042: Weight, DoubleValuesSource and related objects
+  now implement a SegmentCacheable interface, with a single method
+  isCacheable(LeafReaderContext) determining whether or not the object may
+  be cached against a LeafReader. (Alan Woodward, Robert Muir)
+
+* LUCENE-8038: Payload factors for scoring in PayloadScoreQuery are now
+  calculated by a PayloadDecoder, instead of delegating to the Similarity.
+  (Alan Woodward)
+
+* LUCENE-8014: Similarity.computeSlopFactor() and
+  Similarity.computePayloadFactor() have been deprecated. (Alan Woodward)
+
+* LUCENE-6278: Scorer.freq() has been removed (Alan Woodward)
+
+* LUCENE-7736: DoubleValuesSource and LongValuesSource now expose a
+  rewrite(IndexSearcher) function. (Alan Woodward)
+
+* LUCENE-7998: DoubleValuesSource.fromQuery() allows you to use the scores
+  from a Query as a DoubleValuesSource. (Alan Woodward)
+
+* LUCENE-8049: IndexWriter.getMergingSegments()'s return type was changed from
+  Collection to Set to more accurately reflect it's nature. (David Smiley)
+
+* LUCENE-8059: TopFieldDocCollector can now early terminate collection when
+  the sort order is compatible with the index order. As a consequence,
+  EarlyTerminatingSortingCollector is now deprecated. (Adrien Grand)
+
+New Features
+
+* LUCENE-8061: Add convenience factory methods to create BBoxes and XYZSolids
+  directly from bounds objects.
+  
+* LUCENE-7736: IndexReaderFunctions expose various IndexReader statistics as
+  DoubleValuesSources. (Alan Woodward)
+
+* LUCENE-8068: Allow IndexWriter to write a single DWPT to disk Adds a
+  flushNextBuffer method to IndexWriter that allows the caller to
+  synchronously move the next pending or the biggest non-pending index buffer to
+  disk. This enables flushing selected buffer to disk without highjacking an
+  indexing thread. This is for instance useful if more than one IW (shards) must
+  be maintained in a single JVM / system. (Simon Willnauer)
+
+Bug Fixes
+
+* LUCENE-8076: Normalize Vincenti distance calculation for planet models that aren't normalized.
+  (Ignacio Vera)
+
+* LUCENE-8057: Exact circle bounds computation was incorrect.
+  (Ignacio Vera)
+
+* LUCENE-8056: Exact circle segment bounding suffered from precision errors.
+  (Karl Wright)
+
+* LUCENE-8054: Fix the exact circle case where relationships fail when the
+  planet model has c <= ab, because the planes are constructed incorrectly.
+  (Ignacio Vera)
+
+* LUCENE-7991: KNearestNeighborDocumentClassifier.knnSearch no longer applies
+  a previous boosted field's factor to subsequent unboosted fields.
+  (Christine Poerschke)
+
+* LUCENE-7999: Switch from int to long to track the name for the next
+  segment to write, so that very long lived indices with very frequent
+  refreshes or commits, and high indexing thread counts, do not
+  overflow an int (Mykhailo Demianenko via Mike McCandless)
+
+* LUCENE-8025: Use sumTotalTermFreq=sumDocFreq when scoring DOCS_ONLY fields
+  that omit term frequency information, as it is equivalent in that case.
+  Previously bogus numbers were used, and many similarities would
+  completely degrade. (Robert Muir, Adrien Grand)
+
+* LUCENE-8045: ParallelLeafReader did not correctly report FieldInfo.dvGen
+  (Alan Woodward)
+
+* LUCENE-8034: Use subtraction instead of addition to sidestep int
+  overflow in SpanNotQuery.  (Hari Menon via Mike McCandless)
+
+* LUCENE-8078: The query cache should not cache instances of
+  MatchNoDocsQuery. (Jon Harper via Adrien Grand)
+
+* LUCENE-8048: Filesystems do not guarantee order of directories updates
+  (Nikolay Martynov, Simon Willnauer, Erick Erickson)
+  
+Optimizations
+
+* LUCENE-8018: Smaller FieldInfos memory footprint by not retaining unnecessary
+  references to TreeMap entries. (Julian Vassev via Adrien Grand)
+
+* LUCENE-7994: Use int/int scatter map to gather facet counts when the
+  number of hits is small relative to the number of unique facet labels
+  (Dawid Weiss, Robert Muir, Mike McCandless)
+
+* LUCENE-8062: GlobalOrdinalsQuery is no longer eligible for caching. (Jim Ferenczi)
+
+* LUCENE-8058: Large instances of TermInSetQuery are no longer eligible for
+  caching as they could break memory accounting of the query cache.
+  (Adrien Grand)
+
+* LUCENE-8055: MemoryIndex.MemoryDocValuesIterator returns 2 documents
+  instead of 1. (Simon Willnauer)
+
+* LUCENE-8043: Fix document accounting in IndexWriter to prevent writing too many
+  documents. Once this happens, Lucene refuses to open the index and throws a
+  CorruptIndexException. (Simon Willnauer, Yonik Seeley, Mike McCandless)
+
+Tests
+
+* LUCENE-8035: Run tests with JDK-specific options: --illegal-access=deny
+  on Java 9+.  (Uwe Schindler)
+
+Build
+
+* LUCENE-6144: Upgrade Ivy to 2.4.0; 'ant ivy-bootstrap' now removes old Ivy
+  jars in ~/.ant/lib/.  (Shawn Heisey, Steve Rowe)
+
+
+======================= Lucene 7.1.0 =======================
+
+Changes in Runtime Behavior
+
+* Resolving of external entities in queryparser/xml/CoreParser is disallowed
+  by default. See SOLR-11477 for details.
+
+New Features
+
+* LUCENE-7970: Add a shape to Geo3D that consists of multiple planes that
+  approximate a true circle, rather than an ellipse, for non-spherical planet models.
+  (Karl Wright, Ignacio Vera)
+  
+* LUCENE-7955: Add support for the concept of "nearest distance" to Geo3D's
+  GeoPath abstraction, which is the distance along the path to the point that is
+  closest to the provided point. (Karl Wright)
+  
+* LUCENE-7906: Add spatial relationships between all currently-defined Geo shapes.
+  (Ignacio Vera)
+
+* LUCENE-7955: Add support for zero-width paths. (Karl Wright)
+
+* LUCENE-7936: Add serialization and deserialization support to Geo3D. (Karl Wright,
+  Ignacio Vera)
+
+* LUCENE-7942: Distance computations now have the ability to accurately aggregate
+  distances, rather than just doing sums. (Karl Wright)
+
+* LUCENE-7934: Add a planet model interface. (Karl Wright)
+
+* LUCENE-7918: Revamp the API for composites so that it's generic and can be used
+  for many kinds of shapes. (Ignacio Vera)
+
+* LUCENE-7621: Add CoveringQuery, a query whose required number of matching
+  clauses can be defined per document. (Adrien Grand)
+
+* LUCENE-7927: Add LongValueFacetCounts, to compute facet counts for individual
+  numeric values (Mike McCandless)
+
+* LUCENE-7940: Add BengaliAnalyzer. (Md. Abdulla-Al-Sun via Robert Muir)
+
+* LUCENE-7392: Add point based LatLonBoundingBox as new RangeField Type.
+  (Nick Knize)
+
+* LUCENE-7951: Spatial-extras has much better Geo3d support by implementing Spatial4j
+  abstractions: SpatialContextFactory, ShapeFactory, BinaryCodec, DistanceCalculator.
+  (Ignacio Vera, David Smiley)
+
+* LUCENE-7973: Update dictionary version for Ukrainian analyzer to 3.9.0 (Andriy
+  Rysin via Dawid Weiss)
+  
+* LUCENE-7974: Add FloatPointNearestNeighbor, an N-dimensional FloatPoint
+  K-nearest-neighbor search implementation.  (Steve Rowe)
+
+* LUCENE-7975: Change the default taxonomy facets cache to a faster
+  byte[] (UTF-8) based cache.  (Mike McCandless)
+
+* LUCENE-7972: DirectoryTaxonomyReader, in Lucene's facet module, now
+  implements Accountable, so you can more easily track how much heap
+  it's using.  (Mike McCandless)
+
+* LUCENE-7982: A new NormsFieldExistsQuery matches documents that have
+  norms in a specified field (Colin Goodheart-Smithe via Mike McCandless)
+
+Optimizations
+
+* LUCENE-7905: Optimize how OrdinalMap (used by
+  SortedSetDocValuesFacetCounts and others) builds its map (Robert
+  Muir, Adrien Grand, Mike McCandless)
+
+* LUCENE-7655: Speed up geo-distance queries in case of dense single-valued
+  fields when most documents match. (Maciej Zasada via Adrien Grand)
+
+* LUCENE-7897: IndexOrDocValuesQuery now requires the range cost to be more
+  than 8x greater than the cost of the lead iterator in order to use doc values.
+  (Murali Krishna P via Adrien Grand)
+
+* LUCENE-7925: Collapse duplicate SHOULD or MUST clauses by summing up their
+  boosts. (Adrien Grand)
+
+* LUCENE-7939: MinShouldMatchSumScorer now leverages two-phase iteration in
+  order to be faster when used in conjunctions. (Adrien Grand)
+
+* LUCENE-7827: AnalyzingInfixSuggester doesn't create "textgrams" 
+  when minPrefixChar=0 (Mikhail Khludnev)
+
+Bug Fixes
+
+* LUCENE-8066: It was still possible to construct a concave GeoExactCircle, so use
+   a sector approach to prevent that. (Ignacio Vera)
+
+* LUCENE-7967: The GeoDegeneratePoint isWithin() method needed allowance for
+   numerical precision. (Karl Wright)
+
+* LUCENE-7965: GeoBBoxFactory was constructing the wrong shape at the poles
+  if the longitude span was greater than 180 degrees. (Karl Wright)
+
+* LUCENE-7916: Prevent ArrayIndexOutOfBoundsException if ICUTokenizer is used
+  with a different ICU JAR version than it is compiled against. Note, this is
+  not recommended, lucene-analyzers-icu contains binary data structures
+  specific to ICU/Unicode versions it is built against. (Chris Koenig, Robert Muir)
+
+* LUCENE-7891: Lucene's taxonomy facets now uses a non-buggy LRU cache
+  by default.  (Jan-Willem van den Broek via Mike McCandless)
+
+* LUCENE-7959: Improve NativeFSLockFactory's exception message if it cannot create
+  write.lock for an empty index due to bad permissions/read-only filesystem/etc.
+  (Erick Erickson, Shawn Heisey, Robert Muir)
+
+* LUCENE-7968: AnalyzingSuggester would sometimes order suggestions incorrectly,
+  it did not properly break ties on the surface forms when both the weights and
+  the analyzed forms were equal. (Robert Muir)
+
+* LUCENE-7957: ConjunctionScorer.getChildren was failing to return all
+  child scorers (Adrien Grand, Mike McCandless)
+
+* SOLR-11477: Disallow resolving of external entities in queryparser/xml/CoreParser
+  by default. (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
+
+Build
+
+* SOLR-11181: Switch order of maven artifact publishing procedure: deploy first
+  instead of locally installing first, to workaround a double repository push of
+  *-sources.jar and *-javadoc.jar files.  (Lynn Monson via Steve Rowe)
+  
+* LUCENE-6673: Maven build fails for target javadoc:jar.  
+  (Ramkumar Aiyengar, Daniel Collins via Steve Rowe)
+
+* LUCENE-7985: Upgrade forbiddenapis to 2.4.1.  (Uwe Schindler)
+
+Other
+
+* LUCENE-7948, LUCENE-7937: Upgrade randomizedtesting to 2.5.3 (minor fixes 
+  in test filtering for IDEs). (Mike Sokolov, Dawid Weiss)
+
+* LUCENE-7933: LongBitSet now validates the numBits parameter (Won
+  Jonghoon, Mike McCandless)
+
+* LUCENE-7978: Add some more documentation about setting up build
+  environment.  (Anton R. Yuste via Uwe Schindler)
+
+* LUCENE-7983: IndexWriter.IndexReaderWarmer is now a functional interface
+  instead of an abstract class with a single method (Dawid Weiss)
+  
+* LUCENE-5753: Update TLDs recognized by UAX29URLEmailTokenizer. (Steve Rowe)
+
+
+======================= Lucene 7.0.1 =======================
+
+Bug Fixes
+
+* LUCENE-7957: ConjunctionScorer.getChildren was failing to return all
+  child scorers (Adrien Grand, Mike McCandless)
+
 ======================= Lucene 7.0.0 =======================
 
 New Features
@@ -13,6 +388,27 @@ New Features
 * LUCENE-7756: LeafReader.getMetaData now exposes the index created version as
   well as the oldest Lucene version that contributed to the segment.
   (Adrien Grand)
+
+* LUCENE-7854: The new TermFrequencyAttribute used during analysis
+  with a custom token stream allows indexing custom term frequencies
+  (Mike McCandless)
+
+* LUCENE-7866: Add a new DelimitedTermFrequencyTokenFilter that allows to
+  mark tokens with a custom term frequency (LUCENE-7854). It parses a numeric
+  value after a separator char ('|') at the end of each token and changes
+  the term frequency to this value.  (Uwe Schindler, Robert Muir, Mike
+  McCandless)
+
+* LUCENE-7868: Multiple threads can now resolve deletes and doc values
+  updates concurrently, giving sizable speedups in update-heavy
+  indexing use cases (Simon Willnauer, Mike McCandless)
+
+* LUCENE-7823: Pure query based naive bayes classifier using BM25 scores (Tommaso Teofili)
+
+* LUCENE-7838: Knn classifier based on fuzzified term queries (Tommaso Teofili)
+
+* LUCENE-7855: Added advanced options of the Wikipedia tokenizer to its factory.
+  (Juan Pedro via Adrien Grand)
 
 API Changes
 
@@ -53,10 +449,67 @@ API Changes
 * LUCENE-7741: DoubleValuesSource now has an explain() method (Alan Woodward,
   Adrien Grand)
 
+* LUCENE-7815: Removed the PostingsHighlighter; you should use the UnifiedHighlighter
+  instead, which derived from the UH.  WholeBreakIterator and
+  CustomSeparatorBreakIterator were moved to UH's package. (David Smiley)
+
+* LUCENE-7850: Removed support for legacy numerics. (Adrien Grand)
+
+* LUCENE-7500: Removed abstract LeafReader.fields(); instead terms(fieldName)
+  has been made abstract, fomerly was final.  Also, MultiFields.getTerms
+  was optimized to work directly instead of being implemented on getFields.
+  (David Smiley)
+
+* LUCENE-7872: TopDocs.totalHits is now a long. (Adrien Grand, hossman)
+
+* LUCENE-7868: IndexWriterConfig.setMaxBufferedDeleteTerms is
+  removed. (Simon Willnauer, Mike McCandless)
+
+* LUCENE-7877: PrefixAwareTokenStream is replaced with ConcatenatingTokenStream
+  (Alan Woodward, Uwe Schindler, Adrien Grand)
+
+* LUCENE-7867: The deprecated Token class is now only available in the test
+  framework (Alan Woodward, Adrien Grand)
+
+* LUCENE-7723: DoubleValuesSource enforces implementation of equals() and
+  hashCode() (Alan Woodward)
+
+* LUCENE-7737: The spatial-extras module no longer has a dependency on the
+  queries module.  All uses of ValueSource are either replaced with core
+  DoubleValuesSource extensions, or with the new ShapeValuesSource and
+  ShapeValuesPredicate classes (Alan Woodward, David Smiley)
+
+* LUCENE-7892: Doc-values query factory methods have been renamed so that their
+  name contains "slow" in order to cleary indicate that they would usually be a
+  bad choice. (Adrien Grand)
+
+* LUCENE-7899: FieldValueQuery is renamed to DocValuesFieldExistsQuery
+  (Adrien Grand, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7626: IndexWriter will no longer accept broken token offsets
   (Mike McCandless)
+
+* LUCENE-7859: Spatial-extras PackedQuadPrefixTree bug that only revealed itself
+  with the new pointsOnly optimizations in LUCENE-7845. (David Smiley)
+
+* LUCENE-7871: fix false positive match in BlockJoinSelector when children have no value, introducing 
+  wrap methods accepting children as DISI. Extracting ToParentDocValues (Mikhail Khludnev)
+
+* LUCENE-7914: Add a maximum recursion level in automaton recursive
+  functions (Operations.isFinite and Operations.topsortState) to prevent
+  large automaton to overflow the stack (Robert Muir, Adrien Grand, Jim Ferenczi)
+
+* LUCENE-7864: IndexMergeTool is not using intermediate hard links (even
+  if possible). (Dawid Weiss)
+
+* LUCENE-7956: Fixed potential stack overflow error in ICUNormalizer2CharFilter.
+  (Adrien Grand)
+
+* LUCENE-7963: Remove useless getAttribute() in DefaultIndexingChain that
+  causes performance drop, introduced by LUCENE-7626.  (Daniel Mitterdorfer
+  via Uwe Schindler)
 
 Improvements
 
@@ -65,6 +518,11 @@ Improvements
 
 * LUCENE-7730: More accurate encoding of the length normalization factor
   thanks to the removal of index-time boosts. (Adrien Grand)
+
+* LUCENE-7901: Original Highlighter now eagerly throws an exception if you
+  provide components that are null. (Jason Gerlowski, David Smiley)
+
+* LUCENE-7841: Normalize ґ to г in Ukrainian analyzer. (Andriy Rysin via Dawid Weiss)
 
 Optimizations
 
@@ -84,7 +542,19 @@ Optimizations
   values using different numbers of bits per value if this proves to save
   storage. (Adrien Grand)
 
+* LUCENE-7845: Enhance spatial-extras RecursivePrefixTreeStrategy queries when the
+  query is a point (for 2D) or a is a simple date interval (e.g. 1 month).  When
+  the strategy is marked as pointsOnly, the results is a TermQuery. (David Smiley)
+
+* LUCENE-7874: DisjunctionMaxQuery rewrites to a BooleanQuery when tiebreaker is set to 1. (Jim Ferenczi)
+
+* LUCENE-7828: Speed up range queries on range fields by improving how we
+  compute the relation between the query and inner nodes of the BKD tree.
+  (Adrien Grand)
+
 Other
+
+* LUCENE-7923: Removed FST.Arc.node field (unused). (Dawid Weiss)
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
 
@@ -95,13 +565,59 @@ Other
 * LUCENE-7753: Make fields static when possible.
   (Daniel Jelinski via Adrien Grand)
 
-======================= Lucene 6.7.0 =======================
+* LUCENE-7540: Upgrade ICU to 59.1 (Mike McCandless, Jim Ferenczi)
 
-Other
+* LUCENE-7852: Correct copyright year(s) in lucene/LICENSE.txt file.
+  (Christine Poerschke, Steve Rowe)
 
-* LUCENE-7800: Remove code that potentially rethrows checked exceptions 
+* LUCENE-7719: Generalized the UnifiedHighlighter's support for AutomatonQuery
+  for character & binary automata. Added AutomatonQuery.isBinary. (David Smiley)
+
+* LUCENE-7873: Due to serious problems with context class loaders in several
+  frameworks (OSGI, Java 9 Jigsaw), the lookup of Codecs, PostingsFormats,
+  DocValuesFormats and all analysis factories was changed to only inspect the
+  current classloader that defined the interface class (lucene-core.jar).
+  See MIGRATE.txt for more information!  (Uwe Schindler, Dawid Weiss)
+
+* LUCENE-7883: Lucene no longer uses the context class loader when resolving
+  resources in CustomAnalyzer or ClassPathResourceLoader. Resources are only
+  resolved against Lucene's class loader by default. Please use another builder
+  method to change to a custom classloader.  (Uwe Schindler)
+
+* LUCENE-5822: Convert README to Markdown (Jason Gerlowski via Mike Drob)
+
+* LUCENE-7773: Remove unused/deprecated token types from StandardTokenizer.
+  (Ahmet Arslan via Steve Rowe)
+
+* LUCENE-7800: Remove code that potentially rethrows checked exceptions
   from methods that don't declare them ("sneaky throw" hack). (Robert Muir,
-  Uwe Schindler, Dawid Weiss)  
+  Uwe Schindler, Dawid Weiss)
+
+* LUCENE-7876: Avoid calls to LeafReader.fields() and MultiFields.getFields()
+  that are trivially replaced by LeafReader.terms() and MultiFields.getTerms()
+  (David Smiley)
+
+======================= Lucene 6.6.2 =======================
+
+Changes in Runtime Behavior
+
+* Resolving of external entities in queryparser/xml/CoreParser is disallowed
+  by default. See SOLR-11477 for details.
+
+Bug Fixes
+
+* SOLR-11477: Disallow resolving of external entities in queryparser/xml/CoreParser
+  by default. (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
+
+======================= Lucene 6.6.1 =======================
+
+Bug Fixes
+
+* LUCENE-7869: Changed MemoryIndex to sort 1d points. In case of 1d points, the PointInSetQuery.MergePointVisitor expects
+  that these points are visited in ascending order. The memory index doesn't do this and this can result in document
+  with multiple points that should match to not match. (Martijn van Groningen)
+
+* LUCENE-7878: Fix query builder to keep the SHOULD clause that wraps multi-word synonyms. (Jim Ferenczi)
 
 ======================= Lucene 6.6.0 =======================
 
@@ -149,6 +665,12 @@ Bug Fixes
 
 * LUCENE-7833: ToParentBlockJoinQuery computed the min score instead of the max
   score with ScoreMode.MAX. (Adrien Grand)
+
+* LUCENE-7847: Fixed all-docs-match optimization of range queries on range
+  fields. (Adrien Grand)
+
+* LUCENE-7810: Fix equals() and hashCode() methods of several join queries.
+  (Hossman, Adrien Grand, Martijn van Groningen)
 
 Improvements
 
@@ -1385,6 +1907,21 @@ Other
 
 * LUCENE-7095: Add point values support to the numeric field query time join.
   (Martijn van Groningen, Mike McCandless)
+
+======================= Lucene 5.5.5 =======================
+
+Changes in Runtime Behavior
+
+* Resolving of external entities in queryparser/xml/CoreParser is disallowed
+  by default. See SOLR-11477 for details.
+
+Bug Fixes
+
+* LUCENE-7419: Fix performance bug with TokenStream.end(), where it would lookup
+  PositionIncrementAttribute every time. (Mike McCandless, Robert Muir)
+
+* SOLR-11477: Disallow resolving of external entities in queryparser/xml/CoreParser
+  by default. (Michael Stepankin, Olga Barinova, Uwe Schindler, Christine Poerschke)
 
 ======================= Lucene 5.5.4 =======================
 

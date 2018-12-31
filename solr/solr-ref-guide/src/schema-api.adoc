@@ -1,6 +1,21 @@
 = Schema API
-:page-shortname: schema-api
-:page-permalink: schema-api.html
+:page-tocclass: right
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 The Schema API allows you to use an HTTP API to manage many of the elements of your schema.
 
@@ -23,35 +38,38 @@ When modifying the schema with the API, a core reload will automatically occur i
 .Re-index after schema modifications!
 [IMPORTANT]
 ====
-If you modify your schema, you will likely need to re-index all documents. If you do not, you may lose access to documents, or not be able to interpret them properly, e.g. after replacing a field type.
+If you modify your schema, you will likely need to re-index all documents. If you do not, you may lose access to documents, or not be able to interpret them properly, e.g., after replacing a field type.
 
 Modifying your schema will never modify any documents that are already indexed. You must re-index documents in order to apply schema changes to them. Queries and updates made after the change may encounter errors that were not present before the change. Completely deleting the index and rebuilding it is usually the only option to fix such errors.
 ====
 
+////
+// Commented out section because this makes less sense with 2 API endpoints available.
 The base address for the API is `\http://<host>:<port>/solr/<collection_name>`. If, for example, you run Solr's "```cloud```" example (via the `bin/solr` command shown below), which creates a "```gettingstarted```" collection, then the base URL for that collection (as in all the sample URLs in this section) would be: `\http://localhost:8983/solr/gettingstarted`.
 
 [source,bash]
 ----
 bin/solr -e cloud -noprompt
 ----
+////
 
-[[SchemaAPI-APIEntryPoints]]
-== API Entry Points
+////
+// TODO this needs to probably go away with v2 APIs?
 
-* `/schema`: <<SchemaAPI-RetrievetheEntireSchema,retrieve>> the schema, or <<SchemaAPI-ModifytheSchema,modify>> the schema to add, remove, or replace fields, dynamic fields, copy fields, or field types
-* `/schema/fields`: <<SchemaAPI-ListFields,retrieve information>> about all defined fields or a specific named field
-* `/schema/dynamicfields`: <<SchemaAPI-ListDynamicFields,retrieve information>> about all dynamic field rules or a specific named dynamic rule
-* `/schema/fieldtypes`: <<SchemaAPI-ListFieldTypes,retrieve information>> about all field types or a specific field type
-* `/schema/copyfields`: <<SchemaAPI-ListCopyFields,retrieve information>> about copy fields
-* `/schema/name`: <<SchemaAPI-ShowSchemaName,retrieve>> the schema name
-* `/schema/version`: <<SchemaAPI-ShowtheSchemaVersion,retrieve>> the schema version
-* `/schema/uniquekey`: <<SchemaAPI-ListUniqueKey,retrieve>> the defined uniqueKey
-* `/schema/similarity`: <<SchemaAPI-ShowGlobalSimilarity,retrieve>> the global similarity definition
+== Schema API Entry Points
 
-[[SchemaAPI-ModifytheSchema]]
+* `/schema`: <<Retrieve the Entire Schema,retrieve>> the schema, or <<Modify the Schema,modify>> the schema to add, remove, or replace fields, dynamic fields, copy fields, or field types
+* `/schema/fields`: <<List Fields,retrieve information>> about all defined fields or a specific named field
+* `/schema/dynamicfields`: <<List Dynamic Fields,retrieve information>> about all dynamic field rules or a specific named dynamic rule
+* `/schema/fieldtypes`: <<List Field Types,retrieve information>> about all field types or a specific field type
+* `/schema/copyfields`: <<List Copy Fields,retrieve information>> about copy fields
+* `/schema/name`: <<Show Schema Name,retrieve>> the schema name
+* `/schema/version`: <<Show the Schema Version,retrieve>> the schema version
+* `/schema/uniquekey`: <<List UniqueKey,retrieve>> the defined uniqueKey
+* `/schema/similarity`: <<Show Global Similarity,retrieve>> the global similarity definition
+////
+
 == Modify the Schema
-
-`POST /_collection_/schema`
 
 To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/collection/schema/` endpoint with a sequence of commands to perform the requested actions. The following commands are supported:
 
@@ -73,40 +91,76 @@ In each case, the response will include the status and the time to process the r
 
 When modifying the schema with the API, a core reload will automatically occur in order for the changes to be available immediately for documents indexed thereafter. Previously indexed documents will *not* be automatically handled - they *must* be re-indexed if they used schema elements that you changed.
 
-[[SchemaAPI-AddaNewField]]
 === Add a New Field
 
 The `add-field` command adds a new field definition to your schema. If a field with the same name exists an error is thrown.
 
 All of the properties available when defining a field with manual `schema.xml` edits can be passed via the API. These request attributes are described in detail in the section <<defining-fields.adoc#defining-fields,Defining Fields>>.
 
-For example, to define a new stored field named "sell-by", of type "tdate", you would POST the following request:
+For example, to define a new stored field named "sell-by", of type "pdate", you would POST the following request:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1add]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-field":{
      "name":"sell-by",
-     "type":"tdate",
+     "type":"pdate",
      "stored":true }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-DeleteaField]]
+[example.tab-pane#v2add]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "add-field":{
+     "name":"sell-by",
+     "type":"pdate",
+     "stored":true }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
+
 === Delete a Field
 
 The `delete-field` command removes a field definition from your schema. If the field does not exist in the schema, or if the field is the source or destination of a copy field rule, an error is thrown.
 
 For example, to delete a field named "sell-by", you would POST the following request:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1delete]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field" : { "name":"sell-by" }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-ReplaceaField]]
+[example.tab-pane#v2delete]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "delete-field" : { "name":"sell-by" }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
+
 === Replace a Field
 
 The `replace-field` command replaces a field's definition. Note that you must supply the full definition for a field - this command will *not* partially modify a field's definition. If the field does not exist in the schema an error is thrown.
@@ -115,6 +169,11 @@ All of the properties available when defining a field with manual `schema.xml` e
 
 For example, to replace the definition of an existing field "sell-by", to make it be of type "date" and to not be stored, you would POST the following request:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1replace]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -124,8 +183,23 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "stored":false }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-AddaDynamicFieldRule]]
+[example.tab-pane#v2replace]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "replace-field":{
+     "name":"sell-by",
+     "type":"date",
+     "stored":false }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
+
 === Add a Dynamic Field Rule
 
 The `add-dynamic-field` command adds a new dynamic field rule to your schema.
@@ -134,6 +208,11 @@ All of the properties available when editing `schema.xml` can be passed with the
 
 For example, to create a new dynamic field rule where all incoming fields ending with "_s" would be stored and have field type "string", you can POST a request like this:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1add-dynamic]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -143,22 +222,54 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "stored":true }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-DeleteaDynamicFieldRule]]
+[example.tab-pane#v2add-dynamic]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "add-dynamic-field":{
+     "name":"*_s",
+     "type":"string",
+     "stored":true }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
+
 === Delete a Dynamic Field Rule
 
 The `delete-dynamic-field` command deletes a dynamic field rule from your schema. If the dynamic field rule does not exist in the schema, or if the schema contains a copy field rule with a target or destination that matches only this dynamic field rule, an error is thrown.
 
 For example, to delete a dynamic field rule matching "*_s", you can POST a request like this:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1delete-dynamic]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-dynamic-field":{ "name":"*_s" }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-ReplaceaDynamicFieldRule]]
+[example.tab-pane#v2delete-dynamic]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "delete-dynamic-field":{ "name":"*_s" }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
+
 === Replace a Dynamic Field Rule
 
 The `replace-dynamic-field` command replaces a dynamic field rule in your schema. Note that you must supply the full definition for a dynamic field rule - this command will *not* partially modify a dynamic field rule's definition. If the dynamic field rule does not exist in the schema an error is thrown.
@@ -167,6 +278,11 @@ All of the properties available when editing `schema.xml` can be passed with the
 
 For example, to replace the definition of the "*_s" dynamic field rule with one where the field type is "text_general" and it's not stored, you can POST a request like this:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1replace-dynamic]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -176,8 +292,23 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "stored":false }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-AddaNewFieldType]]
+[example.tab-pane#v2replace-dynamic]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "replace-dynamic-field":{
+     "name":"*_s",
+     "type":"text_general",
+     "stored":false }
+}' http://localhost:8983/solr/gettingstarted/schema
+----
+====
+--
+
 === Add a New Field Type
 
 The `add-field-type` command adds a new field type to your schema.
@@ -186,6 +317,11 @@ All of the field type properties available when editing `schema.xml` by hand are
 
 For example, to create a new field type named "myNewTxtField", you can POST a request as follows:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1-single-analyzer]
+====
+[tab-label]*V1 API with Single Analysis*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -206,7 +342,14 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
 
-Note in this example that we have only defined a single analyzer section that will apply to index analysis and query analysis. If we wanted to define separate analysis, we would replace the `analyzer` section in the above example with separate sections for `indexAnalyzer` and `queryAnalyzer`. As in this example:
+Note in this example that we have only defined a single analyzer section that will apply to index analysis and query analysis.
+====
+
+[example.tab-pane#v1-two-analyzers]
+====
+[tab-label]*V1 API with Two Analyzers*
+
+If we wanted to define separate analysis, we would replace the `analyzer` section in the above example with separate sections for `indexAnalyzer` and `queryAnalyzer`. As in this example:
 
 [source,bash]
 ----
@@ -223,22 +366,62 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
            "class":"solr.KeywordTokenizerFactory" }}}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-DeleteaFieldType]]
+[example.tab-pane#v2-two-analyzers]
+====
+[tab-label]*V2 API with Two Analyzers*
+
+To define two analyzers with the V2 API, we just use a different endpoint:
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "add-field-type":{
+     "name":"myNewTextField",
+     "class":"solr.TextField",
+     "indexAnalyzer":{
+        "tokenizer":{
+           "class":"solr.PathHierarchyTokenizerFactory",
+           "delimiter":"/" }},
+     "queryAnalyzer":{
+        "tokenizer":{
+           "class":"solr.KeywordTokenizerFactory" }}}
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
+
 === Delete a Field Type
 
 The `delete-field-type` command removes a field type from your schema. If the field type does not exist in the schema, or if any field or dynamic field rule in the schema uses the field type, an error is thrown.
 
 For example, to delete the field type named "myNewTxtField", you can make a POST request as follows:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1delete-type]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field-type":{ "name":"myNewTxtField" }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-ReplaceaFieldType]]
+[example.tab-pane#v2delete-type]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "delete-field-type":{ "name":"myNewTxtField" }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
+
 === Replace a Field Type
 
 The `replace-field-type` command replaces a field type in your schema. Note that you must supply the full definition for a field type - this command will *not* partially modify a field type's definition. If the field type does not exist in the schema an error is thrown.
@@ -247,6 +430,11 @@ All of the field type properties available when editing `schema.xml` by hand are
 
 For example, to replace the definition of a field type named "myNewTxtField", you can make a POST request as follows:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1replace-type]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -259,26 +447,48 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
            "class":"solr.StandardTokenizerFactory" }}}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-AddaNewCopyFieldRule]]
+[example.tab-pane#v2replace-type]
+====
+[tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "replace-field-type":{
+     "name":"myNewTxtField",
+     "class":"solr.TextField",
+     "positionIncrementGap":"100",
+     "analyzer":{
+        "tokenizer":{
+           "class":"solr.StandardTokenizerFactory" }}}
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
+
 === Add a New Copy Field Rule
 
 The `add-copy-field` command adds a new copy field rule to your schema.
 
 The attributes supported by the command are the same as when creating copy field rules by manually editing the `schema.xml`, as below:
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`source`::
+The source field. This parameter is required.
 
-[cols="20,20,60",options="header"]
-|===
-|Name |Required |Description
-|source |Yes |The source field.
-|dest |Yes |A field or an array of fields to which the source field will be copied.
-|maxChars |No |The upper limit for the number of characters to be copied. The section <<copying-fields.adoc#copying-fields,Copying Fields>> has more details.
-|===
+`dest`::
+A field or an array of fields to which the source field will be copied. This parameter is required.
+
+`maxChars`::
+The upper limit for the number of characters to be copied. The section <<copying-fields.adoc#copying-fields,Copying Fields>> has more details.
 
 For example, to define a rule to copy the field "shelf" to the "location" and "catchall" fields, you would POST the following request:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1add-copyfield]
+====
+[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -287,8 +497,22 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "dest":[ "location", "catchall" ]}
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-DeleteaCopyFieldRule]]
+[example.tab-pane#v2add-copyfield]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "add-copy-field":{
+     "source":"shelf",
+     "dest":[ "location", "catchall" ]}
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
+
 === Delete a Copy Field Rule
 
 The `delete-copy-field` command deletes a copy field rule from your schema. If the copy field rule does not exist in the schema an error is thrown.
@@ -297,14 +521,31 @@ The `source` and `dest` attributes are required by this command.
 
 For example, to delete a rule to copy the field "shelf" to the "location" field, you would POST the following request:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1delete-copyfield]
+====
+[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-copy-field":{ "source":"shelf", "dest":"location" }
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
+====
 
-[[SchemaAPI-MultipleCommandsinaSinglePOST]]
+[example.tab-pane#v2delete-copyfield]
+====
+[tab-label]*V1 API*
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '{
+  "delete-copy-field":{ "source":"shelf", "dest":"location" }
+}' http://localhost:8983/api/cores/gettingstarted/schema
+----
+====
+--
+
 === Multiple Commands in a Single POST
 
 It is possible to perform one or more add requests in a single command. The API is transactional and all commands in a single call either succeed or fail together.
@@ -371,7 +612,6 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/solr/gettingstarted/schema
 ----
 
-[[SchemaAPI-SchemaChangesamongReplicas]]
 === Schema Changes among Replicas
 
 When running in SolrCloud mode, changes made to the schema on one node will propagate to all replicas in the collection.
@@ -382,57 +622,43 @@ If agreement is not reached by all replicas in the specified time, then the requ
 
 If you do not supply an `updateTimeoutSecs` parameter, the default behavior is for the receiving node to return immediately after persisting the updates to ZooKeeper. All other replicas will apply the updates asynchronously. Consequently, without supplying a timeout, your client application cannot be sure that all replicas have applied the changes.
 
-[[SchemaAPI-RetrieveSchemaInformation]]
 == Retrieve Schema Information
 
 The following endpoints allow you to read how your schema has been defined. You can GET the entire schema, or only portions of it as needed.
 
-To modify the schema, see the previous section <<SchemaAPI-ModifytheSchema,Modify the Schema>>.
+To modify the schema, see the previous section <<Modify the Schema>>.
 
-[[SchemaAPI-RetrievetheEntireSchema]]
 === Retrieve the Entire Schema
 
 `GET /_collection_/schema`
 
-[[SchemaAPI-INPUT]]
-==== INPUT
+==== Retrieve Schema Parameters
 
 *Path Parameters*
 
-
-[options="header",]
-|===
-|Key |Description
-|collection |The collection (or core) name.
-|===
+`collection`::
+The collection (or core) name.
 
 *Query Parameters*
 
 The query parameters should be added to the API request after '?'.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`wt`::
+Defines the format of the response. The options are *json*, *xml* or *schema.xml*. If not specified, JSON will be returned by default.
 
-[cols="10,20,10,10,50",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|wt |string |No |json |Defines the format of the response. The options are *json*, *xml* or *schema.xml*. If not specified, JSON will be returned by default.
-|===
-
-[[SchemaAPI-OUTPUT]]
-==== OUTPUT
+==== Retrieve Schema Response
 
 *Output Content*
 
 The output will include all fields, field types, dynamic rules and copy field rules, in the format requested (JSON or XML). The schema name and version are also included.
 
-[[SchemaAPI-EXAMPLES]]
-==== EXAMPLES
+==== Retrieve Schema Examples
 
 Get the entire schema in JSON.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema
 ----
 
 [source,json]
@@ -573,58 +799,55 @@ curl http://localhost:8983/solr/gettingstarted/schema?wt=schema.xml
 </schema>
 ----
 
-
-[[SchemaAPI-ListFields]]
 === List Fields
 
 `GET /_collection_/schema/fields`
 
 `GET /_collection_/schema/fields/_fieldname_`
 
-[[SchemaAPI-INPUT.1]]
-==== INPUT
+==== List Fields Parameters
 
 *Path Parameters*
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`collection`::
+The collection (or core) name.
 
-[cols="30,70",options="header"]
-|===
-|Key |Description
-|collection |The collection (or core) name.
-|fieldname |The specific fieldname (if limiting request to a single field).
-|===
+`fieldname`::
+The specific fieldname (if limiting the request to a single field).
 
 *Query Parameters*
 
 The query parameters can be added to the API request after a '?'.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`wt`::
+Defines the format of the response. The options are `json` or `xml`. If not specified, JSON will be returned by default.
 
-[cols="15,15,10,20,40",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|wt |string |No |json |Defines the format of the response. The options are *json* or *xml*. If not specified, JSON will be returned by default.
-|fl |string |No |(all fields) |Comma- or space-separated list of one or more fields to return. If not specified, all fields will be returned by default.
-|includeDynamic |boolean |No |false |If *true*, and if the *fl* query parameter is specified or the *fieldname* path parameter is used, matching dynamic fields are included in the response and identified with the *dynamicBase* property. If neither the *fl* query parameter nor the *fieldname* path parameter is specified, the *includeDynamic* query parameter is ignored. If *false*, matching dynamic fields will not be returned.
-|showDefaults |boolean |No |false |If *true*, all default field properties from each field's field type will be included in the response (e.g. *tokenized* for `solr.TextField`). If *false*, only explicitly specified field properties will be included.
-|===
+`fl`::
+Comma- or space-separated list of one or more fields to return. If not specified, all fields will be returned by default.
 
-[[SchemaAPI-OUTPUT.1]]
-==== OUTPUT
+`includeDynamic`::
+If `true`, and if the `fl` query parameter is specified or the `fieldname` path parameter is used, matching dynamic fields are included in the response and identified with the `dynamicBase` property.
++
+If neither the `fl` query parameter nor the `fieldname` path parameter is specified, the `includeDynamic` query parameter is ignored.
++
+If `false`, the default, matching dynamic fields will not be returned.
 
-*Output Content*
+`showDefaults`::
+If `true`, all default field properties from each field's field type will be included in the response (e.g., `tokenized` for `solr.TextField`). If `false`, the default, only explicitly specified field properties will be included.
 
-The output will include each field and any defined configuration for each field. The defined configuration can vary for each field, but will minimally include the field `name`, the `type`, if it is `indexed` and if it is `stored`. If `multiValued` is defined as either true or false (most likely true), that will also be shown. See the section <<defining-fields.adoc#defining-fields,Defining Fields>> for more information about each parameter.
+==== List Fields Response
 
-[[SchemaAPI-EXAMPLES.1]]
-==== EXAMPLES
+The output will include each field and any defined configuration for each field. The defined configuration can vary for each field, but will minimally include the field `name`, the `type`, if it is `indexed` and if it is `stored`.
+
+If `multiValued` is defined as either true or false (most likely true), that will also be shown. See the section <<defining-fields.adoc#defining-fields,Defining Fields>> for more information about each parameter.
+
+==== List Fields Examples
 
 Get a list of all fields.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/fields?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/fields
 ----
 
 The sample output below has been truncated to only show a few fields.
@@ -661,54 +884,43 @@ The sample output below has been truncated to only show a few fields.
 }
 ----
 
-
-[[SchemaAPI-ListDynamicFields]]
 === List Dynamic Fields
 
 `GET /_collection_/schema/dynamicfields`
 
 `GET /_collection_/schema/dynamicfields/_name_`
 
-[[SchemaAPI-INPUT.2]]
-==== INPUT
+==== List Dynamic Field Parameters
 
 *Path Parameters*
 
-[options="header",]
-|===
-|Key |Description
-|collection |The collection (or core) name.
-|name |The name of the dynamic field rule (if limiting request to a single dynamic field rule).
-|===
+`collection`::
+The collection (or core) name.
+
+`name`::
+The name of the dynamic field rule (if limiting request to a single dynamic field rule).
 
 *Query Parameters*
 
 The query parameters can be added to the API request after a '?'.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`wt`::
+Defines the format of the response. The options are `json` or `xml`. If not specified, JSON will be returned by default.
 
-[cols="15,10,10,10,55",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|wt |string |No |json |Defines the format of the response. The options are *json,* *xml*. If not specified, JSON will be returned by default.
-|showDefaults |boolean |No |false |If *true*, all default field properties from each dynamic field's field type will be included in the response (e.g. *tokenized* for `solr.TextField`). If *false*, only explicitly specified field properties will be included.
-|===
+`showDefaults`::
+If `true`, all default field properties from each dynamic field's field type will be included in the response (e.g., `tokenized` for `solr.TextField`). If `false`, the default, only explicitly specified field properties will be included.
 
-[[SchemaAPI-OUTPUT.2]]
-==== OUTPUT
-
-*Output Content*
+==== List Dynamic Field Response
 
 The output will include each dynamic field rule and the defined configuration for each rule. The defined configuration can vary for each rule, but will minimally include the dynamic field `name`, the `type`, if it is `indexed` and if it is `stored`. See the section <<dynamic-fields.adoc#dynamic-fields,Dynamic Fields>> for more information about each parameter.
 
-[[SchemaAPI-EXAMPLES.2]]
-==== EXAMPLES
+==== List Dynamic Field Examples
 
 Get a list of all dynamic field declarations:
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/dynamicfields?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/dynamicfields
 ----
 
 The sample output below has been truncated.
@@ -755,55 +967,43 @@ The sample output below has been truncated.
 }
 ----
 
-[[SchemaAPI-ListFieldTypes]]
 === List Field Types
 
 `GET /_collection_/schema/fieldtypes`
 
 `GET /_collection_/schema/fieldtypes/_name_`
 
-[[SchemaAPI-INPUT.3]]
-==== INPUT
+==== List Field Type Parameters
 
 *Path Parameters*
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`collection`::
+The collection (or core) name.
 
-[cols="30,70",options="header"]
-|===
-|Key |Description
-|collection |The collection (or core) name.
-|name |The name of the field type (if limiting request to a single field type).
-|===
+`name`::
+The name of the field type (if limiting request to a single field type).
 
 *Query Parameters*
 
 The query parameters can be added to the API request after a '?'.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`wt`::
+Defines the format of the response. The options are `json` or `xml`. If not specified, JSON will be returned by default.
 
-[cols="15,10,10,10,55",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|wt |string |No |json |Defines the format of the response. The options are *json* or *xml*. If not specified, JSON will be returned by default.
-|showDefaults |boolean |No |false |If *true*, all default field properties from each field type will be included in the response (e.g. *tokenized* for `solr.TextField`). If *false*, only explicitly specified field properties will be included.
-|===
+`showDefaults`::
+If `true`, all default field properties from each dynamic field's field type will be included in the response (e.g., `tokenized` for `solr.TextField`). If `false`, the default, only explicitly specified field properties will be included.
 
-[[SchemaAPI-OUTPUT.3]]
-==== OUTPUT
-
-*Output Content*
+==== List Field Type Response
 
 The output will include each field type and any defined configuration for the type. The defined configuration can vary for each type, but will minimally include the field type `name` and the `class`. If query or index analyzers, tokenizers, or filters are defined, those will also be shown with other defined parameters. See the section <<solr-field-types.adoc#solr-field-types,Solr Field Types>> for more information about how to configure various types of fields.
 
-[[SchemaAPI-EXAMPLES.3]]
-==== EXAMPLES
+==== List Field Type Examples
 
 Get a list of all field types.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/fieldtypes?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/fieldtypes
 ----
 
 The sample output below has been truncated to show a few different field types from different parts of the list.
@@ -841,7 +1041,7 @@ The sample output below has been truncated to show a few different field types f
             "sortMissingLast": true
         },
         {
-            "class": "solr.TrieFloatField",
+            "class": "solr.FloatPointField",
             "dynamicFields": [
                 "*_fs",
                 "*_f"
@@ -852,58 +1052,45 @@ The sample output below has been truncated to show a few different field types f
             ],
             "name": "float",
             "positionIncrementGap": "0",
-            "precisionStep": "0"
         }]
 }
 ----
 
-[[SchemaAPI-ListCopyFields]]
 === List Copy Fields
 
 `GET /_collection_/schema/copyfields`
 
-[[SchemaAPI-INPUT.4]]
-==== INPUT
+==== List Copy Field Parameters
 
 *Path Parameters*
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
-|===
-|Key |Description
-|collection |The collection (or core) name.
-|===
+`collection`::
+The collection (or core) name.
 
 *Query Parameters*
 
 The query parameters can be added to the API request after a '?'.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`wt`::
+Defines the format of the response. The options are `json` or `xml`. If not specified, JSON will be returned by default.
 
-[cols="15,10,10,10,55",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|wt |string |No |json |Defines the format of the response. The options are *json* or *xml*. If not specified, JSON will be returned by default.
-|source.fl |string |No |(all source fields) |Comma- or space-separated list of one or more copyField source fields to include in the response - copyField directives with all other source fields will be excluded from the response. If not specified, all copyField-s will be included in the response.
-|dest.fl |string |No |(all dest fields) |Comma- or space-separated list of one or more copyField dest fields to include in the response - copyField directives with all other dest fields will be excluded. If not specified, all copyField-s will be included in the response.
-|===
+`source.fl`::
+Comma- or space-separated list of one or more copyField source fields to include in the response - copyField directives with all other source fields will be excluded from the response. If not specified, all copyField-s will be included in the response.
 
-[[SchemaAPI-OUTPUT.4]]
-==== OUTPUT
+`dest.fl`::
+Comma- or space-separated list of one or more copyField destination fields to include in the response. copyField directives with all other `dest` fields will be excluded. If not specified, all copyField-s will be included in the response.
 
-*Output Content*
+==== List Copy Field Response
 
-The output will include the `source` and `dest`ination of each copy field rule defined in `schema.xml`. For more information about copying fields, see the section <<copying-fields.adoc#copying-fields,Copying Fields>>.
+The output will include the `source` and `dest` (destination) of each copy field rule defined in `schema.xml`. For more information about copying fields, see the section <<copying-fields.adoc#copying-fields,Copying Fields>>.
 
-[[SchemaAPI-EXAMPLES.4]]
-==== EXAMPLES
+==== List Copy Field Examples
 
-Get a list of all copyfields.
+Get a list of all copyFields.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/copyfields?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/copyfields
 ----
 
 The sample output below has been truncated to the first few copy definitions.
@@ -936,50 +1123,35 @@ The sample output below has been truncated to the first few copy definitions.
 }
 ----
 
-
-[[SchemaAPI-ShowSchemaName]]
 === Show Schema Name
 
 `GET /_collection_/schema/name`
 
-[[SchemaAPI-INPUT.5]]
-==== INPUT
+==== Show Schema Parameters
 
 *Path Parameters*
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
-|===
-|Key |Description
-|collection |The collection (or core) name.
-|===
+`collection`::
+The collection (or core) name.
 
 *Query Parameters*
 
 The query parameters can be added to the API request after a '?'.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`wt`::
+Defines the format of the response. The options are `json` or `xml`. If not specified, JSON will be returned by default.
 
-[cols="15,10,10,10,55",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|wt |string |No |json |Defines the format of the response. The options are *json* or *xml*. If not specified, JSON will be returned by default.
-|===
+==== Show Schema Response
 
-[[SchemaAPI-OUTPUT.5]]
-==== OUTPUT
+The output will be simply the name given to the schema.
 
-*Output Content* The output will be simply the name given to the schema.
-
-[[SchemaAPI-EXAMPLES.5]]
-==== EXAMPLES
+==== Show Schema Examples
 
 Get the schema name.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/name?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/name
 ----
 
 [source,json]
@@ -991,52 +1163,35 @@ curl http://localhost:8983/solr/gettingstarted/schema/name?wt=json
   "name":"example"}
 ----
 
-
-[[SchemaAPI-ShowtheSchemaVersion]]
 === Show the Schema Version
 
 `GET /_collection_/schema/version`
 
-[[SchemaAPI-INPUT.6]]
-==== INPUT
+==== Show Schema Version Parameters
 
 *Path Parameters*
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
-|===
-|Key |Description
-|collection |The collection (or core) name.
-|===
+collection::
+The collection (or core) name.
 
 *Query Parameters*
 
 The query parameters can be added to the API request after a '?'.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`wt`::
+Defines the format of the response. The options are `json` or `xml`. If not specified, JSON will be returned by default.
 
-[cols="15,10,10,10,55",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|wt |string |No |json |Defines the format of the response. The options are *json* or *xml*. If not specified, JSON will be returned by default.
-|===
-
-[[SchemaAPI-OUTPUT.6]]
-==== OUTPUT
-
-*Output Content*
+==== Show Schema Version Response
 
 The output will simply be the schema version in use.
 
-[[SchemaAPI-EXAMPLES.6]]
-==== EXAMPLES
+==== Show Schema Version Example
 
 Get the schema version
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/version?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/version
 ----
 
 [source,json]
@@ -1048,52 +1203,36 @@ curl http://localhost:8983/solr/gettingstarted/schema/version?wt=json
   "version":1.5}
 ----
 
-
-[[SchemaAPI-ListUniqueKey]]
 === List UniqueKey
 
 `GET /_collection_/schema/uniquekey`
 
-[[SchemaAPI-INPUT.7]]
-==== INPUT
+==== List UniqueKey Parameters
 
 *Path Parameters*
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+|`collection`::
+The collection (or core) name.
 
-[cols="30,70",options="header"]
-|===
-|Key |Description
-|collection |The collection (or core) name.
-|===
 
 *Query Parameters*
 
 The query parameters can be added to the API request after a '?'.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+|`wt`::
+Defines the format of the response. The options are `json` or `xml`. If not specified, JSON will be returned by default.
 
-[cols="15,10,10,10,55",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|wt |string |No |json |Defines the format of the response. The options are *json* or *xml*. If not specified, JSON will be returned by default.
-|===
-
-[[SchemaAPI-OUTPUT.7]]
-==== OUTPUT
-
-*Output Content*
+==== List UniqueKey Response
 
 The output will include simply the field name that is defined as the uniqueKey for the index.
 
-[[SchemaAPI-EXAMPLES.7]]
-==== EXAMPLES
+==== List UniqueKey Example
 
 List the uniqueKey.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/uniquekey?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/uniquekey
 ----
 
 [source,json]
@@ -1105,52 +1244,35 @@ curl http://localhost:8983/solr/gettingstarted/schema/uniquekey?wt=json
   "uniqueKey":"id"}
 ----
 
-
-[[SchemaAPI-ShowGlobalSimilarity]]
 === Show Global Similarity
 
 `GET /_collection_/schema/similarity`
 
-[[SchemaAPI-INPUT.8]]
-==== INPUT
+==== Show Global Similarity Parameters
 
 *Path Parameters*
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="30,70",options="header"]
-|===
-|Key |Description
-|collection |The collection (or core) name.
-|===
+`collection`::
+The collection (or core) name.
 
 *Query Parameters*
 
 The query parameters can be added to the API request after a '?'.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`wt`::
+Defines the format of the response. The options are `json` or `xml`. If not specified, JSON will be returned by default.
 
-[cols="15,10,10,10,55",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|wt |string |No |json |Defines the format of the response. The options are *json* or *xml*. If not specified, JSON will be returned by default.
-|===
-
-[[SchemaAPI-OUTPUT.8]]
-==== OUTPUT
-
-*Output Content*
+==== Show Global Similary Response
 
 The output will include the class name of the global similarity defined (if any).
 
-[[SchemaAPI-EXAMPLES.8]]
-==== EXAMPLES
+==== Show Global Similarity Example
 
 Get the similarity implementation.
 
 [source,bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/schema/similarity?wt=json
+curl http://localhost:8983/solr/gettingstarted/schema/similarity
 ----
 
 [source,json]
@@ -1163,8 +1285,6 @@ curl http://localhost:8983/solr/gettingstarted/schema/similarity?wt=json
     "class":"org.apache.solr.search.similarities.DefaultSimilarityFactory"}}
 ----
 
-
-[[SchemaAPI-ManageResourceData]]
 == Manage Resource Data
 
 The <<managed-resources.adoc#managed-resources,Managed Resources>> REST API provides a mechanism for any Solr plugin to expose resources that should support CRUD (Create, Read, Update, Delete) operations. Depending on what Field Types and Analyzers are configured in your Schema, additional `/schema/` REST API paths may exist. See the <<managed-resources.adoc#managed-resources,Managed Resources>> section for more information and examples.

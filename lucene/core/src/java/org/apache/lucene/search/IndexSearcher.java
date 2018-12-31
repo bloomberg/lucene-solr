@@ -31,13 +31,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader; // javadocs
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.IndexWriter; // javadocs
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
@@ -45,9 +44,8 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.NIOFSDirectory;    // javadoc
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /** Implements search over a single IndexReader.
@@ -94,22 +92,14 @@ public class IndexSearcher {
     @Override
     public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
       return new SimScorer() {
-
         @Override
         public float score(int doc, float freq) {
           return 0f;
         }
-
         @Override
-        public float computeSlopFactor(int distance) {
-          return 1f;
+        public float maxScore(float maxFreq) {
+          return 0f;
         }
-
-        @Override
-        public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-          return 1f;
-        }
-
       };
     }
 
@@ -421,7 +411,7 @@ public class IndexSearcher {
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after);
+        return TopScoreDocCollector.create(cappedNumHits, after, true);
       }
 
       @Override
@@ -459,7 +449,7 @@ public class IndexSearcher {
    */
   public void search(Query query, Collector results)
     throws IOException {
-    search(leafContexts, createNormalizedWeight(query, results.needsScores()), results);
+    search(leafContexts, createNormalizedWeight(query, results.scoreMode()), results);
   }
 
   /** Search implementation with arbitrary sorting, plus
@@ -542,13 +532,15 @@ public class IndexSearcher {
           + after.doc + " limit=" + limit);
     }
     final int cappedNumHits = Math.min(numHits, limit);
+    final Sort rewrittenSort = sort.rewrite(this);
 
     final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<TopFieldCollector, TopFieldDocs>() {
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
         final boolean fillFields = true;
-        return TopFieldCollector.create(sort, cappedNumHits, after, fillFields, doDocScores, doMaxScore);
+        // TODO: don't pay the price for accurate hit counts by default
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, fillFields, doDocScores, doMaxScore, true);
       }
 
       @Override
@@ -558,7 +550,7 @@ public class IndexSearcher {
         for (TopFieldCollector collector : collectors) {
           topDocs[i++] = collector.topDocs();
         }
-        return TopDocs.merge(sort, 0, cappedNumHits, topDocs, true);
+        return TopDocs.merge(rewrittenSort, 0, cappedNumHits, topDocs, true);
       }
 
     };
@@ -582,14 +574,22 @@ public class IndexSearcher {
       return collectorManager.reduce(Collections.singletonList(collector));
     } else {
       final List<C> collectors = new ArrayList<>(leafSlices.length);
-      boolean needsScores = false;
+      ScoreMode scoreMode = null;
       for (int i = 0; i < leafSlices.length; ++i) {
         final C collector = collectorManager.newCollector();
         collectors.add(collector);
-        needsScores |= collector.needsScores();
+        if (scoreMode == null) {
+          scoreMode = collector.scoreMode();
+        } else if (scoreMode != collector.scoreMode()) {
+          throw new IllegalStateException("CollectorManager does not always produce collectors with the same score mode");
+        }
+      }
+      if (scoreMode == null) {
+        // no segments
+        scoreMode = ScoreMode.COMPLETE;
       }
 
-      final Weight weight = createNormalizedWeight(query, needsScores);
+      final Weight weight = createNormalizedWeight(query, scoreMode);
       final List<Future<C>> topDocsFutures = new ArrayList<>(leafSlices.length);
       for (int i = 0; i < leafSlices.length; ++i) {
         final LeafReaderContext[] leaves = leafSlices[i].leaves;
@@ -686,7 +686,7 @@ public class IndexSearcher {
    * entire index.
    */
   public Explanation explain(Query query, int doc) throws IOException {
-    return explain(createNormalizedWeight(query, true), doc);
+    return explain(createNormalizedWeight(query, ScoreMode.COMPLETE), doc);
   }
 
   /** Expert: low-level implementation method
@@ -719,9 +719,9 @@ public class IndexSearcher {
    * can then directly be used to get a {@link Scorer}.
    * @lucene.internal
    */
-  public Weight createNormalizedWeight(Query query, boolean needsScores) throws IOException {
+  public Weight createNormalizedWeight(Query query, ScoreMode scoreMode) throws IOException {
     query = rewrite(query);
-    return createWeight(query, needsScores, 1f);
+    return createWeight(query, scoreMode, 1f);
   }
 
   /**
@@ -729,10 +729,10 @@ public class IndexSearcher {
    * if possible and configured.
    * @lucene.experimental
    */
-  public Weight createWeight(Query query, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(Query query, ScoreMode scoreMode, float boost) throws IOException {
     final QueryCache queryCache = this.queryCache;
-    Weight weight = query.createWeight(this, needsScores, boost);
-    if (needsScores == false && queryCache != null) {
+    Weight weight = query.createWeight(this, scoreMode, boost);
+    if (scoreMode.needsScores() == false && queryCache != null) {
       weight = queryCache.doCache(weight, queryCachingPolicy);
     }
     return weight;
@@ -767,41 +767,46 @@ public class IndexSearcher {
   }
   
   /**
-   * Returns {@link TermStatistics} for a term.
+   * Returns {@link TermStatistics} for a term, or {@code null} if
+   * the term does not exist.
    * 
    * This can be overridden for example, to return a term's statistics
    * across a distributed collection.
    * @lucene.experimental
    */
   public TermStatistics termStatistics(Term term, TermContext context) throws IOException {
-    return new TermStatistics(term.bytes(), context.docFreq(), context.totalTermFreq());
+    if (context.docFreq() == 0) {
+      return null;
+    } else {
+      return new TermStatistics(term.bytes(), context.docFreq(), context.totalTermFreq());
+    }
   }
   
   /**
-   * Returns {@link CollectionStatistics} for a field.
+   * Returns {@link CollectionStatistics} for a field, or {@code null} if
+   * the field does not exist (has no indexed terms)
    * 
    * This can be overridden for example, to return a field's statistics
    * across a distributed collection.
    * @lucene.experimental
    */
   public CollectionStatistics collectionStatistics(String field) throws IOException {
-    final int docCount;
-    final long sumTotalTermFreq;
-    final long sumDocFreq;
-
     assert field != null;
-    
-    Terms terms = MultiFields.getTerms(reader, field);
-    if (terms == null) {
-      docCount = 0;
-      sumTotalTermFreq = 0;
-      sumDocFreq = 0;
-    } else {
-      docCount = terms.getDocCount();
-      sumTotalTermFreq = terms.getSumTotalTermFreq();
-      sumDocFreq = terms.getSumDocFreq();
+    long docCount = 0;
+    long sumTotalTermFreq = 0;
+    long sumDocFreq = 0;
+    for (LeafReaderContext leaf : reader.leaves()) {
+      final Terms terms = leaf.reader().terms(field);
+      if (terms == null) {
+        continue;
+      }
+      docCount += terms.getDocCount();
+      sumTotalTermFreq += terms.getSumTotalTermFreq();
+      sumDocFreq += terms.getSumDocFreq();
     }
-
+    if (docCount == 0) {
+      return null;
+    }
     return new CollectionStatistics(field, reader.maxDoc(), docCount, sumTotalTermFreq, sumDocFreq);
   }
 }

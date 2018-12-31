@@ -26,7 +26,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * Implements the CombSUM method for combining evidence from multiple
@@ -84,6 +83,15 @@ public class MultiSimilarity extends Similarity {
     }
 
     @Override
+    public float maxScore(float freq) {
+      float sumMaxScore = 0;
+      for (SimScorer subScorer : subScorers) {
+        sumMaxScore += subScorer.maxScore(freq);
+      }
+      return sumMaxScore;
+    }
+
+    @Override
     public Explanation explain(int doc, Explanation freq) throws IOException {
       List<Explanation> subs = new ArrayList<>();
       for (SimScorer subScorer : subScorers) {
@@ -92,15 +100,6 @@ public class MultiSimilarity extends Similarity {
       return Explanation.match(score(doc, freq.getValue()), "sum of:", subs);
     }
 
-    @Override
-    public float computeSlopFactor(int distance) {
-      return subScorers[0].computeSlopFactor(distance);
-    }
-
-    @Override
-    public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-      return subScorers[0].computePayloadFactor(doc, start, end, payload);
-    }
   }
 
   static class MultiStats extends SimWeight {

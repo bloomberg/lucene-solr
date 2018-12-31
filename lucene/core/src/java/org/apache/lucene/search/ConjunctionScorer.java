@@ -26,6 +26,7 @@ class ConjunctionScorer extends Scorer {
 
   final DocIdSetIterator disi;
   final Scorer[] scorers;
+  final Collection<Scorer> required;
 
   /** Create a new {@link ConjunctionScorer}, note that {@code scorers} must be a subset of {@code required}. */
   ConjunctionScorer(Weight weight, Collection<Scorer> required, Collection<Scorer> scorers) {
@@ -33,6 +34,7 @@ class ConjunctionScorer extends Scorer {
     assert required.containsAll(scorers);
     this.disi = ConjunctionDISI.intersectScorers(required);
     this.scorers = scorers.toArray(new Scorer[scorers.size()]);
+    this.required = required;
   }
 
   @Override
@@ -60,14 +62,29 @@ class ConjunctionScorer extends Scorer {
   }
 
   @Override
-  public int freq() {
-    return scorers.length;
+  public float maxScore() {
+    // We iterate in the same order as #score() so no need to worry
+    // about floating-point errors: we would do the same errors in
+    // #score()
+    double sum = 0d;
+    for (Scorer scorer : scorers) {
+      sum += scorer.maxScore();
+    }
+    return (float) sum;
+  }
+
+  @Override
+  public void setMinCompetitiveScore(float score) {
+    if (scorers.length == 1) {
+      scorers[0].setMinCompetitiveScore(score);
+    }
+    // TODO: handle the case when there are multiple scoring clauses too
   }
 
   @Override
   public Collection<ChildScorer> getChildren() {
     ArrayList<ChildScorer> children = new ArrayList<>();
-    for (Scorer scorer : scorers) {
+    for (Scorer scorer : required) {
       children.add(new ChildScorer(scorer, "MUST"));
     }
     return children;

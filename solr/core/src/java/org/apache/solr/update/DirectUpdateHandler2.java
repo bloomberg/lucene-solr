@@ -45,7 +45,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
@@ -55,6 +55,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
@@ -70,8 +71,6 @@ import org.slf4j.LoggerFactory;
 /**
  * <code>DirectUpdateHandler2</code> implements an UpdateHandler where documents are added
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
- * <p>
- * TODO: add soft commitWithin support
  */
 public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState.IndexWriterCloser, SolrMetricProducer {
   protected final SolrCoreState solrCoreState;
@@ -98,6 +97,13 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   protected final CommitTracker softCommitTracker;
   
   protected boolean commitWithinSoftCommit;
+  /**
+   * package access for testing
+   * @lucene.internal
+   */
+  void setCommitWithinSoftCommit(boolean value) {
+    this.commitWithinSoftCommit = value;
+  }
 
   protected boolean indexWriterCloseWaitsForMerges;
 
@@ -122,12 +128,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     indexWriterCloseWaitsForMerges = updateHandlerInfo.indexWriterCloseWaitsForMerges;
 
     ZkController zkController = core.getCoreContainer().getZkController();
-    if (zkController != null) {
-      DocCollection dc = zkController.getClusterState().getCollection(core.getCoreDescriptor().getCollectionName());
-      if (dc.getRealtimeReplicas() == 1) {
-        commitWithinSoftCommit = false;
-        commitTracker.setOpenSearcher(true);
-      }
+    if (zkController != null && core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
+      commitWithinSoftCommit = false;
+      commitTracker.setOpenSearcher(true);
     }
 
   }
@@ -249,7 +252,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       cmd.overwrite = false;
     }
     try {
-      if ( (cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0) {
+      if ((cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0) {
         if (ulog != null) ulog.add(cmd);
         return 1;
       }
@@ -397,7 +400,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   private Term getIdTerm(AddUpdateCommand cmd) {
-    return new Term(cmd.isBlock() ? "_root_" : idField.getName(), cmd.getIndexedId());
+    return new Term(cmd.isBlock() ? IndexSchema.ROOT_FIELD_NAME : idField.getName(), cmd.getIndexedId());
   }
 
   private void updateDeleteTrackers(DeleteUpdateCommand cmd) {
@@ -425,7 +428,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     deleteByIdCommands.increment();
     deleteByIdCommandsCumulative.mark();
 
-    if ( (cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0 ) {
+    if ((cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0 ) {
       if (ulog != null) ulog.delete(cmd);
       return;
     }
@@ -489,7 +492,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     deleteByQueryCommandsCumulative.mark();
     boolean madeIt=false;
     try {
-      if ( (cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0) {
+      if ((cmd.getFlags() & UpdateCommand.IGNORE_INDEXWRITER) != 0) {
         if (ulog != null) ulog.deleteByQuery(cmd);
         madeIt = true;
         return;
@@ -547,7 +550,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       }
     }
   }
-
 
   @Override
   public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
@@ -811,7 +813,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   @Override
   public void close() throws IOException {
     log.debug("closing " + this);
-    
+
     commitTracker.close();
     softCommitTracker.close();
 
@@ -914,6 +916,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     } catch (IOException e) {
       numErrors.increment();
       numErrorsCumulative.mark();
+      throw e;
     }
   }
 
@@ -921,7 +924,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    * Calls either {@link IndexWriter#updateDocValues} or {@link IndexWriter#updateDocument} as 
    * needed based on {@link AddUpdateCommand#isInPlaceUpdate}.
    * <p>
-   * If the this is an UPDATE_INPLACE cmd, then all fields inclued in 
+   * If the this is an UPDATE_INPLACE cmd, then all fields included in 
    * {@link AddUpdateCommand#getLuceneDocument} must either be the uniqueKey field, or be DocValue 
    * only fields.
    * </p>

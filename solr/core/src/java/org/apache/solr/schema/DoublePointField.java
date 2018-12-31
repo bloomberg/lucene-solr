@@ -18,7 +18,6 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
@@ -26,6 +25,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -61,16 +61,18 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
     if (min == null) {
       actualMin = Double.NEGATIVE_INFINITY;
     } else {
-      actualMin = Double.parseDouble(min);
+      actualMin = parseDoubleFromUser(field.getName(), min);
       if (!minInclusive) {
+        if (actualMin == Double.POSITIVE_INFINITY) return new MatchNoDocsQuery();
         actualMin = DoublePoint.nextUp(actualMin);
       }
     }
     if (max == null) {
       actualMax = Double.POSITIVE_INFINITY;
     } else {
-      actualMax = Double.parseDouble(max);
+      actualMax = parseDoubleFromUser(field.getName(), max);
       if (!maxInclusive) {
+        if (actualMax == Double.NEGATIVE_INFINITY) return new MatchNoDocsQuery();
         actualMax = DoublePoint.nextDown(actualMax);
       }
     }
@@ -100,7 +102,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return DoublePoint.newExactQuery(field.getName(), Double.parseDouble(externalVal));
+    return DoublePoint.newExactQuery(field.getName(), parseDoubleFromUser(field.getName(), externalVal));
   }
 
   @Override
@@ -112,7 +114,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
     double[] values = new double[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
-      values[i] = Double.parseDouble(val);
+      values[i] = parseDoubleFromUser(field.getName(), val);
       i++;
     }
     return DoublePoint.newSetQuery(field.getName(), values);
@@ -127,25 +129,12 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     result.grow(Double.BYTES);
     result.setLength(Double.BYTES);
-    DoublePoint.encodeDimension(Double.parseDouble(val.toString()), result.bytes(), 0);
+    DoublePoint.encodeDimension(parseDoubleFromUser(null, val.toString()), result.bytes(), 0);
   }
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-
-    Object missingValue = null;
-    boolean sortMissingLast = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    if (sortMissingLast) {
-      missingValue = top ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
-    } else if (sortMissingFirst) {
-      missingValue = top ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
-    }
-    SortField sf = new SortField(field.getName(), SortField.Type.DOUBLE, top);
-    sf.setMissingValue(missingValue);
-    return sf;
+    return getSortField(field, SortField.Type.DOUBLE, top, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
   }
 
   @Override

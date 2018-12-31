@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.util.CharFilterFactory;
@@ -47,6 +48,7 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.search.TermInSetQuery;
@@ -67,7 +69,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.Sorting;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -478,14 +480,20 @@ public abstract class FieldType extends FieldProperties {
       Tokenizer ts = new Tokenizer() {
         final char[] cbuf = new char[maxChars];
         final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+        final BytesTermAttribute bytesAtt = isPointField() ? addAttribute(BytesTermAttribute.class) : null;
         final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
         @Override
         public boolean incrementToken() throws IOException {
           clearAttributes();
           int n = input.read(cbuf,0,maxChars);
           if (n<=0) return false;
-          String s = toInternal(new String(cbuf,0,n));
-          termAtt.setEmpty().append(s);
+          if (isPointField()) {
+            BytesRef b = ((PointField)FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
+            bytesAtt.setBytesRef(b);
+          } else {
+            String s = toInternal(new String(cbuf, 0, n));
+            termAtt.setEmpty().append(s);
+          }
           offsetAtt.setOffset(correctOffset(0),correctOffset(n));
           return true;
         }
@@ -654,8 +662,68 @@ public abstract class FieldType extends FieldProperties {
    * Returns the SortField instance that should be used to sort fields
    * of this type.
    * @see SchemaField#checkSortability
+   * @see #getSortField(SchemaField,SortField.Type,boolean,Object,Object)
    */
   public abstract SortField getSortField(SchemaField field, boolean top);
+
+  /**
+   * <p>A Helper utility method for use by subclasses.</p>
+   * <p>This method deals with:</p>
+   * <ul>
+   *  <li>{@link SchemaField#checkSortability}</li>
+   *  <li>Creating a {@link SortField} on <code>field</code> with the specified 
+   *      <code>reverse</code> &amp; <code>sortType</code></li>
+   *  <li>Setting the {@link SortField#setMissingValue} to <code>missingLow</code> or <code>missingHigh</code>
+   *      as appropriate based on the value of <code>reverse</code> and the 
+   *      <code>sortMissingFirst</code> &amp; <code>sortMissingLast</code> properties of the 
+   *      <code>field</code></li>
+   * </ul>
+   *
+   * @param field The SchemaField to sort on.  May use <code>sortMissingFirst</code> or <code>sortMissingLast</code> or neither.
+   * @param sortType The sort Type of the underlying values in the <code>field</code>
+   * @param reverse True if natural order of the <code>sortType</code> should be reversed
+   * @param missingLow The <code>missingValue</code> to be used if the other params indicate that docs w/o values should sort as "low" as possible.
+   * @param missingHigh The <code>missingValue</code> to be used if the other params indicate that docs w/o values should sort as "high" as possible.
+   * @see #getSortedSetSortField
+   */
+  protected static SortField getSortField(SchemaField field, SortField.Type sortType, boolean reverse,
+                                          Object missingLow, Object missingHigh) {
+    field.checkSortability();
+
+    SortField sf = new SortField(field.getName(), sortType, reverse);
+    applySetMissingValue(field, sf, missingLow, missingHigh);
+    
+    return sf;
+  }
+
+  /**
+   * Same as {@link #getSortField} but using {@link SortedSetSortField}
+   */
+  protected static SortField getSortedSetSortField(SchemaField field, SortedSetSelector.Type selector,
+                                                   boolean reverse, Object missingLow, Object missingHigh) {
+                                                   
+    field.checkSortability();
+
+    SortField sf = new SortedSetSortField(field.getName(), reverse, selector);
+    applySetMissingValue(field, sf, missingLow, missingHigh);
+    
+    return sf;
+  }
+  
+  /** 
+   * @see #getSortField 
+   * @see #getSortedSetSortField 
+   */
+  private static void applySetMissingValue(SchemaField field, SortField sortField, 
+                                           Object missingLow, Object missingHigh) {
+    final boolean reverse = sortField.getReverse();
+    
+    if (field.sortMissingLast()) {
+      sortField.setMissingValue(reverse ? missingLow : missingHigh);
+    } else if (field.sortMissingFirst()) {
+      sortField.setMissingValue(reverse ? missingHigh : missingLow);
+    }
+  }
 
   /**
    * Utility usable by subclasses when they want to get basic String sorting
@@ -663,8 +731,7 @@ public abstract class FieldType extends FieldProperties {
    * @see SchemaField#checkSortability
    */
   protected SortField getStringSort(SchemaField field, boolean reverse) {
-    field.checkSortability();
-    return Sorting.getStringSortField(field.name, reverse, field.sortMissingLast(),field.sortMissingFirst());
+    return getSortField(field, SortField.Type.STRING, reverse, SortField.STRING_FIRST, SortField.STRING_LAST);
   }
 
   /** called to get the default value source (normally, from the
@@ -719,7 +786,7 @@ public abstract class FieldType extends FieldProperties {
     final BytesRef miValue = part1 == null ? null : new BytesRef(toInternal(part1));
     final BytesRef maxValue = part2 == null ? null : new BytesRef(toInternal(part2));
     if (field.hasDocValues() && !field.indexed()) {
-      return SortedSetDocValuesField.newRangeQuery(
+      return SortedSetDocValuesField.newSlowRangeQuery(
             field.getName(),
             miValue, maxValue,
             minInclusive, maxInclusive);
@@ -754,12 +821,13 @@ public abstract class FieldType extends FieldProperties {
   /** @lucene.experimental  */
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
     if (!field.indexed()) {
+      // TODO: if the field isn't indexed, this feels like the wrong query type to use?
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (String externalVal : externalVals) {
         Query subq = getFieldQuery(parser, field, externalVal);
         builder.add(subq, BooleanClause.Occur.SHOULD);
       }
-      return builder.build();
+      return QueryUtils.build(builder, parser);
     }
 
     List<BytesRef> lst = new ArrayList<>(externalVals.size());
@@ -837,6 +905,7 @@ public abstract class FieldType extends FieldProperties {
   protected static final String ENABLE_GRAPH_QUERIES = "enableGraphQueries";
   private static final String ARGS = "args";
   private static final String POSITION_INCREMENT_GAP = "positionIncrementGap";
+  protected static final String SYNONYM_QUERY_STYLE = "synonymQueryStyle";
 
   /**
    * Get a map of property name -&gt; value for this field type. 
@@ -858,6 +927,7 @@ public abstract class FieldType extends FieldProperties {
       if (this instanceof TextField) {
         namedPropertyValues.add(AUTO_GENERATE_PHRASE_QUERIES, ((TextField) this).getAutoGeneratePhraseQueries());
         namedPropertyValues.add(ENABLE_GRAPH_QUERIES, ((TextField) this).getEnableGraphQueries());
+        namedPropertyValues.add(SYNONYM_QUERY_STYLE, ((TextField) this).getSynonymQueryStyle());
       }
       namedPropertyValues.add(getPropertyName(INDEXED), hasProperty(INDEXED));
       namedPropertyValues.add(getPropertyName(STORED), hasProperty(STORED));

@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -48,8 +49,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.ShardParams._ROUTE_;
-
 /**
  * This class implements the logic required to test Solr cloud backup/restore capability.
  */
@@ -57,6 +56,10 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final int NUM_SHARDS = 2;//granted we sometimes shard split to get more
+
+  int replFactor;
+  int numTlogReplicas;
+  int numPullReplicas;
 
   private static long docsSeed; // see indexDocs()
 
@@ -84,11 +87,21 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   @Test
   public void test() throws Exception {
     boolean isImplicit = random().nextBoolean();
-    int replFactor = TestUtil.nextInt(random(), 1, 2);
-    CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor);
-    if (NUM_SHARDS * replFactor > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
-      create.setMaxShardsPerNode(NUM_SHARDS);//just to assert it survives the restoration
+    boolean doSplitShardOperation = !isImplicit && random().nextBoolean();
+    replFactor = TestUtil.nextInt(random(), 1, 2);
+    numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
+    numPullReplicas = TestUtil.nextInt(random(), 0, 1);
+    
+    CollectionAdminRequest.Create create = isImplicit ?
+      // NOTE: use shard list with same # of shards as NUM_SHARDS; we assume this later
+      CollectionAdminRequest.createCollectionWithImplicitRouter(getCollectionName(), "conf1", "shard1,shard2", replFactor, numTlogReplicas, numPullReplicas) :
+      CollectionAdminRequest.createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas);
+    
+    if (NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
+      create.setMaxShardsPerNode((int)Math.ceil(NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas) / cluster.getJettySolrRunners().size()));//just to assert it survives the restoration
+      if (doSplitShardOperation) {
+        create.setMaxShardsPerNode(create.getMaxShardsPerNode() * 2);
+      }
     }
     if (random().nextBoolean()) {
       create.setAutoAddReplicas(true);//just to assert it survives the restoration
@@ -97,9 +110,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     coreProps.put("customKey", "customValue");//just to assert it survives the restoration
     create.setProperties(coreProps);
     if (isImplicit) { //implicit router
-      create.setRouterName(ImplicitDocRouter.NAME);
-      create.setNumShards(null);//erase it. TODO suggest a new createCollectionWithImplicitRouter method
-      create.setShards("shard1,shard2"); // however still same number as NUM_SHARDS; we assume this later
       create.setRouterField("shard_s");
     } else {//composite id router
       if (random().nextBoolean()) {
@@ -112,7 +122,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     indexDocs(getCollectionName());
 
-    if (!isImplicit && random().nextBoolean()) {
+    if (doSplitShardOperation) {
       // shard split the first shard
       int prevActiveSliceCount = getActiveSliceCount(getCollectionName());
       CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(getCollectionName());
@@ -235,10 +245,17 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
           .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
 
-      if (origShardToDocCount.size() > cluster.getJettySolrRunners().size()) {
-        // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
-        restore.setMaxShardsPerNode(origShardToDocCount.size());
+
+      //explicitly specify the replicationFactor/pullReplicas/nrtReplicas/tlogReplicas .
+      //Value is still the same as the original. maybe test with different values that the original for better test coverage
+      if (random().nextBoolean())  {
+        restore.setReplicationFactor(replFactor);
       }
+      if (backupCollection.getReplicas().size() > cluster.getJettySolrRunners().size()) {
+        // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
+        restore.setMaxShardsPerNode((int)Math.ceil(backupCollection.getReplicas().size()/cluster.getJettySolrRunners().size()));
+      }
+      
 
       if (rarely()) { // Try with createNodeSet configuration
         int nodeSetSize = cluster.getJettySolrRunners().size() / 2;
@@ -250,7 +267,11 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
         restore.setCreateNodeSet(String.join(",", nodeStrs));
         restore.setCreateNodeSetShuffle(usually());
         // we need to double maxShardsPerNode value since we reduced number of available nodes by half.
-        restore.setMaxShardsPerNode(origShardToDocCount.size() * 2);
+        if (restore.getMaxShardsPerNode() != null) {
+          restore.setMaxShardsPerNode(restore.getMaxShardsPerNode() * 2);
+        } else {
+          restore.setMaxShardsPerNode(origShardToDocCount.size() * 2);
+        }
       }
 
       Properties props = new Properties();
@@ -295,6 +316,16 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
           v <= restoreCollection.getMaxShardsPerNode());
     });
 
+    assertEquals("Different count of nrtReplicas. Backup collection state=" + backupCollection + "\nRestore " +
+        "collection state=" + restoreCollection, replFactor, restoreCollection.getNumNrtReplicas().intValue());
+    assertEquals("Different count of pullReplicas. Backup collection state=" + backupCollection + "\nRestore" +
+        " collection state=" + restoreCollection, numPullReplicas, restoreCollection.getNumPullReplicas().intValue());
+    assertEquals("Different count of TlogReplica. Backup collection state=" + backupCollection + "\nRestore" +
+        " collection state=" + restoreCollection, numTlogReplicas, restoreCollection.getNumTlogReplicas().intValue());
+
+    assertEquals("Restore collection should use stateFormat=2", 2, restoreCollection.getStateFormat());
+
+
     // assert added core properties:
     // DWS: did via manual inspection.
     // TODO Find the applicable core.properties on the file system but how?
@@ -304,9 +335,11 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     Map<String,Integer> shardToDocCount = new TreeMap<>();
     for (Slice slice : docCollection.getActiveSlices()) {
       String shardName = slice.getName();
-      long docsInShard = client.query(docCollection.getName(), new SolrQuery("*:*").setParam(_ROUTE_, shardName))
-          .getResults().getNumFound();
-      shardToDocCount.put(shardName, (int) docsInShard);
+      try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(slice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+        long docsInShard = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false"))
+            .getResults().getNumFound();
+        shardToDocCount.put(shardName, (int) docsInShard);
+      }
     }
     return shardToDocCount;
   }

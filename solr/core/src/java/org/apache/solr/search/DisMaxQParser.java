@@ -65,15 +65,14 @@ public class DisMaxQParser extends QParser {
 
   /**
    * Uses {@link SolrPluginUtils#parseFieldBoosts(String)} with the 'qf' parameter. Falls back to the 'df' parameter
-   * or {@link org.apache.solr.schema.IndexSchema#getDefaultSearchFieldName()}.
    */
   public static Map<String, Float> parseQueryFields(final IndexSchema indexSchema, final SolrParams solrParams)
       throws SyntaxError {
     Map<String, Float> queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
     if (queryFields.isEmpty()) {
-      String df = QueryParsing.getDefaultField(indexSchema, solrParams.get(CommonParams.DF));
+      String df = solrParams.get(CommonParams.DF);
       if (df == null) {
-        throw new SyntaxError("Neither "+DisMaxParams.QF+", "+CommonParams.DF +", nor the default search field are present.");
+        throw new SyntaxError("Neither "+DisMaxParams.QF+" nor "+CommonParams.DF +" are present.");
       }
       queryFields.put(df, 1.0f);
     }
@@ -114,7 +113,7 @@ public class DisMaxQParser extends QParser {
     addBoostQuery(query, solrParams);
     addBoostFunctions(query, solrParams);
 
-    return query.build();
+    return QueryUtils.build(query, this);
   }
 
   protected void addBoostFunctions(BooleanQuery.Builder query, SolrParams solrParams) throws SyntaxError {
@@ -253,7 +252,7 @@ public class DisMaxQParser extends QParser {
       SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery) dis);
       boolean mmAutoRelax = params.getBool(DisMaxParams.MM_AUTORELAX, false);
       SolrPluginUtils.setMinShouldMatch(t, minShouldMatch, mmAutoRelax);
-      query = t.build();
+      query = QueryUtils.build(t, this);
     }
     return query;
   }

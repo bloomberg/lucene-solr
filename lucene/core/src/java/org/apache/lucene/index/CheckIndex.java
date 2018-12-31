@@ -149,7 +149,7 @@ public final class CheckIndex implements Closeable {
     public boolean partial;
 
     /** The greatest segment name. */
-    public int maxSegmentName;
+    public long maxSegmentName;
 
     /** Whether the SegmentInfos.counter is greater than any of the segments' names. */
     public boolean validCounter; 
@@ -635,7 +635,7 @@ public final class CheckIndex implements Closeable {
 
     for(int i=0;i<numSegments;i++) {
       final SegmentCommitInfo info = sis.info(i);
-      int segmentName = Integer.parseInt(info.info.name.substring(1), Character.MAX_RADIX);
+      long segmentName = Long.parseLong(info.info.name.substring(1), Character.MAX_RADIX);
       if (segmentName > result.maxSegmentName) {
         result.maxSegmentName = segmentName;
       }
@@ -744,13 +744,13 @@ public final class CheckIndex implements Closeable {
           segInfoStat.fieldNormStatus = testFieldNorms(reader, infoStream, failFast);
 
           // Test the Term Index
-          segInfoStat.termIndexStatus = testPostings(reader, infoStream, verbose, failFast, version);
+          segInfoStat.termIndexStatus = testPostings(reader, infoStream, verbose, failFast);
 
           // Test Stored Fields
           segInfoStat.storedFieldStatus = testStoredFields(reader, infoStream, failFast);
 
           // Test Term Vectors
-          segInfoStat.termVectorStatus = testTermVectors(reader, infoStream, verbose, crossCheckTermVectors, failFast, version);
+          segInfoStat.termVectorStatus = testTermVectors(reader, infoStream, verbose, crossCheckTermVectors, failFast);
 
           // Test Docvalues
           segInfoStat.docValuesStatus = testDocValues(reader, infoStream, failFast);
@@ -1209,7 +1209,7 @@ public final class CheckIndex implements Closeable {
    * checks Fields api is consistent with itself.
    * searcher is optional, to verify with queries. Can be null.
    */
-  private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose, Version version) throws IOException {
+  private static Status.TermIndexStatus checkFields(Fields fields, Bits liveDocs, int maxDoc, FieldInfos fieldInfos, boolean doPrint, boolean isVectors, PrintStream infoStream, boolean verbose) throws IOException {
     // TODO: we should probably return our own stats thing...?!
     long startNS;
     if (doPrint) {
@@ -1253,6 +1253,10 @@ public final class CheckIndex implements Closeable {
         continue;
       }
       
+      if (terms.getDocCount() > maxDoc) {
+        throw new RuntimeException("docCount > maxDoc for field: " + field + ", docCount=" + terms.getDocCount() + ", maxDoc=" + maxDoc);
+      }
+      
       final boolean hasFreqs = terms.hasFreqs();
       final boolean hasPositions = terms.hasPositions();
       final boolean hasPayloads = terms.hasPayloads();
@@ -1293,12 +1297,6 @@ public final class CheckIndex implements Closeable {
 
       if (hasFreqs != expectedHasFreqs) {
         throw new RuntimeException("field \"" + field + "\" should have hasFreqs=" + expectedHasFreqs + " but got " + hasFreqs);
-      }
-
-      if (hasFreqs == false) {
-        if (terms.getSumTotalTermFreq() != -1) {
-          throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but Terms.getSumTotalTermFreq()=" + terms.getSumTotalTermFreq() + " (should be -1)");
-        }
       }
 
       if (!isVectors) {
@@ -1375,8 +1373,8 @@ public final class CheckIndex implements Closeable {
         postings = termsEnum.postings(postings, PostingsEnum.ALL);
 
         if (hasFreqs == false) {
-          if (termsEnum.totalTermFreq() != -1) {
-            throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but TermsEnum.totalTermFreq()=" + termsEnum.totalTermFreq() + " (should be -1)");   
+          if (termsEnum.totalTermFreq() != termsEnum.docFreq()) {
+            throw new RuntimeException("field \"" + field + "\" hasFreqs is false, but TermsEnum.totalTermFreq()=" + termsEnum.totalTermFreq() + " (should be " + termsEnum.docFreq() + ")");
           }
         }
         
@@ -1406,14 +1404,11 @@ public final class CheckIndex implements Closeable {
             break;
           }
           visitedDocs.set(doc);
-          int freq = -1;
-          if (hasFreqs) {
-            freq = postings.freq();
-            if (freq <= 0) {
-              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
-            }
-            totalTermFreq += freq;
-          } else {
+          int freq = postings.freq();
+          if (freq <= 0) {
+            throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
+          }
+          if (hasFreqs == false) {
             // When a field didn't index freq, it must
             // consistently "lie" and pretend that freq was
             // 1:
@@ -1421,6 +1416,8 @@ public final class CheckIndex implements Closeable {
               throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " != 1 when Terms.hasFreqs() is false");
             }
           }
+          totalTermFreq += freq;
+
           if (liveDocs == null || liveDocs.get(doc)) {
             hasNonDeletedDocs = true;
             status.totFreq++;
@@ -1465,20 +1462,17 @@ public final class CheckIndex implements Closeable {
               if (hasOffsets) {
                 int startOffset = postings.startOffset();
                 int endOffset = postings.endOffset();
-                // In Lucene 7 we fixed IndexWriter to also enforce term vector offsets
-                if (isVectors == false || version.onOrAfter(Version.LUCENE_7_0_0)) {
-                  if (startOffset < 0) {
-                    throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
-                  }
-                  if (startOffset < lastOffset) {
-                    throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset + "; consider using the FixBrokenOffsets tool in Lucene's backward-codecs module to correct your index");
-                  }
-                  if (endOffset < 0) {
-                    throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
-                  }
-                  if (endOffset < startOffset) {
-                    throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " < startOffset " + startOffset);
-                  }
+                if (startOffset < 0) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " is out of bounds");
+                }
+                if (startOffset < lastOffset) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": startOffset " + startOffset + " < lastStartOffset " + lastOffset + "; consider using the FixBrokenOffsets tool in Lucene's backward-codecs module to correct your index");
+                }
+                if (endOffset < 0) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " is out of bounds");
+                }
+                if (endOffset < startOffset) {
+                  throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + ": endOffset " + endOffset + " < startOffset " + startOffset);
                 }
                 lastOffset = startOffset;
               }
@@ -1493,19 +1487,25 @@ public final class CheckIndex implements Closeable {
         }
         
         final long totalTermFreq2 = termsEnum.totalTermFreq();
-        final boolean hasTotalTermFreq = hasFreqs && totalTermFreq2 != -1;
         
         if (docCount != docFreq) {
           throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != tot docs w/o deletions " + docCount);
         }
-        if (hasTotalTermFreq) {
-          if (totalTermFreq2 <= 0) {
-            throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds");
-          }
-          sumTotalTermFreq += totalTermFreq;
-          if (totalTermFreq != totalTermFreq2) {
-            throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);
-          }
+        if (docFreq > terms.getDocCount()) {
+          throw new RuntimeException("term " + term + " docFreq=" + docFreq + " > docCount=" + terms.getDocCount());
+        }
+        if (totalTermFreq2 <= 0) {
+          throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds");
+        }
+        sumTotalTermFreq += totalTermFreq;
+        if (totalTermFreq != totalTermFreq2) {
+          throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq2 + " != recomputed totalTermFreq=" + totalTermFreq);
+        }
+        if (totalTermFreq2 < docFreq) {
+          throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds, docFreq=" + docFreq);
+        }
+        if (hasFreqs == false && totalTermFreq != docFreq) {
+          throw new RuntimeException("term " + term + " totalTermFreq=" + totalTermFreq + " !=  docFreq=" + docFreq);
         }
         
         // Test skipping
@@ -1629,22 +1629,22 @@ public final class CheckIndex implements Closeable {
         }
         status.blockTreeStats.put(field, stats);
 
-        if (sumTotalTermFreq != 0) {
-          final long v = fields.terms(field).getSumTotalTermFreq();
-          if (v != -1 && sumTotalTermFreq != v) {
-            throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + v + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
-          }
+        final long actualSumDocFreq = fields.terms(field).getSumDocFreq();
+        if (sumDocFreq != actualSumDocFreq) {
+          throw new RuntimeException("sumDocFreq for field " + field + "=" + actualSumDocFreq + " != recomputed sumDocFreq=" + sumDocFreq);
         }
+
+        final long actualSumTotalTermFreq = fields.terms(field).getSumTotalTermFreq();
+        if (sumTotalTermFreq != actualSumTotalTermFreq) {
+          throw new RuntimeException("sumTotalTermFreq for field " + field + "=" + actualSumTotalTermFreq + " != recomputed sumTotalTermFreq=" + sumTotalTermFreq);
+        } 
         
-        if (sumDocFreq != 0) {
-          final long v = fields.terms(field).getSumDocFreq();
-          if (v != -1 && sumDocFreq != v) {
-            throw new RuntimeException("sumDocFreq for field " + field + "=" + v + " != recomputed sumDocFreq=" + sumDocFreq);
-          }
+        if (hasFreqs == false && sumTotalTermFreq != sumDocFreq) {
+          throw new RuntimeException("sumTotalTermFreq for field " + field + " should be " + sumDocFreq + ", got sumTotalTermFreq=" + sumTotalTermFreq);
         }
         
         final int v = fieldTerms.getDocCount();
-        if (v != -1 && visitedDocs.cardinality() != v) {
+        if (visitedDocs.cardinality() != v) {
           throw new RuntimeException("docCount for field " + field + "=" + v + " != recomputed docCount=" + visitedDocs.cardinality());
         }
         
@@ -1745,15 +1745,15 @@ public final class CheckIndex implements Closeable {
    * Test the term index.
    * @lucene.experimental
    */
-  public static Status.TermIndexStatus testPostings(CodecReader reader, PrintStream infoStream, Version version) throws IOException {
-    return testPostings(reader, infoStream, false, false, version);
+  public static Status.TermIndexStatus testPostings(CodecReader reader, PrintStream infoStream) throws IOException {
+    return testPostings(reader, infoStream, false, false);
   }
   
   /**
    * Test the term index.
    * @lucene.experimental
    */
-  public static Status.TermIndexStatus testPostings(CodecReader reader, PrintStream infoStream, boolean verbose, boolean failFast, Version version) throws IOException {
+  public static Status.TermIndexStatus testPostings(CodecReader reader, PrintStream infoStream, boolean verbose, boolean failFast) throws IOException {
 
     // TODO: we should go and verify term vectors match, if
     // crossCheckTermVectors is on...
@@ -1768,7 +1768,7 @@ public final class CheckIndex implements Closeable {
 
       final Fields fields = reader.getPostingsReader().getMergeInstance();
       final FieldInfos fieldInfos = reader.getFieldInfos();
-      status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, true, false, infoStream, verbose, version);
+      status = checkFields(fields, reader.getLiveDocs(), maxDoc, fieldInfos, true, false, infoStream, verbose);
     } catch (Throwable e) {
       if (failFast) {
         throw IOUtils.rethrowAlways(e);
@@ -2195,7 +2195,7 @@ public final class CheckIndex implements Closeable {
           throw new RuntimeException("dv iterator field=" + field + ": doc=" + (doc-1) + " has unstable advanceExact");
         }
 
-        if (i % 1 == 0) {
+        if (i % 2 == 0) {
           int doc2 = it2.nextDoc();
           if (doc != doc2) {
             throw new RuntimeException("dv iterator field=" + field + ": doc=" + doc + " was not found through advance() (got: " + doc2 + ")");
@@ -2377,15 +2377,15 @@ public final class CheckIndex implements Closeable {
    * Test term vectors.
    * @lucene.experimental
    */
-  public static Status.TermVectorStatus testTermVectors(CodecReader reader, PrintStream infoStream, Version version) throws IOException {
-    return testTermVectors(reader, infoStream, false, false, false, version);
+  public static Status.TermVectorStatus testTermVectors(CodecReader reader, PrintStream infoStream) throws IOException {
+    return testTermVectors(reader, infoStream, false, false, false);
   }
 
   /**
    * Test term vectors.
    * @lucene.experimental
    */
-  public static Status.TermVectorStatus testTermVectors(CodecReader reader, PrintStream infoStream, boolean verbose, boolean crossCheckTermVectors, boolean failFast, Version version) throws IOException {
+  public static Status.TermVectorStatus testTermVectors(CodecReader reader, PrintStream infoStream, boolean verbose, boolean crossCheckTermVectors, boolean failFast) throws IOException {
     long startNS = System.nanoTime();
     final Status.TermVectorStatus status = new Status.TermVectorStatus();
     final FieldInfos fieldInfos = reader.getFieldInfos();
@@ -2425,7 +2425,7 @@ public final class CheckIndex implements Closeable {
           
           if (tfv != null) {
             // First run with no deletions:
-            checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose, version);
+            checkFields(tfv, null, 1, fieldInfos, false, true, infoStream, verbose);
             
             // Only agg stats if the doc is live:
             final boolean doStats = liveDocs == null || liveDocs.get(j);

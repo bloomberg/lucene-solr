@@ -17,6 +17,9 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +48,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
+/**
+ * @since 6.6.0
+ */
 public class TimeSeriesStream extends TupleStream implements Expressible  {
 
   private static final long serialVersionUID = 1;
@@ -53,6 +59,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   private String end;
   private String gap;
   private String field;
+  private String format;
+  private DateTimeFormatter formatter;
 
   private Metric[] metrics;
   private List<Tuple> tuples = new ArrayList();
@@ -70,8 +78,9 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
                           String field,
                           String start,
                           String end,
-                          String gap) throws IOException {
-    init(collection, params, field, metrics, start, end, gap, zkHost);
+                          String gap,
+                          String format) throws IOException {
+    init(collection, params, field, metrics, start, end, gap, format, zkHost);
   }
 
   public TimeSeriesStream(StreamExpression expression, StreamFactory factory) throws IOException{
@@ -82,8 +91,16 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     StreamExpressionNamedParameter endExpression = factory.getNamedOperand(expression, "end");
     StreamExpressionNamedParameter fieldExpression = factory.getNamedOperand(expression, "field");
     StreamExpressionNamedParameter gapExpression = factory.getNamedOperand(expression, "gap");
+    StreamExpressionNamedParameter formatExpression = factory.getNamedOperand(expression, "format");
+    StreamExpressionNamedParameter qExpression = factory.getNamedOperand(expression, "q");
+
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
     List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
+
+
+    if(qExpression == null) {
+      throw new IOException("The timeseries expression requires the q parameter");
+    }
 
     String start = null;
     if(startExpression != null) {
@@ -103,6 +120,11 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     String field = null;
     if(fieldExpression != null) {
       field = ((StreamExpressionValue)fieldExpression.getParameter()).getValue();
+    }
+
+    String format = null;
+    if(formatExpression != null) {
+      format = ((StreamExpressionValue)formatExpression.getParameter()).getValue();
     }
 
     // Collection Name
@@ -149,7 +171,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     }
 
     // We've got all the required items
-    init(collectionName, params, field, metrics, start, end, gap , zkHost);
+    init(collectionName, params, field, metrics, start, end, gap, format, zkHost);
   }
 
   public String getCollection() {
@@ -163,6 +185,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
                     String start,
                     String end,
                     String gap,
+                    String format,
                     String zkHost) throws IOException {
     this.zkHost  = zkHost;
     this.collection = collection;
@@ -175,6 +198,10 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     this.field = field;
     this.params = params;
     this.end = end;
+    if(format != null) {
+      this.format = format;
+      formatter = DateTimeFormatter.ofPattern(format, Locale.ROOT);
+    }
   }
 
   @Override
@@ -201,6 +228,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     expression.addParameter(new StreamExpressionNamedParameter("end", end));
     expression.addParameter(new StreamExpressionNamedParameter("gap", gap));
     expression.addParameter(new StreamExpressionNamedParameter("field", gap));
+    expression.addParameter(new StreamExpressionNamedParameter("format", format));
+
 
     // zkHost
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
@@ -348,17 +377,25 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     for(int b=0; b<allBuckets.size(); b++) {
       NamedList bucket = (NamedList)allBuckets.get(b);
       Object val = bucket.get("val");
+
+      if(formatter != null) {
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(((java.util.Date) val).toInstant(), ZoneOffset.UTC);
+        val = localDateTime.format(formatter);
+      }
+
       Tuple t = currentTuple.clone();
       t.put(field, val);
       int m = 0;
       for(Metric metric : _metrics) {
         String identifier = metric.getIdentifier();
         if(!identifier.startsWith("count(")) {
-          double d = (double)bucket.get("facet_"+m);
-          if(metric.outputLong) {
-            t.put(identifier, Math.round(d));
-          } else {
-            t.put(identifier, d);
+          if(bucket.get("facet_"+m) != null) {
+            Number d = (Number) bucket.get("facet_" + m);
+            if (metric.outputLong) {
+              t.put(identifier, Math.round(d.doubleValue()));
+            } else {
+              t.put(identifier, d.doubleValue());
+            }
           }
           ++m;
         } else {

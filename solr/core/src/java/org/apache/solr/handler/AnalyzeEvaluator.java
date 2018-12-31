@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.handler;
 
 import java.io.IOException;
@@ -22,6 +23,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.eval.SourceEvaluator;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -29,13 +31,11 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.eval.*;
-
 import org.apache.solr.common.SolrException;
 import org.apache.lucene.analysis.*;
 import org.apache.solr.core.SolrCore;
 
-public class AnalyzeEvaluator extends SimpleEvaluator {
+public class AnalyzeEvaluator extends SourceEvaluator {
   private static final long serialVersionUID = 1L;
 
   private String fieldName;
@@ -53,13 +53,13 @@ public class AnalyzeEvaluator extends SimpleEvaluator {
   }
 
   public void setStreamContext(StreamContext context) {
+    this.streamContext = context;
     Object solrCoreObj = context.get("solr-core");
     if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore) ) {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "StreamContext must have SolrCore in solr-core key");
     }
-    SolrCore solrCore = (SolrCore) solrCoreObj;
 
-    analyzer = solrCore.getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
+    analyzer = ((SolrCore) solrCoreObj).getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
   }
 
   private void init(String fieldName, String analyzerField) {
@@ -73,9 +73,13 @@ public class AnalyzeEvaluator extends SimpleEvaluator {
 
   @Override
   public Object evaluate(Tuple tuple) throws IOException {
-    String value = tuple.getString(fieldName);
-    if(value == null) {
-      return null;
+    String value = null;
+    Object obj = tuple.get(fieldName);
+
+    if(obj == null) {
+      value = fieldName;
+    } else {
+      value = obj.toString();
     }
 
     List<String> tokens = new ArrayList();

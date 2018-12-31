@@ -17,11 +17,11 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Collections;
 
-public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
+public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
   Query q;
   BooleanClause[] clauses;
 
@@ -48,8 +48,14 @@ public class TestMaxScoreQueryParser extends AbstractSolrTestCase {
     assertEquals(new BoostQuery(new TermQuery(new Term("text", "foo")), 3f), q);
 
     q = parse("price:[0 TO 10]");
-    assertTrue(q instanceof LegacyNumericRangeQuery 
-        || (q instanceof IndexOrDocValuesQuery && ((IndexOrDocValuesQuery)q).getIndexQuery() instanceof PointRangeQuery));
+    Class expected = LegacyNumericRangeQuery.class;
+    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+      expected = PointRangeQuery.class;
+      if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
+        expected = IndexOrDocValuesQuery.class;
+      }
+    }
+    assertTrue(expected + " vs actual: " + q.getClass(), expected.isInstance(q));
   }
 
   @Test

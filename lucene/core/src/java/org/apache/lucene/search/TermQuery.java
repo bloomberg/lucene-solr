@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -65,13 +66,16 @@ public class TermQuery extends Query {
         collectionStats = searcher.collectionStatistics(term.field());
         termStats = searcher.termStatistics(term, termStates);
       } else {
-        // we do not need the actual stats, use fake stats with docFreq=maxDoc and ttf=-1
-        final int maxDoc = searcher.getIndexReader().maxDoc();
-        collectionStats = new CollectionStatistics(term.field(), maxDoc, -1, -1, -1);
-        termStats = new TermStatistics(term.bytes(), maxDoc, -1);
+        // we do not need the actual stats, use fake stats with docFreq=maxDoc=ttf=1
+        collectionStats = new CollectionStatistics(term.field(), 1, 1, 1, 1);
+        termStats = new TermStatistics(term.bytes(), 1, 1);
       }
      
-      this.stats = similarity.computeWeight(boost, collectionStats, termStats);
+      if (termStats == null) {
+        this.stats = null; // term doesn't exist in any segment, we won't use similarity at all
+      } else {
+        this.stats = similarity.computeWeight(boost, collectionStats, termStats);
+      }
     }
 
     @Override
@@ -91,9 +95,30 @@ public class TermQuery extends Query {
       if (termsEnum == null) {
         return null;
       }
+      IndexOptions indexOptions = context.reader()
+          .getFieldInfos()
+          .fieldInfo(getTerm().field())
+          .getIndexOptions();
       PostingsEnum docs = termsEnum.postings(null, needsScores ? PostingsEnum.FREQS : PostingsEnum.NONE);
       assert docs != null;
-      return new TermScorer(this, docs, similarity.simScorer(stats, context));
+      return new TermScorer(this, docs, similarity.simScorer(stats, context),
+          getMaxFreq(indexOptions, termsEnum.totalTermFreq(), termsEnum.docFreq()));
+    }
+
+    private long getMaxFreq(IndexOptions indexOptions, long ttf, long df) {
+      // TODO: store the max term freq?
+      if (indexOptions.compareTo(IndexOptions.DOCS) <= 0) {
+        // omitTFAP field, tf values are implicitly 1.
+        return 1;
+      } else {
+        assert ttf >= 0;
+        return Math.min(Integer.MAX_VALUE, ttf - df + 1);
+      }
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
     }
 
     /**
@@ -136,13 +161,13 @@ public class TermQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      Scorer scorer = scorer(context);
+      TermScorer scorer = (TermScorer) scorer(context);
       if (scorer != null) {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
           SimScorer docScorer = similarity.simScorer(stats, context);
-          Explanation freqExplanation = Explanation.match(freq, "termFreq=" + freq);
+          Explanation freqExplanation = Explanation.match(freq, "freq, occurrences of term within document");
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(
               scoreExplanation.getValue(),
@@ -177,12 +202,12 @@ public class TermQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     final IndexReaderContext context = searcher.getTopReaderContext();
     final TermContext termState;
     if (perReaderTermState == null
         || perReaderTermState.wasBuiltFor(context) == false) {
-      if (needsScores) {
+      if (scoreMode.needsScores()) {
         // make TermQuery single-pass if we don't have a PRTS or if the context
         // differs!
         termState = TermContext.build(context, term);
@@ -196,7 +221,7 @@ public class TermQuery extends Query {
       termState = this.perReaderTermState;
     }
 
-    return new TermWeight(searcher, needsScores, boost, termState);
+    return new TermWeight(searcher, scoreMode.needsScores(), boost, termState);
   }
 
   /** Prints a user-readable version of this query. */

@@ -24,15 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.carrotsearch.hppc.IntHashSet;
-import com.carrotsearch.hppc.IntObjectHashMap;
-import com.carrotsearch.hppc.LongHashSet;
-import com.carrotsearch.hppc.LongObjectHashMap;
-import com.carrotsearch.hppc.LongObjectMap;
-import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.carrotsearch.hppc.cursors.LongCursor;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.carrotsearch.hppc.cursors.ObjectCursor;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -42,6 +33,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -50,6 +42,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermInSetQuery;
@@ -87,6 +80,16 @@ import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+
+import com.carrotsearch.hppc.IntHashSet;
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongObjectHashMap;
+import com.carrotsearch.hppc.LongObjectMap;
+import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.LongCursor;
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.
@@ -216,6 +219,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
         Map<String, UninvertingReader.Type> mapping = new HashMap();
         mapping.put(field, UninvertingReader.Type.SORTED);
+        @SuppressWarnings("resource")
         UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
@@ -273,7 +277,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     IntObjectHashMap<BytesRef> ordBytes = null;
     if(values != null) {
       groupBits = new FixedBitSet(values.getValueCount());
-      MultiDocValues.OrdinalMap ordinalMap = null;
+      OrdinalMap ordinalMap = null;
       SortedDocValues[] sortedDocValues = null;
       LongValues segmentOrdinalMap = null;
       SortedDocValues currentValues = null;
@@ -386,6 +390,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if(CollapsingQParserPlugin.HINT_TOP_FC.equals(hint)) {
         Map<String, UninvertingReader.Type> mapping = new HashMap();
         mapping.put(field, UninvertingReader.Type.SORTED);
+        @SuppressWarnings("resource")
         UninvertingReader uninvertingReader = new UninvertingReader(new ReaderWrapper(searcher.getSlowAtomicReader(), field), mapping);
         values = uninvertingReader.getSortedDocValues(field);
       } else {
@@ -518,7 +523,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   private static class GroupExpandCollector implements Collector, GroupCollector {
     private SortedDocValues docValues;
-    private MultiDocValues.OrdinalMap ordinalMap;
+    private OrdinalMap ordinalMap;
     private SortedDocValues segmentValues;
     private LongValues segmentOrdinalMap;
     private MultiDocValues.MultiSortedDocValues multiSortedDocValues;
@@ -533,7 +538,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       DocIdSetIterator iterator = new BitSetIterator(groupBits, 0); // cost is not useful here
       int group;
       while ((group = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false, true);
         groups.put(group, collector);
       }
 
@@ -547,8 +552,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     @Override
-    public boolean needsScores() {
-      return true; // TODO: is this always true?
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE; // TODO: is this always true?
     }
 
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
@@ -625,7 +630,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       Iterator<LongCursor> iterator = groupSet.iterator();
       while (iterator.hasNext()) {
         LongCursor cursor = iterator.next();
-        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false);
+        Collector collector = (sort == null) ? TopScoreDocCollector.create(limit) : TopFieldCollector.create(sort, limit, false, false, false, true);
         groups.put(cursor.value, collector);
       }
 
@@ -634,8 +639,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
     
     @Override
-    public boolean needsScores() {
-      return true; // TODO: is this always true?
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE; // TODO: is this always true?
     }
 
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {

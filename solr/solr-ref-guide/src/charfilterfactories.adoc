@@ -1,12 +1,25 @@
 = CharFilterFactories
-:page-shortname: charfilterfactories
-:page-permalink: charfilterfactories.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 CharFilter is a component that pre-processes input characters.
 
 CharFilters can be chained like Token Filters and placed in front of a Tokenizer. CharFilters can add, change, or remove characters while preserving the original character offsets to support features like highlighting.
 
-[[CharFilterFactories-solr.MappingCharFilterFactory]]
 == solr.MappingCharFilterFactory
 
 This filter creates `org.apache.lucene.analysis.MappingCharFilter`, which can be used for changing one string to another (for example, for normalizing `é` to `e`.).
@@ -27,8 +40,8 @@ Example:
 Mapping file syntax:
 
 * Comment lines beginning with a hash mark (`#`), as well as blank lines, are ignored.
-* Each non-comment, non-blank line consists of a mapping of the form: `"source" => "target"`
-** Double-quoted source string, optional whitespace, an arrow (`=>`), optional whitespace, double-quoted target string.
+* Each non-comment, non-blank line consists of a mapping of the form: `"source" \=> "target"`
+** Double-quoted source string, optional whitespace, an arrow (`\=>`), optional whitespace, double-quoted target string.
 * Trailing comments on mapping lines are not allowed.
 * The source string must contain at least one character, but the target string may be empty.
 * The following character escape sequences are recognized within source and target strings:
@@ -38,18 +51,17 @@ Mapping file syntax:
 [cols="20,30,20,30",options="header"]
 |===
 |Escape Sequence |Resulting Character (http://www.ecma-international.org/publications/standards/Ecma-048.htm[ECMA-48] alias) |Unicode Character |Example Mapping Line
-|`\\` |`\` |U+005C |`"\\" => "/"`
-|`\"` |`"` |U+0022 |`"\"and\"" => "'and'"`
-|`\b` |backspace (BS) |U+0008 |`"\b" => " "`
-|`\t` |tab (HT) |U+0009 |`"\t" => ","`
-|`\n` |newline (LF) |U+000A |`"\n" => "<br>"`
-|`\f` |form feed (FF) |U+000C |`"\f" => "\n"`
-|`\r` |carriage return (CR) |U+000D |`"\r" => "/carriage-return/"`
-|`\uXXXX` |Unicode char referenced by the 4 hex digits |U+XXXX |`"\uFEFF" => ""`
+|`\\` |`\` |U+005C |`"\\" \=> "/"`
+|`\"` |`"` |U+0022 |`"\"and\"" \=> "'and'"`
+|`\b` |backspace (BS) |U+0008 |`"\b" \=> " "`
+|`\t` |tab (HT) |U+0009 |`"\t" \=> ","`
+|`\n` |newline (LF) |U+000A |`"\n" \=> "<br>"`
+|`\f` |form feed (FF) |U+000C |`"\f" \=> "\n"`
+|`\r` |carriage return (CR) |U+000D |`"\r" \=> "/carriage-return/"`
+|`\uXXXX` |Unicode char referenced by the 4 hex digits |U+XXXX |`"\uFEFF" \=> ""`
 |===
 ** A backslash followed by any other character is interpreted as if the character were present without the backslash.
 
-[[CharFilterFactories-solr.HTMLStripCharFilterFactory]]
 == solr.HTMLStripCharFilterFactory
 
 This filter creates `org.apache.solr.analysis.HTMLStripCharFilter`. This CharFilter strips HTML from the input stream and passes the result to another CharFilter or a Tokenizer.
@@ -80,11 +92,11 @@ The table below presents examples of HTML stripping.
 |===
 |Input |Output
 |`my <a href="www.foo.bar">link</a>` |my link
-|`<br>hello<!--comment-->` |hello
-|`hello<script><!-- f('<!--internal--></script>'); --></script>` |hello
+|`<br>hello<!--comment-\->` |hello
+|`hello<script><!-- f('<!--internal-\-></script>'); -\-></script>` |hello
 |`if a<b then print a;` |if a<b then print a;
 |`hello <td height=22 nowrap align="left">` |hello
-|`a<b &#65 Alpha&Omega Ω` |a<b A Alpha&Omega Ω
+|`a<b &#65 Alpha&Omega` Ω |a<b A Alpha&Omega Ω
 |===
 
 Example:
@@ -98,7 +110,6 @@ Example:
 </analyzer>
 ----
 
-[[CharFilterFactories-solr.ICUNormalizer2CharFilterFactory]]
 == solr.ICUNormalizer2CharFilterFactory
 
 This filter performs pre-tokenization Unicode normalization using http://site.icu-project.org[ICU4J].
@@ -122,7 +133,6 @@ Example:
 </analyzer>
 ----
 
-[[CharFilterFactories-solr.PatternReplaceCharFilterFactory]]
 == solr.PatternReplaceCharFilterFactory
 
 This filter uses http://www.regular-expressions.info/reference.html[regular expressions] to replace or change character patterns.

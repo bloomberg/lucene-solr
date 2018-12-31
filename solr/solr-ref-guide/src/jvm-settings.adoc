@@ -1,6 +1,20 @@
 = JVM Settings
-:page-shortname: jvm-settings
-:page-permalink: jvm-settings.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 Optimizing the JVM can be a key factor in getting the most from your Solr installation.
 
@@ -8,7 +22,6 @@ Configuring your JVM can be a complex topic and a full discussion is beyond the 
 
 For more general information about improving Solr performance, see https://wiki.apache.org/solr/SolrPerformanceFactors.
 
-[[JVMSettings-ChoosingMemoryHeapSettings]]
 == Choosing Memory Heap Settings
 
 The most important JVM configuration settings are those that determine the amount of memory it is allowed to allocate. There are two primary command-line options that set memory limits for the JVM. These are `-Xms`, which sets the initial size of the JVM's memory heap, and `-Xmx`, which sets the maximum size to which the heap is allowed to grow.
@@ -25,14 +38,12 @@ When setting the maximum heap size, be careful not to let the JVM consume all av
 
 On systems with many CPUs/cores, it can also be beneficial to tune the layout of the heap and/or the behavior of the garbage collector. Adjusting the relative sizes of the generational pools in the heap can affect how often GC sweeps occur and whether they run concurrently. Configuring the various settings of how the garbage collector should behave can greatly reduce the overall performance impact when it does run. There is a lot of good information on this topic available on Sun's website. A good place to start is here: http://www.oracle.com/technetwork/java/javase/tech/index-jsp-140228.html[Oracle's Java HotSpot Garbage Collection].
 
-[[JVMSettings-UsetheServerHotSpotVM]]
 == Use the Server HotSpot VM
 
 If you are using Sun's JVM, add the `-server` command-line option when you start Solr. This tells the JVM that it should optimize for a long running, server process. If the Java runtime on your system is a JRE, rather than a full JDK distribution (including `javac` and other development tools), then it is possible that it may not support the `-server` JVM option. Test this by running `java -help` and look for `-server` as an available option in the displayed usage message.
 
-[[JVMSettings-CheckingJVMSettings]]
 == Checking JVM Settings
 
 A great way to see what JVM settings your server is using, along with other useful information, is to use the admin RequestHandler, `solr/admin/system`. This request handler will display a wealth of server statistics and settings.
 
-You can also use any of the tools that are compatible with the Java Management Extensions (JMX). See the section _Using JMX with Solr_ in <<managing-solr.adoc#managing-solr,Managing Solr>> for more information.
+You can also use any of the tools that are compatible with the Java Management Extensions (JMX). See the section <<using-jmx-with-solr.adoc#using-jmx-with-solr,Using JMX with Solr>> for more information.

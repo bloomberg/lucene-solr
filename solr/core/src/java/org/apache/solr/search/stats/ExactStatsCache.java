@@ -22,6 +22,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
@@ -156,37 +157,42 @@ public class ExactStatsCache extends StatsCache {
     Query q = rb.getQuery();
     try {
       HashSet<Term> terms = new HashSet<>();
-      searcher.createNormalizedWeight(q, true).extractTerms(terms);
+      searcher.createNormalizedWeight(q, ScoreMode.COMPLETE).extractTerms(terms);
       IndexReaderContext context = searcher.getTopReaderContext();
       HashMap<String,TermStats> statsMap = new HashMap<>();
       HashMap<String,CollectionStats> colMap = new HashMap<>();
       for (Term t : terms) {
         TermContext termContext = TermContext.build(context, t);
 
+        if (!colMap.containsKey(t.field())) { // collection stats for this field
+          CollectionStatistics collectionStatistics = searcher.localCollectionStatistics(t.field());
+          if (collectionStatistics != null) {
+            colMap.put(t.field(), new CollectionStats(collectionStatistics));
+          }
+        }
+
         TermStatistics tst = searcher.localTermStatistics(t, termContext);
-        if (tst.docFreq() == 0) { // skip terms that are not present here
+        if (tst == null) { // skip terms that are not present here
           continue;
         }
 
         statsMap.put(t.toString(), new TermStats(t.field(), tst));
         rb.rsp.add(TERMS_KEY, t.toString());
-        if (!colMap.containsKey(t.field())) { // collection stats for this field
-          colMap.put(t.field(), new CollectionStats(searcher.localCollectionStatistics(t.field())));
-        }
       }
-      if (statsMap.size() != 0 && colMap.size() != 0) { //Don't add empty keys
+      if (statsMap.size() != 0) { //Don't add empty keys
         String termStatsString = StatsUtil.termStatsMapToString(statsMap);
         rb.rsp.add(TERM_STATS_KEY, termStatsString);
-
-        String colStatsString = StatsUtil.colStatsMapToString(colMap);
-        rb.rsp.add(COL_STATS_KEY, colStatsString);
-
         if (LOG.isDebugEnabled()) {
-          LOG.debug("termStats=" + termStatsString + ", collectionStats="
-              + colStatsString + ", terms=" + terms + ", numDocs=" + searcher.maxDoc());
+          LOG.debug("termStats={}, terms={}, numDocs={}", termStatsString, terms, searcher.maxDoc());
         }
       }
-
+      if (colMap.size() != 0){
+        String colStatsString = StatsUtil.colStatsMapToString(colMap);
+        rb.rsp.add(COL_STATS_KEY, colStatsString);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("collectionStats={}, terms={}, numDocs={}", colStatsString, terms, searcher.maxDoc());
+        }
+      }
     } catch (IOException e) {
       LOG.error("Error collecting local stats, query='" + q.toString() + "'", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error collecting local stats.", e);

@@ -17,6 +17,8 @@
 package org.apache.lucene.search.similarities;
 
 
+import org.apache.lucene.search.Explanation;
+
 /**
  * Implements the <em>Divergence from Independence (DFI)</em> model based on Chi-square statistics
  * (i.e., standardized Chi-squared distance from independence in term frequency tf).
@@ -50,16 +52,22 @@ public class DFISimilarity extends SimilarityBase {
   }
 
   @Override
-  protected float score(BasicStats stats, float freq, float docLen) {
+  protected double score(BasicStats stats, double freq, double docLen) {
 
-    final float expected = (stats.getTotalTermFreq() + 1) * docLen / (stats.getNumberOfFieldTokens() + 1);
+    final double expected = (stats.getTotalTermFreq() + 1) * docLen / (stats.getNumberOfFieldTokens() + 1);
 
     // if the observed frequency is less than or equal to the expected value, then return zero.
     if (freq <= expected) return 0;
 
-    final float measure = independence.score(freq, expected);
+    final double measure = independence.score(freq, expected);
 
-    return stats.getBoost() * (float) log2(measure + 1);
+    return stats.getBoost() * log2(measure + 1);
+  }
+
+  @Override
+  protected double maxScore(BasicStats stats, double maxFreq) {
+    // TODO: can we compute a better upper bound on the produced scores
+    return Double.POSITIVE_INFINITY;
   }
 
   /**
@@ -67,6 +75,38 @@ public class DFISimilarity extends SimilarityBase {
    */
   public Independence getIndependence() {
     return independence;
+  }
+
+  @Override
+  protected Explanation explain(
+      BasicStats stats, int doc, Explanation freq, double docLen) {
+    final double expected = (stats.getTotalTermFreq() + 1) * docLen /
+        (stats.getNumberOfFieldTokens() + 1);
+    if (freq.getValue() <= expected){
+      return Explanation.match((float) 0, "score(" +
+          getClass().getSimpleName() + ", doc=" + doc + ", freq=" +
+          freq.getValue() +"), equals to 0");
+    }
+    Explanation explExpected = Explanation.match((float) expected,
+        "expected, computed as (F + 1) * dl / (T + 1) from:",
+        Explanation.match(stats.getTotalTermFreq(),
+            "F, total number of occurrences of term across all docs"),
+        Explanation.match((float) docLen, "dl, length of field"),
+        Explanation.match(stats.getNumberOfFieldTokens(),
+            "T, total number of tokens in the field"));
+
+    final double measure = independence.score(freq.getValue(), expected);
+    Explanation explMeasure = Explanation.match((float) measure,
+        "measure, computed as independence.score(freq, expected) from:",
+        freq,
+        explExpected);
+
+    return Explanation.match(
+        (float) score(stats, freq.getValue(), docLen),
+        "score(" + getClass().getSimpleName() + ", doc=" + doc + ", freq=" +
+            freq.getValue() +"), computed as boost * log2(measure + 1) from:",
+        Explanation.match( (float)stats.getBoost(), "boost, query boost"),
+        explMeasure);
   }
 
   @Override

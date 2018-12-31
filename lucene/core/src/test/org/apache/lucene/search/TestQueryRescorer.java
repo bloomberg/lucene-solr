@@ -418,7 +418,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
       return new Weight(FixedScoreQuery.this) {
 
@@ -435,11 +435,6 @@ public class TestQueryRescorer extends LuceneTestCase {
             @Override
             public int docID() {
               return docID;
-            }
-
-            @Override
-            public int freq() {
-              return 1;
             }
 
             @Override
@@ -481,10 +476,20 @@ public class TestQueryRescorer extends LuceneTestCase {
                 return num;
               } else {
                 //System.out.println("score doc=" + docID + " num=" + -num);
-                return -num;
+                return 1f / (1 + num);
               }
             }
+
+            @Override
+            public float maxScore() {
+              return Float.POSITIVE_INFINITY;
+            }
           };
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
         }
 
         @Override

@@ -1,11 +1,28 @@
 = Implicit RequestHandlers
-:page-shortname: implicit-requesthandlers
-:page-permalink: implicit-requesthandlers.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 Solr ships with many out-of-the-box RequestHandlers, which are called implicit because they are not configured in `solrconfig.xml`.
 
-[[ImplicitRequestHandlers-ListofImplicitlyAvailableEndpoints]]
+These handlers have pre-defined default parameters, known as _paramsets_, which can be modified if necessary.
+
 == List of Implicitly Available Endpoints
+
+// TODO 7.1 - this doesn't look great in the PDF, redesign the presentation
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -26,36 +43,37 @@ Solr ships with many out-of-the-box RequestHandlers, which are called implicit b
 |`/analysis/field` |{solr-javadocs}/solr-core/org/apache/solr/handler/FieldAnalysisRequestHandler.html[FieldAnalysisRequestHandler] |`_ANALYSIS_FIELD` |Return index- and query-time analysis over the given field(s)/field type(s).
 |<<config-api.adoc#config-api,`/config`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/SolrConfigHandler.html[SolrConfigHandler] |`_CONFIG` |Retrieve/modify Solr configuration.
 |`/debug/dump` |{solr-javadocs}/solr-core/org/apache/solr/handler/DumpRequestHandler.html[DumpRequestHandler] |`_DEBUG_DUMP` |Echo the request contents back to the client.
-|<<exporting-result-sets.adoc#exporting-result-sets,`/export`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/component/SearchHandler.html[SearchHandler] |`_EXPORT` |Export full sorted result sets.
+|<<exporting-result-sets.adoc#exporting-result-sets,`/export`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/component/ExportHandler.html[ExportHandler] |`_EXPORT` |Export full sorted result sets.
 |<<realtime-get.adoc#realtime-get,`/get`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/RealTimeGetHandler.html[RealTimeGetHandler] |`_GET` |Real-time get: low-latency retrieval of the latest version of a document.
-|<<graph-traversal.adoc#GraphTraversal-ExportingGraphMLtoSupportGraphVisualization,`/graph`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/GraphHandler.html[GraphHandler] |`_ADMIN_GRAPH` |Return http://graphml.graphdrawing.org/[GraphML] formatted output from a <<graph-traversal.adoc#graph-traversal,`gather` `Nodes` streaming expression>>.
+|<<graph-traversal.adoc#exporting-graphml-to-support-graph-visualization,`/graph`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/GraphHandler.html[GraphHandler] |`_ADMIN_GRAPH` |Return http://graphml.graphdrawing.org/[GraphML] formatted output from a <<graph-traversal.adoc#graph-traversal,`gather` `Nodes` streaming expression>>.
 |<<index-replication.adoc#index-replication,`/replication`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/ReplicationHandler.html[ReplicationHandler] |`_REPLICATION` |Replicate indexes for SolrCloud recovery and Master/Slave index distribution.
 |<<schema-api.adoc#schema-api,`/schema`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/SchemaHandler.html[SchemaHandler] |`_SCHEMA` |Retrieve/modify Solr schema.
 |<<parallel-sql-interface.adoc#sql-request-handler,`/sql`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/SQLHandler.html[SQLHandler] |`_SQL` |Front end of the Parallel SQL interface.
-|<<streaming-expressions.adoc#StreamingExpressions-StreamingRequestsandResponses,`/stream`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/StreamHandler.html[StreamHandler] |`_STREAM` |Distributed stream processing.
-|<<the-terms-component.adoc#TheTermsComponent-UsingtheTermsComponentinaRequestHandler,`/terms`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/component/SearchHandler.html[SearchHandler] |`_TERMS` |Return a field's indexed terms and the number of documents containing each term.
+|<<streaming-expressions.adoc#streaming-requests-and-responses,`/stream`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/StreamHandler.html[StreamHandler] |`_STREAM` |Distributed stream processing.
+|<<the-terms-component.adoc#using-the-terms-component-in-a-request-handler,`/terms`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/component/SearchHandler.html[SearchHandler] |`_TERMS` |Return a field's indexed terms and the number of documents containing each term.
 |<<uploading-data-with-index-handlers.adoc#uploading-data-with-index-handlers,`/update`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE` |Add, delete and update indexed documents formatted as SolrXML, CSV, SolrJSON or javabin.
-|<<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-CSVUpdateConveniencePaths,`/update/csv`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_CSV` |Add and update CSV-formatted documents.
-|<<uploading-data-with-index-handlers.adoc#UploadingDatawithIndexHandlers-CSVUpdateConveniencePaths,`/update/json`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON` |Add, delete and update SolrJSON-formatted documents.
-|<<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,`/update/json/docs`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON_DOCS ` |Add and update custom JSON-formatted documents.
+|<<uploading-data-with-index-handlers.adoc#csv-update-convenience-paths,`/update/csv`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_CSV` |Add and update CSV-formatted documents.
+|<<uploading-data-with-index-handlers.adoc#csv-update-convenience-paths,`/update/json`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON` |Add, delete and update SolrJSON-formatted documents.
+|<<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,`/update/json/docs`>> |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON_DOCS` |Add and update custom JSON-formatted documents.
 |===
 
-[[ImplicitRequestHandlers-HowtoViewtheConfiguration]]
 == How to View the Configuration
 
-You can see configuration for all request handlers, including the implicit request handlers, via the <<config-api.adoc#config-api,Config API>>. E.g. for the `gettingstarted` collection:
+You can see configuration for all request handlers, including the implicit request handlers, via the <<config-api.adoc#config-api,Config API>>. For the `gettingstarted` collection:
 
-`curl http://localhost:8983/solr/gettingstarted/config/requestHandler`
+[source,text]
+curl http://localhost:8983/solr/gettingstarted/config/requestHandler
 
-To restrict the results to the configuration for a particular request handler, use the `componentName` request param. E.g. to see just the configuration for the `/export` request handler:
+To restrict the results to the configuration for a particular request handler, use the `componentName` request parameter. To see just the configuration for the `/export` request handler:
 
-`curl "http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export"`
+[source,text]
+curl "http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export"
 
-To include the expanded paramset in the response, as well as the effective parameters from merging the paramset params with the built-in params, use the `expandParams` request param. E.g. for the `/export` request handler:
+To include the expanded paramset in the response, as well as the effective parameters from merging the paramset parameters with the built-in parameters, use the `expandParams` request param. For the `/export` request handler, you can make a request like this:
 
-`curl "http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export&expandParams=true"`
+[source,text]
+curl "http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export&expandParams=true"
 
-[[ImplicitRequestHandlers-HowtoEdittheConfiguration]]
 == How to Edit the Configuration
 
 Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via<<request-parameters-api.adoc#request-parameters-api, Request Parameters API>> using the paramset listed in the above table. However, other parameters, including SearchHandler components, may not be modified. The invariants and appends specified in the implicit configuration cannot be overridden.

@@ -1,6 +1,20 @@
 = Field Properties by Use Case
-:page-shortname: field-properties-by-use-case
-:page-permalink: field-properties-by-use-case.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 Here is a summary of common use cases, and the attributes the fields or field types should have to support the case. An entry of true or false in the table indicates that the option must be set to the given value for the use case to function correctly. If no entry is provided, the setting of that attribute has no impact on the case.
 
@@ -14,7 +28,7 @@ Here is a summary of common use cases, and the attributes the fields or field ty
 |search within field |true | | | | | |
 |retrieve contents | |true^<<fpbuc_8,8>>^ | | | | |true^<<fpbuc_8,8>>^
 |use as unique key |true | |false | | | |
-|sort on field |true^<<fpbuc_7,7>>^ | |false |true ^<<fpbuc_1,1>>^ | | |true^<<fpbuc_7,7>>^
+|sort on field |true^<<fpbuc_7,7>>^ | |false^<<fpbuc_9,9>>^ |true ^<<fpbuc_1,1>>^ | | |true^<<fpbuc_7,7>>^
 |highlighting |true^<<fpbuc_4,4>>^ |true | | |true^<<fpbuc_2,2>>^ |true ^<<fpbuc_3,3>>^ |
 |faceting ^<<fpbuc_5,5>>^ |true^<<fpbuc_7,7>>^ | | | | | |true^<<fpbuc_7,7>>^
 |add multiple values, maintaining order | | |true | | | |
@@ -32,3 +46,4 @@ Notes:
 6. [[fpbuc_6,6]] Term vectors are not mandatory here. If not true, then a stored field is analyzed. So term vectors are recommended, but only required if `stored=false`.
 7. [[fpbuc_7,7]] For most field types, either `indexed` or `docValues` must be true, but both are not required. <<docvalues.adoc#docvalues,DocValues>> can be more efficient in many cases. For `[Int/Long/Float/Double/Date]PointFields`, `docValues=true` is required.
 8. [[fpbuc_8,8]] Stored content will be used by default, but docValues can alternatively be used. See <<docvalues.adoc#docvalues,DocValues>>.
+9. [[fpbuc_9,9]] Multi-valued sorting may be performed on docValues-enabled fields using the two-argument `field()` function, e.g., `field(myfield,min)`; see the <<function-queries.adoc#field-function,field() function in Function Queries>>. 

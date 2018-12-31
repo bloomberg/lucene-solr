@@ -28,12 +28,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.util.TimeOut;
@@ -48,15 +50,19 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final OverseerCollectionMessageHandler ocmh;
+  private final TimeSource timeSource;
 
   public DeleteCollectionCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
+    this.timeSource = ocmh.cloudManager.getTimeSource();
   }
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     final String collection = message.getStr(NAME);
+    DocCollection coll = state.getCollectionOrNull(collection);
+    String policy = coll == null ? null : coll.getPolicyName();
     try {
       // Remove the snapshots meta-data for this collection in ZK. Deleting actual index files
       // should be taken care of as part of collection delete operation.
@@ -91,13 +97,13 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
 
       // wait for a while until we don't see the collection
-      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
+      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
       boolean removed = false;
       while (! timeout.hasTimedOut()) {
-        Thread.sleep(100);
+        timeout.sleep(100);
         removed = !zkStateReader.getClusterState().hasCollection(collection);
         if (removed) {
-          Thread.sleep(500); // just a bit of time so it's more likely other
+          timeout.sleep(500); // just a bit of time so it's more likely other
           // readers see on return
           break;
         }

@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -225,15 +226,15 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
               true,
               threadManager); // request feature weights to be created for all features
 
-          // Local transformer efi if provided
-          scoringQuery.setOriginalQuery(context.getQuery());
-
         }catch (final Exception e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "retrieving the feature store "+featureStoreName, e);
         }
       }
 
+      if (scoringQuery.getOriginalQuery() == null) {
+        scoringQuery.setOriginalQuery(context.getQuery());
+      }
       if (scoringQuery.getFeatureLogger() == null){
         scoringQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
       }
@@ -242,7 +243,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       featureLogger = scoringQuery.getFeatureLogger();
 
       try {
-        modelWeight = scoringQuery.createWeight(searcher, true, 1f);
+        modelWeight = scoringQuery.createWeight(searcher, ScoreMode.COMPLETE, 1f);
       } catch (final IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
       }
@@ -255,13 +256,24 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     @Override
     public void transform(SolrDocument doc, int docid, float score)
         throws IOException {
+      implTransform(doc, docid, new Float(score));
+    }
+
+    @Override
+    public void transform(SolrDocument doc, int docid)
+        throws IOException {
+      implTransform(doc, docid, null);
+    }
+
+    private void implTransform(SolrDocument doc, int docid, Float score)
+        throws IOException {
       Object fv = featureLogger.getFeatureVector(docid, scoringQuery, searcher);
       if (fv == null) { // FV for this document was not in the cache
         fv = featureLogger.makeFeatureVector(
             LTRRescorer.extractFeaturesInfo(
                 modelWeight,
                 docid,
-                (docsWereNotReranked ? new Float(score) : null),
+                (docsWereNotReranked ? score : null),
                 leafContexts));
       }
 

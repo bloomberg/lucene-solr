@@ -334,9 +334,9 @@ public final class TestUtil {
     CheckIndex.testLiveDocs(codecReader, infoStream, true);
     CheckIndex.testFieldInfos(codecReader, infoStream, true);
     CheckIndex.testFieldNorms(codecReader, infoStream, true);
-    CheckIndex.testPostings(codecReader, infoStream, false, true, Version.LUCENE_7_0_0);
+    CheckIndex.testPostings(codecReader, infoStream, false, true);
     CheckIndex.testStoredFields(codecReader, infoStream, true);
-    CheckIndex.testTermVectors(codecReader, infoStream, false, crossCheckTermVectors, true, Version.LUCENE_7_0_0);
+    CheckIndex.testTermVectors(codecReader, infoStream, false, crossCheckTermVectors, true);
     CheckIndex.testDocValues(codecReader, infoStream, true);
     CheckIndex.testPoints(codecReader, infoStream, true);
     
@@ -434,7 +434,7 @@ public final class TestUtil {
 
   /** start and end are BOTH inclusive */
   public static long nextLong(Random r, long start, long end) {
-    assert end >= start;
+    assert end >= start : "start=" + start + ",end=" + end;
     final BigInteger range = BigInteger.valueOf(end).add(BigInteger.valueOf(1)).subtract(BigInteger.valueOf(start));
     if (range.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) <= 0) {
       return start + r.nextInt(range.intValue());

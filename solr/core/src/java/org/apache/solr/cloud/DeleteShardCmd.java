@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.cloud.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -38,6 +39,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -54,9 +56,11 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 public class DeleteShardCmd implements Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final OverseerCollectionMessageHandler ocmh;
+  private final TimeSource timeSource;
 
   public DeleteShardCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
+    this.timeSource = ocmh.cloudManager.getTimeSource();
   }
 
   @Override
@@ -65,16 +69,10 @@ public class DeleteShardCmd implements Cmd {
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
     log.info("Delete shard invoked");
-    Slice slice = clusterState.getSlice(collectionName, sliceId);
+    Slice slice = clusterState.getCollection(collectionName).getSlice(sliceId);
+    if (slice == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        "No shard with name " + sliceId + " exists for collection " + collectionName);
 
-    if (slice == null) {
-      if (clusterState.hasCollection(collectionName)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "No shard with name " + sliceId + " exists for collection " + collectionName);
-      } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No collection with the specified name exists: " + collectionName);
-      }
-    }
     // For now, only allow for deletions of Inactive slices or custom hashes (range==null).
     // TODO: Add check for range gaps on Slice deletion
     final Slice.State state = slice.getState();
@@ -139,14 +137,14 @@ public class DeleteShardCmd implements Cmd {
       Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
 
       // wait for a while until we don't see the shard
-      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
+      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
       boolean removed = false;
       while (!timeout.hasTimedOut()) {
-        Thread.sleep(100);
+        timeout.sleep(100);
         DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
         removed = collection.getSlice(sliceId) == null;
         if (removed) {
-          Thread.sleep(100); // just a bit of time so it's more likely other readers see on return
+          timeout.sleep(100); // just a bit of time so it's more likely other readers see on return
           break;
         }
       }

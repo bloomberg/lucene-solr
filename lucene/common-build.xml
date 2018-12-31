@@ -80,13 +80,15 @@
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
 
-  <property name="ivy.bootstrap.version" value="2.3.0" />
+  <property name="ivy.bootstrap.version" value="2.4.0" /> <!-- UPGRADE NOTE: update disallowed_ivy_jars_regex below -->
+  <property name="disallowed_ivy_jars_regex" value="ivy-2\.[0123].*\.jar"/>
+
   <property name="ivy.default.configuration" value="*"/>
 
   <!-- Running ant targets in parralel may require this set to false because ivy:retrieve tasks may race with resolve -->
   <property name="ivy.sync" value="true"/>
   <property name="ivy.resolution-cache.dir" location="${common.build.dir}/ivy-resolution-cache"/>
-  <property name="ivy.lock-strategy" value="artifact-lock"/>
+  <property name="ivy.lock-strategy" value="artifact-lock-nio"/>
 
   <property name="local.caches" location="${common.dir}/../.caches" />
   <property name="tests.cachedir"  location="${local.caches}/test-stats" />
@@ -413,13 +415,36 @@
   <property name="ivy_bootstrap_url1" value="http://repo1.maven.org/maven2"/>
   <!-- you might need to tweak this from china so it works -->
   <property name="ivy_bootstrap_url2" value="http://uk.maven.org/maven2"/>
-  <property name="ivy_checksum_sha1" value="c5ebf1c253ad4959a29f4acfe696ee48cdd9f473"/>
+  <property name="ivy_checksum_sha1" value="5abe4c24bbe992a9ac07ca563d5bd3e8d569e9ed"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
+    <path id="disallowed.ivy.jars">
+      <fileset dir="${ivy_install_path}">
+        <filename regex="${disallowed_ivy_jars_regex}"/>
+      </fileset>
+    </path>
+    <loadresource property="disallowed.ivy.jars.list">
+      <string value="${toString:disallowed.ivy.jars}"/>
+      <filterchain><tokenfilter><replacestring from="jar:" to="jar, "/></tokenfilter></filterchain>
+    </loadresource>
+    <condition property="disallowed.ivy.jar.found">
+      <resourcecount when="greater" count="0">
+        <path refid="disallowed.ivy.jars"/>
+      </resourcecount>
+    </condition>
+    <antcall target="-ivy-fail-disallowed-ivy-version"/>
+
     <condition property="ivy.available">
       <typefound uri="antlib:org.apache.ivy.ant" name="configure" />
     </condition>
     <antcall target="ivy-fail" />
+  </target>
+
+  <target name="-ivy-fail-disallowed-ivy-version" if="disallowed.ivy.jar.found">
+    <sequential>
+      <echo message="Please delete the following disallowed Ivy jar(s): ${disallowed.ivy.jars.list}"/>
+      <fail>Found disallowed Ivy jar(s): ${disallowed.ivy.jars.list}</fail>
+    </sequential>
   </target>
 
   <target name="ivy-fail" unless="ivy.available">
@@ -459,19 +484,20 @@
     <fail>Ivy is not available</fail>
   </target>
 
-  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir" depends="ivy-bootstrap1,ivy-bootstrap2,ivy-checksum"/>
+  <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir" 
+          depends="-ivy-bootstrap1,-ivy-bootstrap2,-ivy-checksum,-ivy-remove-old-versions"/>
 
   <!-- try to download from repo1.maven.org -->
-  <target name="ivy-bootstrap1">
+  <target name="-ivy-bootstrap1">
     <ivy-download src="${ivy_bootstrap_url1}" dest="${ivy_install_path}"/>
     <available file="${ivy_install_path}/ivy-${ivy.bootstrap.version}.jar" property="ivy.bootstrap1.success" />
   </target> 
 
-  <target name="ivy-bootstrap2" unless="ivy.bootstrap1.success">
+  <target name="-ivy-bootstrap2" unless="ivy.bootstrap1.success">
     <ivy-download src="${ivy_bootstrap_url2}" dest="${ivy_install_path}"/>
   </target>
 
-  <target name="ivy-checksum">
+  <target name="-ivy-checksum">
     <checksum file="${ivy_install_path}/ivy-${ivy.bootstrap.version}.jar"
               property="${ivy_checksum_sha1}"
               algorithm="SHA"
@@ -481,6 +507,14 @@
         <isfalse value="${ivy.checksum.success}"/>
       </condition>
     </fail>
+  </target>
+  
+  <target name="-ivy-remove-old-versions">
+    <delete verbose="true" failonerror="true">
+      <fileset dir="${ivy_install_path}">
+        <filename regex="${disallowed_ivy_jars_regex}"/>
+      </fileset>
+    </delete>
   </target>
    
   <macrodef name="ivy-download">
@@ -559,10 +593,6 @@
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <parent-poms/>
       <artifact:pom id="maven.project" file="@{pom.xml}"/>
-      <artifact:install file="@{jar.file}">
-        <artifact-attachments/>
-        <pom refid="maven.project"/>
-      </artifact:install>
       <artifact:deploy file="@{jar.file}">
         <artifact-attachments/>
         <remoteRepository id="${m2.repository.id}" url="${m2.repository.url}">
@@ -570,9 +600,26 @@
         </remoteRepository>
         <pom refid="maven.project"/>
       </artifact:deploy>
+      <artifact:install file="@{jar.file}">
+        <artifact-attachments/>
+        <pom refid="maven.project"/>
+      </artifact:install>
     </sequential>
   </macrodef>
-  
+
+  <macrodef name="m2-install" description="Installs a Maven artifact into the local repository">
+    <element name="parent-poms" optional="yes"/>
+    <attribute name="pom.xml"/>
+    <attribute name="jar.file" default="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar"/>
+    <sequential>
+      <parent-poms/>
+      <artifact:pom id="maven.project" file="@{pom.xml}"/>
+      <artifact:install file="@{jar.file}">
+        <pom refid="maven.project"/>
+      </artifact:install>
+    </sequential>
+  </macrodef>
+
   <!-- validate maven dependencies -->
   <macrodef name="m2-validate-dependencies">
       <attribute name="pom.xml"/>
@@ -912,6 +959,12 @@
         <condition property="java.security.manager" value="org.apache.lucene.util.TestSecurityManager">
           <istrue value="${tests.useSecurityManager}"/>
         </condition>
+        
+        <!-- additional arguments for Java 9+ -->
+        <local name="tests.runtimespecific.args"/>
+        <condition property="tests.runtimespecific.args" value="" else="--illegal-access=deny">
+          <equals arg1="${build.java.runtime}" arg2="1.8"/>
+        </condition>
 
         <!-- create a fileset pattern that matches ${tests.class}. -->
         <loadresource property="tests.explicitclass" quiet="true">
@@ -993,6 +1046,7 @@
             <jvmarg line="${tests.clover.args}"/>
             <jvmarg line="@{additional.vm.args}"/>
             <jvmarg line="${tests.asserts.args}"/>
+            <jvmarg line="${tests.runtimespecific.args}"/>
 
             <!-- set the number of times tests should run -->
             <sysproperty key="tests.iters" value="${tests.iters}"/>
@@ -1062,6 +1116,9 @@
 
             <sysproperty key="tests.src.home" value="${user.dir}" />
 
+            <!-- replaces default random source to the nonblocking variant -->
+            <sysproperty key="java.security.egd" value="file:/dev/./urandom"/>
+
             <!-- Only pass these to the test JVMs if defined in ANT. -->
             <syspropertyset>
                 <propertyref prefix="tests.maxfailures" />
@@ -1076,7 +1133,7 @@
                 <propertyref prefix="tests.leaveTemporary" />
                 <propertyref prefix="tests.leavetemporary" />
                 <propertyref prefix="solr.test.leavetmpdir" />
-                <propertyref prefix="solr.tests.preferPointFields"/>
+                <propertyref prefix="solr.tests.use.numeric.points" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->
@@ -1687,6 +1744,44 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
 
+  <target name="-install-to-maven-local-repo" depends="install-maven-tasks">
+    <sequential>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="pom.xml">
+        <mapper>
+          <chainedmapper>
+            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
+            <globmapper from="*build.xml" to="*pom.xml"/>
+          </chainedmapper>
+        </mapper>
+        <path location="${ant.file}"/>
+      </pathconvert>
+      <artifact:pom id="maven.project" file="${pom.xml}"/>
+      <artifact:install file="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar">
+        <pom refid="maven.project"/>
+      </artifact:install>
+    </sequential>
+  </target>
+
+  <target name="-install-src-java-to-maven-local-repo" depends="install-maven-tasks">
+    <sequential>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="pom.xml">
+        <mapper>
+          <chainedmapper>
+            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
+            <globmapper from="*build.xml" to="*/src/java/pom.xml"/>
+          </chainedmapper>
+        </mapper>
+        <path location="${ant.file}"/>
+      </pathconvert>
+      <artifact:pom id="maven.project" file="${pom.xml}"/>
+      <artifact:install file="${dist.jar.dir.prefix}-${version}/${dist.jar.dir.suffix}/${final.name}.jar">
+        <pom refid="maven.project"/>
+      </artifact:install>
+    </sequential>
+  </target>
+
   <target name="-dist-maven-src-java" depends="install-maven-tasks, jar-src, javadocs">
     <sequential>
       <property name="top.level.dir" location="${common.dir}/.."/>
@@ -1812,7 +1907,14 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <target name="stage-maven-artifacts">
     <sequential>
       <property name="output.build.xml" location="${build.dir}/stage_maven_build.xml"/>
-      <property name="dev-tools.scripts.dir" value="../dev-tools/scripts"/>
+      <property name="dev-tools.scripts.dir" value="${common.dir}/../dev-tools/scripts"/>
+      <fail message="maven.dist.dir '${maven.dist.dir}' does not exist!">
+        <condition>
+          <not>
+            <available file="${maven.dist.dir}" type="dir"/>
+          </not>
+        </condition>
+      </fail>
       <exec dir="." executable="${perl.exe}" failonerror="false" outputproperty="stage.maven.script.output"
         resultproperty="stage.maven.script.success">
         <arg value="-CSD"/>
@@ -1822,7 +1924,6 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <arg value="${common.dir}/common-build.xml"/> <!-- Imported from the ant file to be written -->
         <arg value="${m2.credentials.prompt}"/>
         <arg value="${m2.repository.id}"/>
-        <arg value="${m2.repository.url}"/>
       </exec>
       <echo message="${stage.maven.script.output}"/>
       <fail message="maven stage script failed!">
@@ -2334,7 +2435,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.8"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.12"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
@@ -2348,7 +2449,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-sysout-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.3"
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.4.1"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
     <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.ant.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>

@@ -885,14 +885,16 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   private static class FailOnlyInCommit extends MockDirectoryWrapper.Failure {
 
-    boolean failOnCommit, failOnDeleteFile;
+    boolean failOnCommit, failOnDeleteFile, failOnSyncMetadata;
     private final boolean dontFailDuringGlobalFieldMap;
+    private final boolean dontFailDuringSyncMetadata;
     private static final String PREPARE_STAGE = "prepareCommit";
     private static final String FINISH_STAGE = "finishCommit";
     private final String stage;
     
-    public FailOnlyInCommit(boolean dontFailDuringGlobalFieldMap, String stage) {
+    public FailOnlyInCommit(boolean dontFailDuringGlobalFieldMap, boolean dontFailDuringSyncMetadata, String stage) {
       this.dontFailDuringGlobalFieldMap = dontFailDuringGlobalFieldMap;
+      this.dontFailDuringSyncMetadata = dontFailDuringSyncMetadata;
       this.stage = stage;
     }
 
@@ -901,9 +903,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       StackTraceElement[] trace = new Exception().getStackTrace();
       boolean isCommit = false;
       boolean isDelete = false;
+      boolean isSyncMetadata = false;
       boolean isInGlobalFieldMap = false;
       for (int i = 0; i < trace.length; i++) {
-        if (isCommit && isDelete && isInGlobalFieldMap) {
+        if (isCommit && isDelete && isInGlobalFieldMap && isSyncMetadata) {
           break;
         }
         if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
@@ -915,14 +918,20 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName())) {
           isInGlobalFieldMap = true;
         }
-          
+        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "syncMetaData".equals(trace[i].getMethodName())) {
+          isSyncMetadata = true;
+        }
       }
       if (isInGlobalFieldMap && dontFailDuringGlobalFieldMap) {
+        isCommit = false;
+      }
+      if (isSyncMetadata && dontFailDuringSyncMetadata) {
         isCommit = false;
       }
       if (isCommit) {
         if (!isDelete) {
           failOnCommit = true;
+          failOnSyncMetadata = isSyncMetadata;
           throw new RuntimeException("now fail first");
         } else {
           failOnDeleteFile = true;
@@ -935,9 +944,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionsDuringCommit() throws Throwable {
     FailOnlyInCommit[] failures = new FailOnlyInCommit[] {
         // LUCENE-1214
-        new FailOnlyInCommit(false, FailOnlyInCommit.PREPARE_STAGE), // fail during global field map is written
-        new FailOnlyInCommit(true, FailOnlyInCommit.PREPARE_STAGE), // fail after global field map is written
-        new FailOnlyInCommit(false, FailOnlyInCommit.FINISH_STAGE)  // fail while running finishCommit    
+        new FailOnlyInCommit(false, true, FailOnlyInCommit.PREPARE_STAGE), // fail during global field map is written
+        new FailOnlyInCommit(true, false, FailOnlyInCommit.PREPARE_STAGE), // fail during sync metadata
+        new FailOnlyInCommit(true, true, FailOnlyInCommit.PREPARE_STAGE), // fail after global field map is written
+        new FailOnlyInCommit(false, true, FailOnlyInCommit.FINISH_STAGE)  // fail while running finishCommit
     };
     
     for (FailOnlyInCommit failure : failures) {
@@ -952,8 +962,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       expectThrows(RuntimeException.class, () -> {
         w.close();
       });
-
-      assertTrue("failOnCommit=" + failure.failOnCommit + " failOnDeleteFile=" + failure.failOnDeleteFile, failure.failOnCommit && failure.failOnDeleteFile);
+      assertTrue("failOnCommit=" + failure.failOnCommit + " failOnDeleteFile=" + failure.failOnDeleteFile
+          + " failOnSyncMetadata=" + failure.failOnSyncMetadata + "", failure.failOnCommit && (failure.failOnDeleteFile || failure.failOnSyncMetadata));
       w.rollback();
       String files[] = dir.listAll();
       assertTrue(files.length == fileCount || (files.length == fileCount+1 && Arrays.asList(files).contains(IndexWriter.WRITE_LOCK_NAME)));
@@ -1758,259 +1768,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     dir.close();
   }
 
-  // Make sure if we hit a transient IOException (e.g., disk
-  // full), and then the exception stops (e.g., disk frees
-  // up), so we successfully close IW or open an NRT
-  // reader, we don't lose any deletes or updates:
-  public void testNoLostDeletesOrUpdates() throws Throwable {
-    int deleteCount = 0;
-    int docBase = 0;
-    int docCount = 0;
-
-    MockDirectoryWrapper dir = newMockDirectory();
-    final AtomicBoolean shouldFail = new AtomicBoolean();
-    dir.failOn(new MockDirectoryWrapper.Failure() {
-      
-      @Override
-      public void eval(MockDirectoryWrapper dir) throws IOException {
-        if (shouldFail.get() == false) {
-          // Only sometimes throw the exc, so we get
-          // it sometimes on creating the file, on
-          // flushing buffer, on closing the file:
-          return;
-        }
-        
-        if (random().nextInt(3) != 2) {
-          return;
-        }
-
-        StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-
-        boolean sawSeal = false;
-        boolean sawWrite = false;
-        for (int i = 0; i < trace.length; i++) {
-          if ("sealFlushedSegment".equals(trace[i].getMethodName())) {
-            sawSeal = true;
-            break;
-          }
-          if ("writeLiveDocs".equals(trace[i].getMethodName()) || "writeFieldUpdates".equals(trace[i].getMethodName())) {
-            sawWrite = true;
-          }
-        }
-        
-        // Don't throw exc if we are "flushing", else
-        // the segment is aborted and docs are lost:
-        if (sawWrite && sawSeal == false) {
-          if (VERBOSE) {
-            System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
-            new Throwable().printStackTrace(System.out);
-          }
-          shouldFail.set(false);
-          throw new FakeIOException();
-        }
-      }
-    });
-    
-    RandomIndexWriter w = null;
-
-    boolean tragic = false;
-
-    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
-      int numDocs = atLeast(100);
-      if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " numDocs=" + numDocs + " docBase=" + docBase + " delCount=" + deleteCount);
-      }
-      if (w == null) {
-        IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
-        w = new RandomIndexWriter(random(), dir, iwc);
-        // Since we hit exc during merging, a partial
-        // forceMerge can easily return when there are still
-        // too many segments in the index:
-        w.setDoRandomForceMergeAssert(false);
-      }
-      for(int i=0;i<numDocs;i++) {
-        Document doc = new Document();
-        doc.add(new StringField("id", ""+(docBase+i), Field.Store.NO));
-        doc.add(new NumericDocValuesField("f", 1L));
-        doc.add(new NumericDocValuesField("cf", 2L));
-        doc.add(new BinaryDocValuesField("bf", TestBinaryDocValuesUpdates.toBytes(1L)));
-        doc.add(new BinaryDocValuesField("bcf", TestBinaryDocValuesUpdates.toBytes(2L)));
-        w.addDocument(doc);
-      }
-      docCount += numDocs;
-
-      // TODO: we could make the test more evil, by letting
-      // it throw more than one exc, randomly, before "recovering"
-
-      // TODO: we could also install an infoStream and try
-      // to fail in "more evil" places inside BDS
-
-      shouldFail.set(true);
-      boolean doClose = false;
-      try {
-        for(int i=0;i<numDocs;i++) {
-          if (random().nextInt(10) == 7) {
-            boolean fieldUpdate = random().nextBoolean();
-            int docid = docBase + i;
-            if (fieldUpdate) {
-              long value = iter;
-              if (VERBOSE) {
-                System.out.println("  update id=" + docid + " to value " + value);
-              }
-              Term idTerm = new Term("id", Integer.toString(docid));
-              if (random().nextBoolean()) { // update only numeric field
-                w.updateDocValues(idTerm, new NumericDocValuesField("f", value), new NumericDocValuesField("cf", value*2));
-              } else if (random().nextBoolean()) {
-                w.updateDocValues(idTerm, new BinaryDocValuesField("bf", TestBinaryDocValuesUpdates.toBytes(value)),
-                    new BinaryDocValuesField("bcf", TestBinaryDocValuesUpdates.toBytes(value*2)));
-              } else {
-                w.updateDocValues(idTerm, 
-                    new NumericDocValuesField("f", value), 
-                    new NumericDocValuesField("cf", value*2),
-                    new BinaryDocValuesField("bf", TestBinaryDocValuesUpdates.toBytes(value)),
-                    new BinaryDocValuesField("bcf", TestBinaryDocValuesUpdates.toBytes(value*2)));
-              }
-            }
-            
-            // sometimes do both deletes and updates
-            if (!fieldUpdate || random().nextBoolean()) {
-              if (VERBOSE) {
-                System.out.println("  delete id=" + docid);
-              }
-              deleteCount++;
-              w.deleteDocuments(new Term("id", ""+docid));
-            }
-          }
-        }
-
-        // Trigger writeLiveDocs + writeFieldUpdates so we hit fake exc:
-        IndexReader r = w.getReader();
-
-        // Sometimes we will make it here (we only randomly
-        // throw the exc):
-        assertEquals(docCount-deleteCount, r.numDocs());
-        r.close();
-        
-        // Sometimes close, so the disk full happens on close:
-        if (random().nextBoolean()) {
-          if (VERBOSE) {
-            System.out.println("  now close writer");
-          }
-          doClose = true;
-          w.commit();
-          w.close();
-          w = null;
-        }
-
-      } catch (Throwable t) {
-        // FakeIOException can be thrown from mergeMiddle, in which case IW
-        // registers it before our CMS gets to suppress it. IW.forceMerge later
-        // throws it as a wrapped IOE, so don't fail in this case.
-        if (t instanceof FakeIOException || (t.getCause() instanceof FakeIOException)) {
-          // expected
-          if (VERBOSE) {
-            System.out.println("TEST: hit expected IOE");
-          }
-          if (t instanceof AlreadyClosedException) {
-            // FakeIOExc struck during merge and writer is now closed:
-            w = null;
-            tragic = true;
-          }
-        } else {
-          throw t;
-        }
-      }
-      shouldFail.set(false);
-
-      if (w != null) {
-        MergeScheduler ms = w.w.getConfig().getMergeScheduler();
-        if (ms instanceof ConcurrentMergeScheduler) {
-          ((ConcurrentMergeScheduler) ms).sync();
-        }
-
-        if (w.w.getTragicException() != null) {
-          // Tragic exc in CMS closed the writer
-          w = null;
-        }
-      }
-
-      IndexReader r;
-
-      if (doClose && w != null) {
-        if (VERBOSE) {
-          System.out.println("  now 2nd close writer");
-        }
-        w.close();
-        w = null;
-      }
-
-      if (w == null || random().nextBoolean()) {
-        // Open non-NRT reader, to make sure the "on
-        // disk" bits are good:
-        if (VERBOSE) {
-          System.out.println("TEST: verify against non-NRT reader");
-        }
-        if (w != null) {
-          w.commit();
-        }
-        r = DirectoryReader.open(dir);
-      } else {
-        if (VERBOSE) {
-          System.out.println("TEST: verify against NRT reader");
-        }
-        r = w.getReader();
-      }
-      if (tragic == false) {
-        assertEquals(docCount-deleteCount, r.numDocs());
-      }
-      BytesRef scratch = new BytesRef();
-      for (LeafReaderContext context : r.leaves()) {
-        LeafReader reader = context.reader();
-        Bits liveDocs = reader.getLiveDocs();
-        NumericDocValues f = reader.getNumericDocValues("f");
-        NumericDocValues cf = reader.getNumericDocValues("cf");
-        BinaryDocValues bf = reader.getBinaryDocValues("bf");
-        BinaryDocValues bcf = reader.getBinaryDocValues("bcf");
-        for (int i = 0; i < reader.maxDoc(); i++) {
-          if (liveDocs == null || liveDocs.get(i)) {
-            assertEquals(i, f.advance(i));
-            assertEquals(i, cf.advance(i));
-            assertEquals(i, bf.advance(i));
-            assertEquals(i, bcf.advance(i));
-            assertEquals("doc=" + (docBase + i), cf.longValue(), f.longValue() * 2);
-            assertEquals("doc=" + (docBase + i), TestBinaryDocValuesUpdates.getValue(bcf), TestBinaryDocValuesUpdates.getValue(bf) * 2);
-          }
-        }
-      }
-
-      r.close();
-
-      // Sometimes re-use RIW, other times open new one:
-      if (w != null && random().nextBoolean()) {
-        if (VERBOSE) {
-          System.out.println("TEST: close writer");
-        }
-        w.close();
-        w = null;
-      }
-
-      docBase += numDocs;
-    }
-
-    if (w != null) {
-      w.close();
-    }
-
-    // Final verify:
-    if (tragic == false) {
-      IndexReader r = DirectoryReader.open(dir);
-      assertEquals(docCount-deleteCount, r.numDocs());
-      r.close();
-    }
-
-    dir.close();
-  }
-  
   // kind of slow, but omits positions, so just CPU
   @Nightly
   public void testTooManyTokens() throws Exception {

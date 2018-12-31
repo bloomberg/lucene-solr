@@ -46,6 +46,7 @@ public class StreamFactory implements Serializable {
   private transient HashMap<String,String> collectionZkHosts;
   private transient HashMap<String,Class<? extends Expressible>> functionNames;
   private transient String defaultZkHost;
+  private transient String defaultCollection;
   
   public StreamFactory(){
     collectionZkHosts = new HashMap<>();
@@ -54,7 +55,12 @@ public class StreamFactory implements Serializable {
   
   public StreamFactory withCollectionZkHost(String collectionName, String zkHost){
     this.collectionZkHosts.put(collectionName, zkHost);
+    this.defaultCollection = collectionName;
     return this;
+  }
+
+  public String getDefaultCollection() {
+    return defaultCollection;
   }
 
   public StreamFactory withDefaultZkHost(String zkHost) {
@@ -361,16 +367,16 @@ public class StreamFactory implements Serializable {
     
     throw new IOException(String.format(Locale.ROOT,"Invalid operation expression %s - function '%s' is unknown (not mapped to a valid StreamOperation)", expression, expression.getFunctionName()));
   }
-
-  public StreamEvaluator constructEvaluator(String expressionClause) throws IOException {
+  
+  public org.apache.solr.client.solrj.io.eval.StreamEvaluator constructEvaluator(String expressionClause) throws IOException {
     return constructEvaluator(StreamExpressionParser.parse(expressionClause));
   }
-  public StreamEvaluator constructEvaluator(StreamExpression expression) throws IOException{
+  public org.apache.solr.client.solrj.io.eval.StreamEvaluator constructEvaluator(StreamExpression expression) throws IOException{
     String function = expression.getFunctionName();
     if(functionNames.containsKey(function)){
       Class<? extends Expressible> clazz = functionNames.get(function);
       if(Expressible.class.isAssignableFrom(clazz) && StreamEvaluator.class.isAssignableFrom(clazz)){
-        return (StreamEvaluator)createInstance(functionNames.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
+        return (org.apache.solr.client.solrj.io.eval.StreamEvaluator)createInstance(functionNames.get(function), new Class[]{ StreamExpression.class, StreamFactory.class }, new Object[]{ expression, this});
       }
     }
     
@@ -433,7 +439,7 @@ public class StreamFactory implements Serializable {
     if("null".equals(lower)){ return null; }
     if("true".equals(lower) || "false".equals(lower)){ return Boolean.parseBoolean(lower); }
     try{ return Long.valueOf(original); } catch(Exception ignored){};
-    try{ if (original.matches(".{1,8}")){ return Float.valueOf(original); }} catch(Exception ignored){};
+    try{ if (original.matches(".{1,8}")){ return Double.valueOf(original); }} catch(Exception ignored){};
     try{ if (original.matches(".{1,17}")){ return Double.valueOf(original); }} catch(Exception ignored){};
     
     // is a string

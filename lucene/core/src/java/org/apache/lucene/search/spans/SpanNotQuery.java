@@ -29,6 +29,7 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TwoPhaseIterator;
 
 /** Removes matches which overlap with another SpanQuery or which are
@@ -97,10 +98,10 @@ public final class SpanNotQuery extends SpanQuery {
 
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
-    SpanWeight includeWeight = include.createWeight(searcher, false, boost);
-    SpanWeight excludeWeight = exclude.createWeight(searcher, false, boost);
-    return new SpanNotWeight(searcher, needsScores ? getTermContexts(includeWeight, excludeWeight) : null,
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    SpanWeight includeWeight = include.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
+    SpanWeight excludeWeight = exclude.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
+    return new SpanNotWeight(searcher, scoreMode.needsScores() ? getTermContexts(includeWeight, excludeWeight) : null,
                                   includeWeight, excludeWeight, boost);
   }
 
@@ -178,7 +179,7 @@ public final class SpanNotQuery extends SpanQuery {
           }
 
           // exclude end position far enough in current doc, check start position:
-          if (candidate.endPosition() + post <= excludeSpans.startPosition()) {
+          if (excludeSpans.startPosition() - post >= candidate.endPosition()) {
             return AcceptStatus.YES;
           } else {
             return AcceptStatus.NO;
@@ -191,6 +192,12 @@ public final class SpanNotQuery extends SpanQuery {
     public void extractTerms(Set<Term> terms) {
       includeWeight.extractTerms(terms);
     }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return includeWeight.isCacheable(ctx) && excludeWeight.isCacheable(ctx);
+    }
+
   }
 
   @Override

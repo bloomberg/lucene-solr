@@ -33,7 +33,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSimilarityProvider extends LuceneTestCase {
@@ -128,12 +127,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
         }
 
         @Override
-        public float computeSlopFactor(int distance) {
-          return 1;
-        }
-
-        @Override
-        public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
+        public float maxScore(float maxFreq) {
           return 1;
         }
       };
@@ -163,13 +157,8 @@ public class TestSimilarityProvider extends LuceneTestCase {
         }
 
         @Override
-        public float computeSlopFactor(int distance) {
-          return 1;
-        }
-
-        @Override
-        public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-          return 1;
+        public float maxScore(float maxFreq) {
+          return 10;
         }
       };
     }

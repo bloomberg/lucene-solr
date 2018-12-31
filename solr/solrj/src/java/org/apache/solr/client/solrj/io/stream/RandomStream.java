@@ -52,6 +52,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 /**
  *  The RandomStream emits a stream of psuedo random Tuples that match the query parameters. Sample expression syntax:
  *  random(collection, q="Hello word", rows="50", fl="title, body")
+ * @since 6.1.0
  **/
 
 public class RandomStream extends TupleStream implements Expressible  {
@@ -174,7 +175,7 @@ public class RandomStream extends TupleStream implements Expressible  {
     if(cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = new CloudSolrClient(zkHost);
+      cloudSolrClient = (new CloudSolrClient.Builder()).withZkHost(zkHost).build();
     }
 
     ModifiableSolrParams params = getParams(this.props);

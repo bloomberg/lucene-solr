@@ -119,7 +119,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     }
     bq.setMinimumNumberShouldMatch(minShouldMatch);
 
-    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq.build(), true);
+    BooleanWeight weight = (BooleanWeight) searcher.createNormalizedWeight(bq.build(), ScoreMode.COMPLETE);
     
     switch (mode) {
     case DOC_VALUES:
@@ -150,10 +150,9 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     DocIdSetIterator actualIt = actual.iterator();
     while ((doc = expectedIt.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(doc, actualIt.nextDoc());
-      assertEquals(expected.freq(), actual.freq());
       float expectedScore = expected.score();
       float actualScore = actual.score();
-      assertEquals(expectedScore, actualScore, CheckHits.explainToleranceDelta(expectedScore, actualScore));
+      assertEquals(expectedScore, actualScore, 0d);
     }
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, actualIt.nextDoc());
   }
@@ -169,10 +168,9 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     int doc;
     while ((doc = expectedIt.advance(prevDoc+amount)) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(doc, actualIt.advance(prevDoc+amount));
-      assertEquals(expected.freq(), actual.freq());
       float expectedScore = expected.score();
       float actualScore = actual.score();
-      assertEquals(expectedScore, actualScore, CheckHits.explainToleranceDelta(expectedScore, actualScore));
+      assertEquals(expectedScore, actualScore, 0d);
       prevDoc = doc;
     }
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, actualIt.advance(prevDoc+amount));
@@ -348,11 +346,10 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     }
 
     @Override
-    public int freq() throws IOException {
-      return currentMatched;
+    public float maxScore() {
+      return Float.POSITIVE_INFINITY;
     }
 
-    @Override
     public int docID() {
       return currentDoc;
     }

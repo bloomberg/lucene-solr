@@ -1,6 +1,20 @@
 = Command Line Utilities
-:page-shortname: command-line-utilities
-:page-permalink: command-line-utilities.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 A ZooKeeper Command Line Interface (CLI) script is available to allow you to interact directly with Solr configuration files stored in ZooKeeper.
 
@@ -20,7 +34,6 @@ The `zkcli.sh` provided by Solr is not the same as the https://zookeeper.apache.
 ZooKeeper's `zkCli.sh` provides a completely general, application-agnostic shell for manipulating data in ZooKeeper. Solr's `zkcli.sh` – discussed in this section – is specific to Solr, and has command line arguments specific to dealing with Solr data in ZooKeeper.
 ====
 
-[[CommandLineUtilities-UsingSolr_sZooKeeperCLI]]
 == Using Solr's ZooKeeper CLI
 
 Use the `help` option to get a list of available commands from the script itself, as in `./server/scripts/cloud-scrips/zkcli.sh help`.
@@ -70,28 +83,25 @@ For `clusterprop`: the cluster property value. If not specified, *null* will be 
 
 [TIP]
 ====
-The short form parameter options may be specified with a single dash (eg: `-c mycollection`).
+The short form parameter options may be specified with a single dash (e.g., `-c mycollection`).
 
-The long form parameter options may be specified using either a single dash (eg: `-collection mycollection`) or a double dash (eg: `--collection mycollection`)
+The long form parameter options may be specified using either a single dash (e.g., `-collection mycollection`) or a double dash (e.g., `--collection mycollection`)
 ====
 
-[[CommandLineUtilities-ZooKeeperCLIExamples]]
 == ZooKeeper CLI Examples
 
 Below are some examples of using the `zkcli.sh` CLI which assume you have already started the SolrCloud example (`bin/solr -e cloud -noprompt`)
 
 If you are on Windows machine, simply replace `zkcli.sh` with `zkcli.bat` in these examples.
 
-[[CommandLineUtilities-Uploadaconfigurationdirectory]]
-=== Upload a configuration directory
+=== Upload a Configuration Directory
 
 [source,bash]
 ----
-./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd upconfig -confname my_new_config -confdir server/solr/configsets/basic_configs/conf
+./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd upconfig -confname my_new_config -confdir server/solr/configsets/_default/conf
 ----
 
-[[CommandLineUtilities-BootstrapZooKeeperfromexistingSOLR_HOME]]
-=== Bootstrap ZooKeeper from existing SOLR_HOME
+=== Bootstrap ZooKeeper from an Existing solr.home
 
 [source,bash]
 ----
@@ -101,35 +111,31 @@ If you are on Windows machine, simply replace `zkcli.sh` with `zkcli.bat` in the
 .Bootstrap with chroot
 [NOTE]
 ====
-Using the boostrap command with a zookeeper chroot in the `-zkhost` parameter, e.g. `-zkhost 127.0.0.1:2181/solr`, will automatically create the chroot path before uploading the configs.
+Using the boostrap command with a zookeeper chroot in the `-zkhost` parameter, e.g., `-zkhost 127.0.0.1:2181/solr`, will automatically create the chroot path before uploading the configs.
 ====
 
-[[CommandLineUtilities-PutarbitrarydataintoanewZooKeeperfile]]
-=== Put arbitrary data into a new ZooKeeper file
+=== Put Arbitrary Data into a New ZooKeeper file
 
 [source,bash]
 ----
 ./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd put /my_zk_file.txt 'some data'
 ----
 
-[[CommandLineUtilities-PutalocalfileintoanewZooKeeperfile]]
-=== Put a local file into a new ZooKeeper file
+=== Put a Local File into a New ZooKeeper File
 
 [source,bash]
 ----
 ./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd putfile /my_zk_file.txt /tmp/my_local_file.txt
 ----
 
-[[CommandLineUtilities-Linkacollectiontoaconfigurationset]]
-=== Link a collection to a configuration set
+=== Link a Collection to a ConfigSet
 
 [source,bash]
 ----
 ./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd linkconfig -collection gettingstarted -confname my_new_config
 ----
 
-[[CommandLineUtilities-CreateanewZooKeeperpath]]
-=== Create a new ZooKeeper path
+=== Create a New ZooKeeper Path
 
 This can be useful to create a chroot path in ZooKeeper before first cluster start.
 
@@ -138,13 +144,11 @@ This can be useful to create a chroot path in ZooKeeper before first cluster sta
 ./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:2181 -cmd makepath /solr
 ----
 
+=== Set a Cluster Property
 
-[[CommandLineUtilities-Setaclusterproperty]]
-=== Set a cluster property
+This command will add or modify a single cluster property in `clusterprops.json`. Use this command instead of the usual getfile \-> edit \-> putfile cycle.
 
-This command will add or modify a single cluster property in `clusterprops.json`. Use this command instead of the usual getfile -> edit -> putfile cycle.
-
-Unlike the CLUSTERPROP command on the <<collections-api.adoc#CollectionsAPI-clusterprop,Collections API>>, this command does *not* require a running Solr cluster.
+Unlike the CLUSTERPROP command on the <<collections-api.adoc#clusterprop,Collections API>>, this command does *not* require a running Solr cluster.
 
 [source,bash]
 ----

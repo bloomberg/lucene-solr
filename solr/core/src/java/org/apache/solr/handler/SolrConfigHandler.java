@@ -39,6 +39,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -47,13 +49,14 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -71,21 +74,18 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
-import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
+import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.core.ConfigOverlay.NOT_EDITABLE;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
@@ -124,7 +124,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
-    setWt(req, CommonParams.JSON);
+    RequestHandlerUtils.setWt(req, CommonParams.JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
     Command command = new Command(req, rsp, httpMethod);
     if ("POST".equals(httpMethod)) {
@@ -396,7 +396,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               RequestParams.ParamSet old = params.getParams(key);
               if (op.name.equals(UPDATE)) {
                 if (old == null) {
-                  op.addError(formatString("unknown paramset {} cannot update ", key));
+                  op.addError(formatString("unknown paramset {0} cannot update ", key));
                   continue;
                 }
                 params = params.setParams(key, old.update(val));
@@ -673,15 +673,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     return null;
   }
 
-  public static void setWt(SolrQueryRequest req, String wt) {
-    SolrParams params = req.getParams();
-    if (params.get(CommonParams.WT) != null) return;//wt is set by user
-    Map<String, String> map = new HashMap<>(1);
-    map.put(CommonParams.WT, wt);
-    map.put("indent", "true");
-    req.setParams(SolrParams.wrapDefaults(params, new MapSolrParams(map)));
-  }
-
   @Override
   public SolrRequestHandler getSubHandler(String path) {
     if (subPaths.contains(path)) return this;
@@ -798,8 +789,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     List<String> activeReplicaCoreUrls = new ArrayList<>();
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
-    Collection<Slice> activeSlices = clusterState.getActiveSlices(collection);
-    if (activeSlices != null && activeSlices.size() > 0) {
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    if (docCollection != null && docCollection.getActiveSlices() != null && docCollection.getActiveSlices().size() > 0) {
+      final Collection<Slice> activeSlices = docCollection.getActiveSlices();
       for (Slice next : activeSlices) {
         Map<String, Replica> replicasMap = next.getReplicasMap();
         if (replicasMap != null) {
@@ -886,10 +878,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return true;
     }
 
-    @Override
-    public Collection<ContentStream> getContentStreams() throws IOException {
-      return null;
-    }
 
     @Override
     protected SolrResponse createResponse(SolrClient client) {

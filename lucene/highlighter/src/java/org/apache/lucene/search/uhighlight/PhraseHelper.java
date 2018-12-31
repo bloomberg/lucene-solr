@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,6 @@ import java.util.function.Predicate;
 
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -50,6 +48,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.highlight.WeightedSpanTerm;
 import org.apache.lucene.search.highlight.WeightedSpanTermExtractor;
@@ -159,7 +158,7 @@ public class PhraseHelper {
       @Override
       protected void extractWeightedTerms(Map<String, WeightedSpanTerm> terms, Query query, float boost)
           throws IOException {
-        query.createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER, false, boost)
+        query.createWeight(UnifiedHighlighter.EMPTY_INDEXSEARCHER, ScoreMode.COMPLETE_NO_SCORES, boost)
             .extractTerms(positionInsensitiveTerms);
       }
 
@@ -247,11 +246,11 @@ public class PhraseHelper {
 
     // Get the underlying query terms
     TreeSet<Term> termSet = new FieldFilteringTermSet(); // sorted so we can loop over results in order shortly...
-    searcher.createWeight(spanQuery, false, 1.0f).extractTerms(termSet);//needsScores==false
+    searcher.createWeight(spanQuery, ScoreMode.COMPLETE_NO_SCORES, 1.0f).extractTerms(termSet);//needsScores==false
 
     // Get Spans by running the query against the reader
     // TODO it might make sense to re-use/cache the Spans instance, to advance forward between docs
-    SpanWeight spanWeight = (SpanWeight) searcher.createNormalizedWeight(spanQuery, false);
+    SpanWeight spanWeight = (SpanWeight) searcher.createNormalizedWeight(spanQuery, ScoreMode.COMPLETE_NO_SCORES);
     Spans spans = spanWeight.getSpans(readerContext, SpanWeight.Postings.POSITIONS);
     if (spans == null) {
       return;
@@ -529,12 +528,16 @@ public class PhraseHelper {
     }
   }
 
+  //TODO move up; it's currently inbetween other inner classes that are related
   /**
+   * Needed to support the ability to highlight a query irrespective of the field a query refers to
+   * (aka requireFieldMatch=false).
    * This reader will just delegate every call to a single field in the wrapped
    * LeafReader. This way we ensure that all queries going through this reader target the same field.
-  */
+   */
   static final class SingleFieldFilterLeafReader extends FilterLeafReader {
     final String fieldName;
+
     SingleFieldFilterLeafReader(LeafReader in, String fieldName) {
       super(in);
       this.fieldName = fieldName;
@@ -542,27 +545,12 @@ public class PhraseHelper {
 
     @Override
     public FieldInfos getFieldInfos() {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException();//TODO merge them
     }
 
     @Override
-    public Fields fields() throws IOException {
-      return new FilterFields(super.fields()) {
-        @Override
-        public Terms terms(String field) throws IOException {
-          return super.terms(fieldName);
-        }
-
-        @Override
-        public Iterator<String> iterator() {
-          return Collections.singletonList(fieldName).iterator();
-        }
-
-        @Override
-        public int size() {
-          return 1;
-        }
-      };
+    public Terms terms(String field) throws IOException {
+      return super.terms(fieldName);
     }
 
     @Override

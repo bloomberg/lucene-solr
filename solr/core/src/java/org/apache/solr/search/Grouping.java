@@ -177,7 +177,7 @@ public class Grouping {
   }
 
   public void addFunctionCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
-    QParser parser = QParser.getParser(groupByStr, "func", request);
+    QParser parser = QParser.getParser(groupByStr, FunctionQParserPlugin.NAME, request);
     Query q = parser.getQuery();
     final Grouping.Command gc;
     if (q instanceof FunctionQuery) {
@@ -605,7 +605,7 @@ public class Grouping {
     }
 
     protected DocList getDocList(GroupDocs groups) {
-      int max = groups.totalHits;
+      int max = Math.toIntExact(groups.totalHits);
       int off = groupOffset;
       int len = docsPerGroup;
       if (format == Format.simple) {
@@ -881,7 +881,7 @@ public class Grouping {
       if (sort == null || sort.equals(Sort.RELEVANCE)) {
         return TopScoreDocCollector.create(groupDocsToCollect);
       } else {
-        return TopFieldCollector.create(searcher.weightSort(sort), groupDocsToCollect, false, needScores, needScores);
+        return TopFieldCollector.create(searcher.weightSort(sort), groupDocsToCollect, false, needScores, needScores, true);
       }
     }
 

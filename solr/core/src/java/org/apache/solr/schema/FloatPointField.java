@@ -18,7 +18,6 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
@@ -26,6 +25,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -61,16 +61,18 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
     if (min == null) {
       actualMin = Float.NEGATIVE_INFINITY;
     } else {
-      actualMin = Float.parseFloat(min);
+      actualMin = parseFloatFromUser(field.getName(), min);
       if (!minInclusive) {
+        if (actualMin == Float.POSITIVE_INFINITY) return new MatchNoDocsQuery();
         actualMin = FloatPoint.nextUp(actualMin);
       }
     }
     if (max == null) {
       actualMax = Float.POSITIVE_INFINITY;
     } else {
-      actualMax = Float.parseFloat(max);
+      actualMax = parseFloatFromUser(field.getName(), max);
       if (!maxInclusive) {
+        if (actualMax == Float.NEGATIVE_INFINITY) return new MatchNoDocsQuery();
         actualMax = FloatPoint.nextDown(actualMax);
       }
     }
@@ -100,7 +102,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return FloatPoint.newExactQuery(field.getName(), Float.parseFloat(externalVal));
+    return FloatPoint.newExactQuery(field.getName(), parseFloatFromUser(field.getName(), externalVal));
   }
 
   @Override
@@ -112,7 +114,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
     float[] values = new float[externalVal.size()];
     int i = 0;
     for (String val:externalVal) {
-      values[i] = Float.parseFloat(val);
+      values[i] = parseFloatFromUser(field.getName(), val);
       i++;
     }
     return FloatPoint.newSetQuery(field.getName(), values);
@@ -127,25 +129,12 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
     result.grow(Float.BYTES);
     result.setLength(Float.BYTES);
-    FloatPoint.encodeDimension(Float.parseFloat(val.toString()), result.bytes(), 0);
+    FloatPoint.encodeDimension(parseFloatFromUser(null, val.toString()), result.bytes(), 0);
   }
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    field.checkSortability();
-
-    Object missingValue = null;
-    boolean sortMissingLast = field.sortMissingLast();
-    boolean sortMissingFirst = field.sortMissingFirst();
-
-    if (sortMissingLast) {
-      missingValue = top ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
-    } else if (sortMissingFirst) {
-      missingValue = top ? Float.POSITIVE_INFINITY : Float.NEGATIVE_INFINITY;
-    }
-    SortField sf = new SortField(field.getName(), SortField.Type.FLOAT, top);
-    sf.setMissingValue(missingValue);
-    return sf;
+    return getSortField(field, SortField.Type.FLOAT, top, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY);
   }
 
   @Override

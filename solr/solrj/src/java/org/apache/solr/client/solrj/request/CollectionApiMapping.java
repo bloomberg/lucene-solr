@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
@@ -101,6 +102,8 @@ public class CollectionApiMapping {
             "target.collection", "target",
             "forward.timeout", "forwardTimeout"
         )),
+    MOVE_REPLICA(PER_COLLECTION,
+        POST, MOVEREPLICA, "move-replica", null),
     REBALANCE_LEADERS(PER_COLLECTION,
         POST,
         REBALANCELEADERS,
@@ -176,6 +179,10 @@ public class CollectionApiMapping {
         POST,
         CLUSTERPROP,
         "set-property",null),
+    UTILIZE_NODE(CLUSTER_CMD,
+        POST,
+        UTILIZENODE,
+        "utilize-node",null),
 
     BACKUP_COLLECTION(COLLECTIONS_COMMANDS,
         POST,
@@ -273,6 +280,19 @@ public class CollectionApiMapping {
         }
       }
       return s;
+    }
+    public Object getReverseParamSubstitute(String param) {
+      String s = paramstoAttr.containsKey(param) ? paramstoAttr.get(param) : param;
+
+      if (prefixSubstitutes != null) {
+        for (Map.Entry<String, String> e : prefixSubstitutes.entrySet()) {
+          if(param.startsWith(e.getValue())){
+            return new Pair<>(e.getKey().substring(0, e.getKey().length() - 1), param.substring(e.getValue().length()));
+          }
+        }
+      }
+      return s;
+
     }
 
   }

@@ -26,6 +26,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -49,7 +50,12 @@ public class ReplicateFromLeader {
     this.coreName = coreName;
   }
 
-  public void startReplication() throws InterruptedException {
+  /**
+   * Start a replication handler thread that will periodically pull indices from the shard leader
+   * @param switchTransactionLog if true, ReplicationHandler will rotate the transaction log once
+   * the replication is done
+   */
+  public void startReplication(boolean switchTransactionLog) throws InterruptedException {
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         if (cc.isShutDown()) {
@@ -65,11 +71,13 @@ public class ReplicateFromLeader {
       } else if (uinfo.autoSoftCommmitMaxTime != -1) {
         pollIntervalStr = toPollIntervalStr(uinfo.autoSoftCommmitMaxTime/2);
       }
+      LOG.info("Will start replication from leader with poll interval: {}", pollIntervalStr );
 
-      NamedList slaveConfig = new NamedList();
-      slaveConfig.add("fetchFromLeader", true);
+      NamedList<Object> slaveConfig = new NamedList<>();
+      slaveConfig.add("fetchFromLeader", Boolean.TRUE);
+      slaveConfig.add(ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO, switchTransactionLog);
       slaveConfig.add("pollInterval", pollIntervalStr);
-      NamedList replicationConfig = new NamedList();
+      NamedList<Object> replicationConfig = new NamedList<>();
       replicationConfig.add("slave", slaveConfig);
 
       String lastCommitVersion = getCommitVersion(core);
@@ -78,20 +86,22 @@ public class ReplicateFromLeader {
       }
 
       replicationProcess = new ReplicationHandler();
-      replicationProcess.setPollListener((solrCore, pollSuccess) -> {
-        if (pollSuccess) {
-          String commitVersion = getCommitVersion(core);
-          if (commitVersion == null) return;
-          if (Long.parseLong(commitVersion) == lastVersion) return;
-          UpdateLog updateLog = solrCore.getUpdateHandler().getUpdateLog();
-          SolrQueryRequest req = new LocalSolrQueryRequest(core,
-              new ModifiableSolrParams());
-          CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
-          cuc.setVersion(Long.parseLong(commitVersion));
-          updateLog.copyOverOldUpdates(cuc);
-          lastVersion = Long.parseLong(commitVersion);
-        }
-      });
+      if (switchTransactionLog) {
+        replicationProcess.setPollListener((solrCore, fetchResult) -> {
+          if (fetchResult == IndexFetcher.IndexFetchResult.INDEX_FETCH_SUCCESS) {
+            String commitVersion = getCommitVersion(core);
+            if (commitVersion == null) return;
+            if (Long.parseLong(commitVersion) == lastVersion) return;
+            UpdateLog updateLog = solrCore.getUpdateHandler().getUpdateLog();
+            SolrQueryRequest req = new LocalSolrQueryRequest(core,
+                new ModifiableSolrParams());
+            CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
+            cuc.setVersion(Long.parseLong(commitVersion));
+            updateLog.copyOverOldUpdates(cuc);
+            lastVersion = Long.parseLong(commitVersion);
+          }
+        });
+      }
       replicationProcess.init(replicationConfig);
       replicationProcess.inform(core);
     }
@@ -119,6 +129,8 @@ public class ReplicateFromLeader {
   }
 
   public void stopReplication() {
-    replicationProcess.close();
+    if (replicationProcess != null) {
+      replicationProcess.close();
+    }
   }
 }

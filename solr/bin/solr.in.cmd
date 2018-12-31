@@ -27,7 +27,9 @@ REM set SOLR_JAVA_HOME=
 REM Increase Java Min/Max Heap as needed to support your indexing / query needs
 REM set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 
-REM Enable verbose GC logging
+REM Configure verbose GC logging:
+REM For Java 8: if this is set, additional params will be added to specify the log file & rotation
+REM For Java 9 or higher: GC_LOG_OPTS is currently not supported. If you set it, the startup script will exit with failure.
 REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
@@ -45,6 +47,9 @@ REM set ZK_CLIENT_TIMEOUT=15000
 REM By default the start script uses "localhost"; override the hostname here
 REM for production SolrCloud environments to control the hostname exposed to cluster state
 REM set SOLR_HOST=192.168.1.1
+
+REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
+REM set SOLR_WAIT_FOR_ZK=30
 
 REM By default the start script uses UTC; override the timezone if needed
 REM set SOLR_TIMEZONE=UTC
@@ -67,6 +72,10 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.clustering.enabled=true
 REM Path to a directory for Solr to store cores and their data. By default, Solr will use server\solr
 REM If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
 REM set SOLR_HOME=
+
+REM Path to a directory that Solr will use as root for data folders for each core.
+REM If not set, defaults to <instance_dir>/data. Overridable per core through 'dataDir' core property
+REM set SOLR_DATA_HOME=
 
 REM Changes the logging level. Valid values: ALL, TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF. Default is INFO
 REM This is an alternative to changing the rootLogger in log4j.properties

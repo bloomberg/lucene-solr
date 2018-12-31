@@ -38,11 +38,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
-import org.apache.lucene.queries.CustomScoreQuery;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -90,7 +91,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
     dir.close();
   }
 
-  public void testCustomScoreQueryHighlight() throws IOException {
+  public void testFunctionScoreQueryHighlight() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
@@ -107,7 +108,7 @@ public class FastVectorHighlighterTest extends LuceneTestCase {
 
     IndexReader reader = DirectoryReader.open(writer);
     int docId = 0;
-    FieldQuery fieldQuery  = highlighter.getFieldQuery( new CustomScoreQuery(new TermQuery(new Term("field", "foo"))), reader );
+    FieldQuery fieldQuery  = highlighter.getFieldQuery( new FunctionScoreQuery(new TermQuery(new Term("field", "foo")), DoubleValuesSource.constant(1)), reader );
     String[] bestFragments = highlighter.getBestFragments(fieldQuery, reader, docId, "field", 54, 1);
     // highlighted results are centered
     assertEquals("This is a test where <b>foo</b> is highlighed and should be highlighted", bestFragments[0]);

@@ -20,23 +20,16 @@ package org.apache.lucene.search.similarities;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -44,13 +37,11 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.Similarity.SimWeight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
  * Tests the {@link SimilarityBase}-based Similarities. Contains unit tests and 
@@ -61,7 +52,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
  * items in the list. If a test case fails, the name of the Similarity that
  * caused the failure is returned as part of the assertion error message.</p>
  * <p>Unit testing is performed by constructing statistics manually and calling
- * the {@link SimilarityBase#score(BasicStats, float, float)} method of the
+ * the {@link SimilarityBase#score(BasicStats, double, double)} method of the
  * Similarities. The statistics represent corner cases of corpus distributions.
  * </p>
  * <p>For the integration tests, a small (8-document) collection is indexed. The
@@ -85,13 +76,12 @@ public class TestSimilarityBase extends LuceneTestCase {
   private static float FLOAT_EPSILON = 1e-5f;
   /** The DFR basic models to test. */
   static BasicModel[] BASIC_MODELS = {
-    new BasicModelBE(), new BasicModelD(), new BasicModelG(),
-    new BasicModelIF(), new BasicModelIn(), new BasicModelIne(),
-    new BasicModelP()
+    new BasicModelG(), new BasicModelIF(), new BasicModelIn(),
+    new BasicModelIne()
   };
   /** The DFR aftereffects to test. */
   static AfterEffect[] AFTER_EFFECTS = {
-    new AfterEffectB(), new AfterEffectL(), new AfterEffect.NoAfterEffect()
+    new AfterEffectB(), new AfterEffectL()
   };
   /** The DFR normalizations to test. */
   static Normalization[] NORMALIZATIONS = {
@@ -193,7 +183,17 @@ public class TestSimilarityBase extends LuceneTestCase {
   }
   
   private CollectionStatistics toCollectionStats(BasicStats stats) {
-    return new CollectionStatistics(stats.field, stats.getNumberOfDocuments(), -1, stats.getNumberOfFieldTokens(), -1);
+    long sumTtf = stats.getNumberOfFieldTokens();
+    long sumDf;
+    if (sumTtf == -1) {
+      sumDf = TestUtil.nextLong(random(), stats.getNumberOfDocuments(), 2L * stats.getNumberOfDocuments());
+    } else {
+      sumDf = TestUtil.nextLong(random(), Math.min(stats.getNumberOfDocuments(), sumTtf), sumTtf);
+    }
+    int docCount = Math.toIntExact(Math.min(sumDf, stats.getNumberOfDocuments()));
+    int maxDoc = TestUtil.nextInt(random(), docCount, docCount + 10);
+
+    return new CollectionStatistics(stats.field, maxDoc, docCount, sumTtf, sumDf);
   }
   
   private TermStatistics toTermStats(BasicStats stats) {
@@ -201,17 +201,17 @@ public class TestSimilarityBase extends LuceneTestCase {
   }
   /**
    * The generic test core called by all unit test methods. It calls the
-   * {@link SimilarityBase#score(BasicStats, float, float)} method of all
+   * {@link SimilarityBase#score(BasicStats, double, double)} method of all
    * Similarities in {@link #sims} and checks if the score is valid; i.e. it
    * is a finite positive real number.
    */
   private void unitTestCore(BasicStats stats, float freq, int docLen) {
     for (SimilarityBase sim : sims) {
       BasicStats realStats = (BasicStats) sim.computeWeight(
-          stats.getBoost(),
+          (float)stats.getBoost(),
           toCollectionStats(stats), 
           toTermStats(stats));
-      float score = sim.score(realStats, freq, docLen);
+      float score = (float)sim.score(realStats, freq, docLen);
       float explScore = sim.explain(
           realStats, 1, Explanation.match(freq, "freq"), docLen).getValue();
       assertFalse("Score infinite: " + sim.toString(), Float.isInfinite(score));
@@ -444,21 +444,6 @@ public class TestSimilarityBase extends LuceneTestCase {
       new IBSimilarity(new DistributionSPL(), new LambdaTTF(), new Normalization.NoNormalization());
     correctnessTestCore(sim, 2.2387237548828125f);
   }
-  
-  /** Correctness test for the PL2 DFR model. */
-  public void testPL2() throws IOException {
-    SimilarityBase sim = new DFRSimilarity(
-        new BasicModelP(), new AfterEffectL(), new NormalizationH2());
-    float tfn = (float)(FREQ * SimilarityBase.log2(
-        1 + AVG_FIELD_LENGTH / DOC_LEN));  // 8.1894750101
-    float l = 1.0f / (tfn + 1.0f);         // 0.108820144666
-    float lambda = (1.0f + TOTAL_TERM_FREQ) / (1f + NUMBER_OF_DOCUMENTS);  // 0.7029703
-    float p = (float)(tfn * SimilarityBase.log2(tfn / lambda) +
-              (lambda + 1 / (12 * tfn) - tfn) * SimilarityBase.log2(Math.E) +
-              0.5 * SimilarityBase.log2(2 * Math.PI * tfn)); // 21.065619
-    float gold = l * p;                    // 2.2923636
-    correctnessTestCore(sim, gold);
-  }
 
   /** Correctness test for the IneB2 DFR model. */
   public void testIneB2() throws IOException {
@@ -474,50 +459,14 @@ public class TestSimilarityBase extends LuceneTestCase {
     correctnessTestCore(sim, 1.6390540599822998f);
   }
   
-  /** Correctness test for the BEB1 DFR model. */
-  public void testBEB1() throws IOException {
-    SimilarityBase sim = new DFRSimilarity(
-        new BasicModelBE(), new AfterEffectB(), new NormalizationH1());
-    float tfn = FREQ * AVG_FIELD_LENGTH / DOC_LEN;  // 8.75
-    float b = (TOTAL_TERM_FREQ + 1 + 1) / ((DOC_FREQ + 1) * (tfn + 1));  // 0.67132866
-    double f = TOTAL_TERM_FREQ + 1 + tfn;
-    double n = f + NUMBER_OF_DOCUMENTS;
-    double n1 = n + f - 1;        // 258.5
-    double m1 = n + f - tfn - 2;  // 248.75
-    double n2 = f;                                      // 79.75
-    double m2 = f - tfn;                                // 71.0
-    float be = (float)(-SimilarityBase.log2(n - 1) -
-               SimilarityBase.log2(Math.E) +                   // -8.924494472554715
-               ((m1 + 0.5f) * SimilarityBase.log2(n1 / m1) +
-                (n1 - m1) * SimilarityBase.log2(n1)) -         // 91.9620374903885
-               ((m2 + 0.5f) * SimilarityBase.log2(n2 / m2) +
-                (n2 - m2) * SimilarityBase.log2(n2)));         // 67.26544321004599
-               // 15.7720995
-    float gold = b * be;                                       // 10.588263
-    correctnessTestCore(sim, gold);
-  }
-
-  /** Correctness test for the D DFR model (basic model only). */
-  public void testD() throws IOException {
-    SimilarityBase sim = new DFRSimilarity(new BasicModelD(), new AfterEffect.NoAfterEffect(), new Normalization.NoNormalization());
-    double totalTermFreqNorm = TOTAL_TERM_FREQ + FREQ + 1;
-    double p = 1.0 / (NUMBER_OF_DOCUMENTS + 1);                // 0.009900990099009901
-    double phi = FREQ / totalTermFreqNorm;                       // 0.08974358974358974
-    double D = phi * SimilarityBase.log2(phi / p) +            // 0.17498542370019005
-              (1 - phi) * SimilarityBase.log2((1 - phi) / (1 - p));
-    float gold = (float)(totalTermFreqNorm * D + 0.5 * SimilarityBase.log2(
-                 1 + 2 * Math.PI * FREQ * (1 - phi)));         // 16.328257
-    correctnessTestCore(sim, gold);
-  }
-  
   /** Correctness test for the In2 DFR model with no aftereffect. */
   public void testIn2() throws IOException {
     SimilarityBase sim = new DFRSimilarity(
-        new BasicModelIn(), new AfterEffect.NoAfterEffect(), new NormalizationH2());
+        new BasicModelIn(), new AfterEffectL(), new NormalizationH2());
     float tfn = (float)(FREQ * SimilarityBase.log2(            // 8.1894750101
                 1 + AVG_FIELD_LENGTH / DOC_LEN));
     float gold = (float)(tfn * SimilarityBase.log2(            // 26.7459577898
-                 (NUMBER_OF_DOCUMENTS + 1) / (DOC_FREQ + 0.5)));
+                 (NUMBER_OF_DOCUMENTS + 1) / (DOC_FREQ + 0.5)) / (1 + tfn));
     correctnessTestCore(sim, gold);
   }
   
@@ -534,17 +483,17 @@ public class TestSimilarityBase extends LuceneTestCase {
   
   /**
    * The generic test core called by all correctness test methods. It calls the
-   * {@link SimilarityBase#score(BasicStats, float, float)} method of all
+   * {@link SimilarityBase#score(BasicStats, double, double)} method of all
    * Similarities in {@link #sims} and compares the score against the manually
    * computed {@code gold}.
    */
   private void correctnessTestCore(SimilarityBase sim, float gold) {
     BasicStats stats = createStats();
     BasicStats realStats = (BasicStats) sim.computeWeight(
-        stats.getBoost(),
+        (float)stats.getBoost(),
         toCollectionStats(stats), 
         toTermStats(stats));
-    float score = sim.score(realStats, FREQ, DOC_LEN);
+    float score = (float) sim.score(realStats, FREQ, DOC_LEN);
     assertEquals(
         sim.toString() + " score not correct.", gold, score, FLOAT_EPSILON);
   }
@@ -608,34 +557,5 @@ public class TestSimilarityBase extends LuceneTestCase {
     expected.setDiscountOverlaps(true);
     actual.setDiscountOverlaps(true);
     assertEquals(expected.computeNorm(state), actual.computeNorm(state));
-  }
-
-  public void testLengthEncodingBackwardCompatibility() throws IOException {
-    Similarity similarity = RandomPicks.randomFrom(random(), sims);
-    for (int indexCreatedVersionMajor : new int[] { Version.LUCENE_6_0_0.major, Version.LATEST.major}) {
-      for (int length : new int[] {1, 2, 4}) { // these length values are encoded accurately on both cases
-        Directory dir = newDirectory();
-        // set the version on the directory
-        new SegmentInfos(indexCreatedVersionMajor).commit(dir);
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setSimilarity(similarity));
-        Document doc = new Document();
-        String value = IntStream.range(0, length).mapToObj(i -> "b").collect(Collectors.joining(" "));
-        doc.add(new TextField("foo", value, Store.NO));
-        w.addDocument(doc);
-        IndexReader reader = DirectoryReader.open(w);
-        IndexSearcher searcher = newSearcher(reader);
-        searcher.setSimilarity(similarity);
-        Term term = new Term("foo", "b");
-        TermContext context = TermContext.build(reader.getContext(), term);
-        SimWeight simWeight = similarity.computeWeight(1f, searcher.collectionStatistics("foo"), searcher.termStatistics(term, context));
-        SimilarityBase.BasicSimScorer simScorer = (SimilarityBase.BasicSimScorer) similarity.simScorer(simWeight, reader.leaves().get(0));
-        float docLength = simScorer.getLengthValue(0);
-        assertEquals(length, (int) docLength);
-        
-        w.close();
-        reader.close();
-        dir.close();
-      }
-    }
   }
 }

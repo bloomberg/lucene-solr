@@ -25,8 +25,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.SolrCloudManager;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -48,7 +51,8 @@ public class CloudUtil {
    * + throw exception if it has been.
    */
   public static void checkSharedFSFailoverReplaced(CoreContainer cc, CoreDescriptor desc) {
-    
+    if (!cc.isSharedFs(desc)) return;
+
     ZkController zkController = cc.getZkController();
     String thisCnn = zkController.getCoreNodeName(desc);
     String thisBaseUrl = zkController.getBaseUrl();
@@ -56,9 +60,9 @@ public class CloudUtil {
     log.debug("checkSharedFSFailoverReplaced running for coreNodeName={} baseUrl={}", thisCnn, thisBaseUrl);
 
     // if we see our core node name on a different base url, unload
-    Map<String,Slice> slicesMap = zkController.getClusterState().getSlicesMap(desc.getCloudDescriptor().getCollectionName());
-    
-    if (slicesMap != null) {
+    final DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(desc.getCloudDescriptor().getCollectionName());    
+    if (docCollection != null && docCollection.getSlicesMap() != null) {
+      Map<String,Slice> slicesMap = docCollection.getSlicesMap();
       for (Slice slice : slicesMap.values()) {
         for (Replica replica : slice.getReplicas()) {
           
@@ -128,4 +132,9 @@ public class CloudUtil {
 
   }
 
+  static boolean usePolicyFramework(DocCollection collection, SolrCloudManager cloudManager)
+      throws IOException, InterruptedException {
+    AutoScalingConfig autoScalingConfig = cloudManager.getDistribStateManager().getAutoScalingConfig();
+    return !autoScalingConfig.getPolicy().getClusterPolicy().isEmpty() || collection.getPolicyName() != null;
+  }
 }

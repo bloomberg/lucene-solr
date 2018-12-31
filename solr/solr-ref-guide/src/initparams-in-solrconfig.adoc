@@ -1,6 +1,20 @@
 = InitParams in SolrConfig
-:page-shortname: initparams-in-solrconfig
-:page-permalink: initparams-in-solrconfig.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 The `<initParams>` section of `solrconfig.xml` allows you to define request handler parameters outside of the handler configuration.
 
@@ -13,7 +27,7 @@ For example, if you want several of your search handlers to return the same list
 
 The properties and configuration of an `<initParams>` section mirror the properties and configuration of a request handler. It can include sections for defaults, appends, and invariants, the same as any request handler.
 
-For example, here is one of the `<initParams>` sections defined by default in the `data_driven_config` example:
+For example, here is one of the `<initParams>` sections defined by default in the `_default` example:
 
 [source,xml]
 ----
@@ -26,27 +40,20 @@ For example, here is one of the `<initParams>` sections defined by default in th
 
 This sets the default search field ("df") to be "_text_" for all of the request handlers named in the path section. If we later want to change the `/query` request handler to search a different field by default, we could override the `<initParams>` by defining the parameter in the `<requestHandler>` section for `/query`.
 
-The syntax and semantics are similar to that of a `<requestHandler>` . The following are the attributes
+The syntax and semantics are similar to that of a `<requestHandler>`. The following are the attributes
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+`path`::
+A comma-separated list of paths which will use the parameters. Wildcards can be used in paths to define nested paths, as described below.
 
-[cols="30,70",options="header"]
-|===
-|Property |Description
-|path |A comma-separated list of paths which will use the parameters. Wildcards can be used in paths to define nested paths, as described below.
-|name a|
+`name`::
 The name of this set of parameters. The name can be used directly in a requestHandler definition if a path is not explicitly named. If you give your `<initParams>` a name, you can refer to the params in a `<requestHandler>` that is not defined as a path.
-
++
 For example, if an `<initParams>` section has the name "myParams", you can call the name when defining your request handler:
-
++
 [source,xml]
-----
 <requestHandler name="/dump1" class="DumpRequestHandler" initParams="myParams"/>
-----
-|===
 
-[[InitParamsinSolrConfig-Wildcards]]
-== Wildcards
+== Wildcards in initParams
 
 An `<initParams>` section can support wildcards to define nested paths that should use the parameters defined. A single asterisk (\*) denotes that a nested path one level deeper should use the parameters. Double asterisks (**) denote all nested paths no matter how deep should use the parameters.
 

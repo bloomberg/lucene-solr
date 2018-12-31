@@ -94,13 +94,6 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                       " +apache +solr");
   }
 
-  public void testQueryLucenePlusSort() throws Exception {
-    assertQueryEquals("lucenePlusSort", 
-                      "apache solr", "apache  solr", "apache solr ; score desc");
-    assertQueryEquals("lucenePlusSort", 
-                      "+apache +solr", "apache AND solr", " +apache +solr; score desc");
-  }
-
   public void testQueryPrefix() throws Exception {
     SolrQueryRequest req = req("myField","foo_s");
     try {
@@ -170,7 +163,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testGraphTermsQuery() throws Exception {
     SolrQueryRequest req = req("q", "*:*");
     try {
-      assertQueryEquals("graphTerms", req, "{!graphTerms f=field1 maxDocFreq=1000}term1,term2");
+      assertQueryEquals("graphTerms", req, "{!graphTerms f=field1_s maxDocFreq=1000}term1,term2");
     } finally {
       req.close();
     }
@@ -377,8 +370,10 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                                "myField","foo_i",
                                "myInner","product(4,foo_i)");
     try {
+      // NOTE: unlike most queries, frange defaultsto cost==100
       assertQueryEquals("frange", req, 
                         "{!frange l=0.2 h=20.4}sum(4,5)",
+                        "{!frange l=0.2 h=20.4 cost=100}sum(4,5)",
                         "{!frange l=$low h=$high}sum(4,$myVar)");
     } finally {
       req.close();
@@ -861,6 +856,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testFuncConcat() throws Exception {
+    SolrQueryRequest req = req("myField","bar_f","myOtherField","bar_t");
+
+    try {
+      assertFuncEquals(req,
+          "concat(bar_f,bar_t)",
+          "concat($myField,bar_t)",
+          "concat(bar_f,$myOtherField)",
+          "concat($myField,$myOtherField)");
+
+    } finally {
+      req.close();
+    }
+  }
+
   public void testFuncSingleValueMathFuncs() throws Exception {
     SolrQueryRequest req = req("myVal","45", "myField","foo_i");
     for (final String func : new String[] {"abs","rad","deg","sqrt","cbrt",
@@ -1039,7 +1049,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req,rsp));
       for (int i = 0; i < inputs.length; i++) {
-        queries[i] = (QParser.getParser(inputs[i], defType, req).getQuery());
+        queries[i] = QParser.getParser(inputs[i], defType, true, req).getQuery();
       }
     } finally {
       SolrRequestInfo.clearRequestInfo();
@@ -1171,6 +1181,27 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "payload(foo_dpf,some_term)");
     } finally {
       req.close();
+    }
+  }
+
+  public void testBoolQuery() throws Exception {
+      assertQueryEquals("bool",
+          "{!bool must='{!lucene}foo_s:a' must='{!lucene}foo_s:b'}",
+          "{!bool must='{!lucene}foo_s:b' must='{!lucene}foo_s:a'}");
+    assertQueryEquals("bool",
+        "{!bool must_not='{!lucene}foo_s:a' should='{!lucene}foo_s:b' " +
+            "must='{!lucene}foo_s:c' filter='{!lucene}foo_s:d' filter='{!lucene}foo_s:e'}",
+        "{!bool must='{!lucene}foo_s:c' filter='{!lucene}foo_s:d' " +
+            "must_not='{!lucene}foo_s:a' should='{!lucene}foo_s:b' filter='{!lucene}foo_s:e'}");
+    try {
+      assertQueryEquals
+          ("bool"
+              , "{!bool must='{!lucene}foo_s:a'}"
+              , "{!bool should='{!lucene}foo_s:a'}"
+          );
+      fail("queries should not have been equal");
+    } catch(AssertionFailedError e) {
+      assertTrue("queries were not equal, as expected", true);
     }
   }
 

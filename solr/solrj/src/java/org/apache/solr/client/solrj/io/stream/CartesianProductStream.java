@@ -28,7 +28,7 @@ import java.util.Map;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eval.FieldEvaluator;
+import org.apache.solr.client.solrj.io.eval.FieldValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
@@ -41,6 +41,9 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
+/**
+ * @since 6.6.0
+ */
 public class CartesianProductStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
@@ -115,7 +118,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
       }
       if(!wasHandledAsEvaluatorFunction){
         // treat as a straight field evaluator
-        evaluator = new FieldEvaluator(evaluatorPart);
+        evaluator = new FieldValueEvaluator(evaluatorPart);
         if(null == asNamePart){
           asNamePart = evaluatorPart; // just use the field name
         }
@@ -150,8 +153,10 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     for(NamedEvaluator evaluator : evaluators) {
       expression.addParameter(String.format(Locale.ROOT, "%s as %s", evaluator.getEvaluator().toExpression(factory), evaluator.getName()));
     }
-    
-    expression.addParameter(new StreamExpressionNamedParameter("productSort", orderBy.toExpression(factory)));
+
+    if(orderBy != null) {
+      expression.addParameter(new StreamExpressionNamedParameter("productSort", orderBy.toExpression(factory)));
+    }
     
     return expression;   
   }
@@ -171,8 +176,10 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     for(NamedEvaluator evaluator : evaluators){
       explanation.addHelper(evaluator.getEvaluator().toExplanation(factory));
     }
-    
-    explanation.addHelper(orderBy.toExplanation(factory));
+
+    if(orderBy != null) {
+      explanation.addHelper(orderBy.toExplanation(factory));
+    }
     
     return explanation;
   }

@@ -1,6 +1,21 @@
 = ConfigSets API
-:page-shortname: configsets-api
-:page-permalink: configsets-api.html
+:page-toclevels: 1
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 The ConfigSets API enables you to create, delete, and otherwise manage ConfigSets.
 
@@ -8,46 +23,40 @@ To use a ConfigSet created with this API as the configuration for a collection, 
 
 This API can only be used with Solr running in SolrCloud mode. If you are not running Solr in SolrCloud mode but would still like to use shared configurations, please see the section <<config-sets.adoc#config-sets,Config Sets>>.
 
-[[ConfigSetsAPI-APIEntryPoints]]
-== API Entry Points
+== ConfigSets API Entry Points
 
 The base URL for all API calls is `\http://<hostname>:<port>/solr`.
 
-* `/admin/configs?action=CREATE`: <<ConfigSetsAPI-create,create>> a ConfigSet, based on an existing ConfigSet
-* `/admin/configs?action=DELETE`: <<ConfigSetsAPI-delete,delete>> a ConfigSet
-* `/admin/configs?action=LIST`: <<ConfigSetsAPI-list,list>> all ConfigSets
+* `/admin/configs?action=CREATE`: <<configsets-create,create>> a ConfigSet, based on an existing ConfigSet
+* `/admin/configs?action=DELETE`: <<configsets-delete,delete>> a ConfigSet
+* `/admin/configs?action=LIST`: <<configsets-list,list>> all ConfigSets
+* `/admin/configs?action=UPLOAD`: <<configsets-upload,upload>> a ConfigSet
 
-[[ConfigSetsAPI-createCreateaConfigSet]]
-
-[[ConfigSetsAPI-create]]
+[[configsets-create]]
 == Create a ConfigSet
 
 `/admin/configs?action=CREATE&name=_name_&baseConfigSet=_baseConfigSet_`
 
 Create a ConfigSet, based on an existing ConfigSet.
 
-[[ConfigSetsAPI-Input]]
-=== Input
+=== Create ConfigSet Parameters
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
+The following parameters are supported when creating a ConfigSet.
 
-[cols="20,15,10,15,40",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|name |String |Yes | |ConfigSet to be created
-|baseConfigSet |String |Yes | |ConfigSet to copy as a base
-|configSetProp._name=value_ |String |No | |ConfigSet property from base to override
-|===
+name::
+The ConfigSet to be created. This parameter is required.
 
-[[ConfigSetsAPI-Output]]
-=== Output
+baseConfigSet::
+The ConfigSet to copy as a base. This parameter is required.
 
-*Output Content*
+configSetProp._name_=_value_::
+Any ConfigSet property from base to override.
 
-The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+=== Create ConfigSet Response
 
-[[ConfigSetsAPI-Examples]]
-=== Examples
+The response will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Create ConfigSet Examples
 
 *Input*
 
@@ -55,7 +64,7 @@ Create a ConfigSet named 'myConfigSet' based on a 'predefinedTemplate' ConfigSet
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConfigSet=predefinedTemplate&configSetProp.immutable=false
+http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConfigSet=predefinedTemplate&configSetProp.immutable=false&wt=xml
 ----
 
 *Output*
@@ -70,37 +79,23 @@ http://localhost:8983/solr/admin/configs?action=CREATE&name=myConfigSet&baseConf
 </response>
 ----
 
-[[ConfigSetsAPI-deleteDeleteaConfigSet]]
-
-[[ConfigSetsAPI-delete]]
+[[configsets-delete]]
 == Delete a ConfigSet
 
 `/admin/configs?action=DELETE&name=_name_`
 
 Delete a ConfigSet
 
-[[ConfigSetsAPI-Input.1]]
-=== Input
+=== Delete ConfigSet Parameters
 
-*Query Parameters*
+name::
+The ConfigSet to be deleted. This parameter is required.
 
-// TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
-
-[cols="20,15,10,15,40",options="header"]
-|===
-|Key |Type |Required |Default |Description
-|name |String |Yes | |ConfigSet to be deleted
-|===
-
-[[ConfigSetsAPI-Output.1]]
-=== Output
-
-*Output Content*
+=== Delete ConfigSet Response
 
 The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
 
-[[ConfigSetsAPI-Examples.1]]
-=== Examples
+=== Delete ConfigSet Examples
 
 *Input*
 
@@ -108,7 +103,7 @@ Delete ConfigSet 'myConfigSet'
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet
+http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet&wt=xml
 ----
 
 *Output*
@@ -123,23 +118,20 @@ http://localhost:8983/solr/admin/configs?action=DELETE&name=myConfigSet
 </response>
 ----
 
-[[ConfigSetsAPI-listListConfigSets]]
-
-[[ConfigSetsAPI-list]]
+[[configsets-list]]
 == List ConfigSets
 
 `/admin/configs?action=LIST`
 
 Fetch the names of the ConfigSets in the cluster.
 
-[[ConfigSetsAPI-Examples.2]]
-=== Examples
+=== List ConfigSet Examples
 
 *Input*
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/configs?action=LIST&wt=json
+http://localhost:8983/solr/admin/configs?action=LIST
 ----
 
 *Output*
@@ -152,4 +144,44 @@ http://localhost:8983/solr/admin/configs?action=LIST&wt=json
     "QTime":203},
   "configSets":["myConfigSet1",
     "myConfig2"]}
+----
+
+[[configsets-upload]]
+== Upload a ConfigSet
+
+`/admin/configs?action=UPLOAD&name=_name_`
+
+Upload a ConfigSet, sent in as a zipped file. Please note that a ConfigSet is uploaded in a "trusted" mode if authentication is enabled and this upload operation is performed as an authenticated request. Without authentication, a ConfigSet is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" ConfigSet, the following functionality would not work:
+
+ * DataImportHandler's ScriptTransformer does not initialize, if specified in the ConfigSet.
+ * XSLT transformer (tr parameter) cannot be used at request processing time.
+ * StatelessScriptUpdateProcessor does not initialize, if specified in the ConfigSet.
+
+=== Upload ConfigSet Parameters
+
+name::
+The ConfigSet to be created when the upload is complete. This parameter is required.
+
+The body of the request should contain a zipped config set.
+
+=== Upload ConfigSet Response
+
+The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Upload ConfigSet Examples
+
+Create a config set named 'myConfigSet' from the zipped file myconfigset.zip. The zip file must be created from within the `conf` directory (i.e., `solrconfig.xml` must be the top level entry in the zip file). Here is an example on how to create the zip file and upload it:
+
+[source,text]
+----
+$ (cd solr/server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) > myconfigset.zip
+
+$ curl -X POST --header "Content-Type:application/octet-stream" --data-binary @myconfigset.zip "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
+----
+
+The same can be achieved using a Unix pipe, without creating an intermediate zip file, as follows:
+
+[source,text]
+----
+$ (cd server/solr/configsets/sample_techproducts_configs/conf && zip -r - *) | curl -X POST --header "Content-Type:application/octet-stream" --data-binary @- "http://localhost:8983/solr/admin/configs?action=UPLOAD&name=myConfigSet"
 ----

@@ -1,6 +1,20 @@
 = Copying Fields
-:page-shortname: copying-fields
-:page-permalink: copying-fields.html
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 You might want to interpret some document fields in more than one way. Solr has a mechanism for making copies of fields so that you can apply several distinct field types to a single piece of incoming information.
 
@@ -31,7 +45,7 @@ Both the source and the destination of `copyField` can contain either leading or
 The `copyField` command can use a wildcard (*) character in the `dest` parameter only if the `source` parameter contains one as well. `copyField` uses the matching glob from the source field for the `dest` field name into which the source content is copied.
 ====
 
-Copying is done at the stream source level and no copy feeds into another copy. This means that copy fields cannot be chained i.e. _you cannot_ copy from `here` to `there` and then from `there` to `elsewhere`. However, the same source field can be copied to multiple destination fields:
+Copying is done at the stream source level and no copy feeds into another copy. This means that copy fields cannot be chained i.e., _you cannot_ copy from `here` to `there` and then from `there` to `elsewhere`. However, the same source field can be copied to multiple destination fields:
 
 [source,xml]
 ----

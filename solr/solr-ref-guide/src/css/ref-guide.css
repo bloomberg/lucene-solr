@@ -698,7 +698,8 @@ ol li ul
     margin-left: 1.25em;
 }
 
-dl dt
+dl dt,
+dl dt code
 {
     margin-bottom: .3125em;
     font-weight: bold;
@@ -1098,67 +1099,90 @@ body.toc2 #header > h1:nth-last-child(2)
     border-bottom: 1px solid #efefed;
 }
 
-#toc > ul
+@media only screen
+       and (min-width : 768px)
+{
+    #toc.toc-right
+    {
+        float: right;
+        margin-left: 1em;
+        border: none;
+        max-width: 300px;
+    }
+    #toc.toc-column
+    {
+      -moz-column-count: 3;
+      -moz-column-gap: 20px;
+      -webkit-column-count: 3;
+      -webkit-column-gap: 20px;
+      column-count: 3;
+      column-gap: 20px;
+      margin-top: 1em;
+    }
+}
+.toc > ul
 {
     margin-left: .125em;
 }
 
-#toc ul.sectlevel0 > li > a
+.toc ul.sectlevel0 > li > a
 {
     font-weight: bold;
 }
 
-#toc ul.sectlevel0 ul.sectlevel1
+.toc ul.sectlevel0 ul.sectlevel1
 {
     margin: .5em 0;
 }
 
-#toc ul
+.toc ul
 {
     list-style-type: none;
     font-family: 'Noto Sans', sans-serif;
 }
 
-#toc a
+.toc a
 {
     text-decoration: none;
 }
 
-#toc a:active
+.toc a:active
 {
     text-decoration: underline;
 }
 
-#toctitle
+.toctitle
 {
     color: #7a2518;
     font-size: 1.2em;
 }
 
-div#toc ul li {
+div.toc ul li {
     margin: 8px 0 8px 22px;
-    list-style: square;
+    list-style: disc;
     line-height: 1.25;
 }
 
-div#toc ul {
+div.toc ul {
     background-color: whitesmoke;
     padding: 5px;
     border-radius: 5px;
-    max-width: 300px;
     color: gray;
 }
 
-div#toc ul li ul {
+div.toc ul li ul {
     padding-left:8px;
 
 }
 
-div#toc ul li ul li::before {
+div.toc ul li ul li::before {
     content: "–  ";
 }
 
-div#toc >ul::before {
+div.toc.section-toc >ul::before {
+    content: "In this section";
+}
+div.toc >ul::before {
     content: "On this Page";
     font-weight: bold;
     color: #555;
@@ -1290,12 +1314,12 @@ div#toc >ul::before {
     background: #f8f8f7;
 }
 
-#content #toc > :first-child
+#content .toc > :first-child
 {
     margin-top: 0;
 }
 
-#content #toc > :last-child
+#content .toc > :last-child
 {
     margin-bottom: 0;
 }
@@ -1421,6 +1445,7 @@ h6 > a.link:hover
 .videoblock
 {
     margin-bottom: 1.25em;
+    overflow: auto;
 }
 
 
@@ -1445,7 +1470,7 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p
 
 .admonitionblock > table
 {
-    width: 100%;
+    width: auto;
     border: 0;
     border-collapse: separate;
     background: none;
@@ -1485,7 +1510,7 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p
 .exampleblock > .content
 {
     margin-bottom: 1.25em;
-    padding: 1.25em;
+    padding: 0 1em 1em 1em;
     border-width: 1px;
     border-style: solid;
     border-color: #e6e6e6;
@@ -1732,7 +1757,7 @@ table.pyhltable .linenodiv
     word-spacing: .1em;
     letter-spacing: 0;
     font-style: italic;
-    font-size: 1.15rem;
+    font-size: inherit;
     line-height: 1.75;
 }
 
@@ -2631,7 +2656,7 @@ p.tableblock
 .exampleblock > .content
 {
     border-color: #e0e0dc;
-    background-color: #fffef7;
+    background-color: transparent;
     -webkit-box-shadow: 0 1px 4px #e0e0dc;
             box-shadow: 0 1px 4px #e0e0dc;
 }

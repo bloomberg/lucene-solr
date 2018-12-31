@@ -28,12 +28,15 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.MetricsCollectorHandler;
+import org.apache.solr.metrics.SolrCoreReporter;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.MetricFilter;
 
 /**
  * This class reports selected metrics from replicas to shard leader.
@@ -45,18 +48,18 @@ import org.slf4j.LoggerFactory;
  *   to 0 disables the reporter.</li>
  *   <li>filter - (optional multiple str) regex expression(s) matching selected metrics to be reported.</li>
  * </ul>
- * NOTE: this reporter uses predefined "replica" group, and it's always created even if explicit configuration
+ * NOTE: this reporter uses predefined "shard" group, and it's always created even if explicit configuration
  * is missing. Default configuration uses filters defined in {@link #DEFAULT_FILTERS}.
  * <p>Example configuration:</p>
  * <pre>
- *    &lt;reporter name="test" group="replica"&gt;
+ *    &lt;reporter name="test" group="shard" class="solr.SolrShardReporter"&gt;
  *      &lt;int name="period"&gt;11&lt;/int&gt;
  *      &lt;str name="filter"&gt;UPDATE\./update/.*requests&lt;/str&gt;
  *      &lt;str name="filter"&gt;QUERY\./select.*requests&lt;/str&gt;
  *    &lt;/reporter&gt;
  * </pre>
  */
-public class SolrShardReporter extends SolrMetricReporter {
+public class SolrShardReporter extends SolrCoreReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final List<String> DEFAULT_FILTERS = new ArrayList(){{
@@ -70,8 +73,6 @@ public class SolrShardReporter extends SolrMetricReporter {
   }};
 
   private String handler = MetricsCollectorHandler.HANDLER_PATH;
-  private int period = SolrMetricManager.DEFAULT_CLOUD_REPORTER_PERIOD;
-  private List<String> filters = new ArrayList<>();
 
   private SolrReporter reporter;
 
@@ -90,34 +91,23 @@ public class SolrShardReporter extends SolrMetricReporter {
     this.handler = handler;
   }
 
-  public void setPeriod(int period) {
-    this.period = period;
-  }
-
-  public void setFilter(List<String> filterConfig) {
-    if (filterConfig == null || filterConfig.isEmpty()) {
-      return;
+  @Override
+  protected void doInit() {
+    if (filters.isEmpty()) {
+      filters = DEFAULT_FILTERS;
     }
-    filters.addAll(filterConfig);
+    // start in setCore(SolrCore) when core is available
   }
 
-  public void setFilter(String filter) {
-    if (filter != null && !filter.isEmpty()) {
-      this.filters.add(filter);
-    }
-  }
-
-  // for unit tests
-  int getPeriod() {
-    return period;
+  @Override
+  protected MetricFilter newMetricFilter() {
+    // unsupported here since setCore(SolrCore) directly uses the this.filters
+    throw new UnsupportedOperationException(getClass().getCanonicalName()+".newMetricFilter() is not supported");
   }
 
   @Override
   protected void validate() throws IllegalStateException {
-    if (filters.isEmpty()) {
-      filters = DEFAULT_FILTERS;
-    }
-    // start in inform(...) only when core is available
+    // (period < 1) means "don't start reporter" and so no (period > 0) validation needed
   }
 
   @Override
@@ -127,7 +117,9 @@ public class SolrShardReporter extends SolrMetricReporter {
     }
   }
 
-  public void setCore(SolrCore core) {
+  @Override
+  public void init(PluginInfo pluginInfo, SolrCore core) {
+    super.init(pluginInfo, core);
     if (reporter != null) {
       reporter.close();
     }

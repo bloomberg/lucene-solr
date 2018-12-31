@@ -31,6 +31,15 @@ public interface CollectionParams {
   String ACTION = "action";
   String NAME = "name";
 
+  /**
+   * @deprecated use {@link #SOURCE_NODE} instead
+   */
+  @Deprecated
+  String FROM_NODE = "fromNode";
+
+  String SOURCE_NODE = "sourceNode";
+  String TARGET_NODE = "targetNode";
+
 
   enum LockLevel {
     CLUSTER(0),
@@ -96,6 +105,7 @@ public interface CollectionParams {
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
     DELETESNAPSHOT(true, LockLevel.COLLECTION),
     LISTSNAPSHOTS(false, LockLevel.NONE),
+    UTILIZENODE(false, LockLevel.NONE),
     //only for testing. it just waits for specified time
     // these are not exposed via collection API commands
     // but the overseer is aware of these tasks
