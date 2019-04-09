@@ -48,10 +48,6 @@ import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchG
  */
 public class SearchGroupShardResponseProcessor implements ShardResponseProcessor {
 
-  protected SearchGroupsResultTransformer newSearchGroupsResultTransformer(SolrIndexSearcher solrIndexSearcher) {
-    return new SearchGroupsResultTransformer.DefaultSearchResultResultTransformer(solrIndexSearcher);
-  }
-
   protected SearchGroupsContainer newSearchGroupsContainer(ResponseBuilder rb) {
       return new SearchGroupsContainer(rb.getGroupingSpec().getFields());
   }
@@ -72,7 +68,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
       }
     }
 
-    SearchGroupsResultTransformer serializer = newSearchGroupsResultTransformer(rb.req.getSearcher());
+    SearchGroupsResultTransformer serializer = new SearchGroupsResultTransformer(rb.req.getSearcher(), rb.getGroupingSpec().isSkipSecondGroupingStep());
     int maxElapsedTime = 0;
     int hitCountDuringFirstPhase = 0;
 

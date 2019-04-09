@@ -29,16 +29,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.GroupingSpecification;
-import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchGroupsResultTransformer;
 
 public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroupShardResponseProcessor {
-
-  @Override
-  protected SearchGroupsResultTransformer newSearchGroupsResultTransformer(SolrIndexSearcher solrIndexSearcher) {
-    return new SearchGroupsResultTransformer.SkipSecondStepSearchResultResultTransformer(solrIndexSearcher);
-  }
 
   @Override
   protected SearchGroupsContainer newSearchGroupsContainer(ResponseBuilder rb) {

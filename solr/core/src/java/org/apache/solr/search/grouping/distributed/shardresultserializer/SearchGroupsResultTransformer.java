@@ -41,15 +41,25 @@ import java.util.*;
 /**
  * Implementation for transforming {@link SearchGroup} into a {@link NamedList} structure and visa versa.
  */
-public abstract class SearchGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, SearchGroupsFieldCommandResult>> {
+public class SearchGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, SearchGroupsFieldCommandResult>> {
 
   private static final String TOP_GROUPS = "topGroups";
   private static final String GROUP_COUNT = "groupCount";
 
   protected final SolrIndexSearcher searcher;
+  private final SearchGroupsFieldCommandTransformer searchGroupsTransformer;
 
-  private SearchGroupsResultTransformer(SolrIndexSearcher searcher) {
+  public SearchGroupsResultTransformer(SolrIndexSearcher searcher) {
+    this(searcher, false);
+  }
+
+  public SearchGroupsResultTransformer(SolrIndexSearcher searcher, boolean skipSecondStep) {
     this.searcher = searcher;
+    if (skipSecondStep){
+      searchGroupsTransformer = new SkipSecondStepSearchGroupsFieldCommandTransformer();
+    } else {
+      searchGroupsTransformer = new DefaultSearchGroupsFieldCommandTransformer();
+    }
   }
 
   final protected Object[] getConvertedSortValues(final Object[] sortValues, final SortField[] sortFields) {
@@ -78,7 +88,7 @@ public abstract class SearchGroupsResultTransformer implements ShardResultTransf
         final SearchGroupsFieldCommandResult fieldCommandResult = fieldCommand.result();
         final Collection<SearchGroup<BytesRef>> searchGroups = fieldCommandResult.getSearchGroups();
         if (searchGroups != null) {
-          commandResult.add(TOP_GROUPS, serializeSearchGroup(searchGroups, fieldCommand));
+          commandResult.add(TOP_GROUPS, searchGroupsTransformer.serializeSearchGroup(searchGroups, fieldCommand));
         }
         final Integer groupedCount = fieldCommandResult.getGroupCount();
         if (groupedCount != null) {
@@ -93,15 +103,21 @@ public abstract class SearchGroupsResultTransformer implements ShardResultTransf
     return result;
   }
 
-  protected abstract NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command);
+  @Override
+  public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
+    return searchGroupsTransformer.transformToNative(shardResponse, groupSort, withinGroupSort, shard);
+  }
 
-  public static class DefaultSearchResultResultTransformer extends SearchGroupsResultTransformer {
 
-    public DefaultSearchResultResultTransformer(SolrIndexSearcher searcher) {
-      super(searcher);
+
+  private interface SearchGroupsFieldCommandTransformer {
+      Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard);
+      NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command);
+
     }
 
-    @Override
+    class DefaultSearchGroupsFieldCommandTransformer implements SearchGroupsFieldCommandTransformer {
+
     public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
       final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
       for (Map.Entry<String, NamedList> command : shardResponse) {
@@ -138,8 +154,7 @@ public abstract class SearchGroupsResultTransformer implements ShardResultTransf
       return result;
     }
 
-    @Override
-    protected NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command) {
+    public NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command) {
       final NamedList<Object[]> result = new NamedList<>(data.size());
 
       for (SearchGroup<BytesRef> searchGroup : data) {
@@ -159,15 +174,11 @@ public abstract class SearchGroupsResultTransformer implements ShardResultTransf
     }
   }
 
-  public static class SkipSecondStepSearchResultResultTransformer extends SearchGroupsResultTransformer {
+  public class SkipSecondStepSearchGroupsFieldCommandTransformer implements SearchGroupsFieldCommandTransformer {
 
     private static final String TOP_DOC_SOLR_ID_KEY = "topDocSolrId";
     private static final String TOP_DOC_SCORE_KEY = "topDocScore";
     private static final String SORTVALUES_KEY  = "sortValues";
-
-    public SkipSecondStepSearchResultResultTransformer(SolrIndexSearcher searcher) {
-      super(searcher);
-    }
 
     @Override
     public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
@@ -222,7 +233,7 @@ public abstract class SearchGroupsResultTransformer implements ShardResultTransf
     }
 
     @Override
-    protected NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command) {
+    public NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command) {
       final NamedList<NamedList> result = new NamedList<>(data.size());
       for (SearchGroup<BytesRef> searchGroup : data) {
 
