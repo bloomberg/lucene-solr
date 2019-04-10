@@ -108,23 +108,36 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return searchGroupsTransformer.transformToNative(shardResponse, groupSort, withinGroupSort, shard);
   }
 
+  // This method will convert a groupValue and a list of secondary values that are required to sort the documents within the group
+  // to a SearchGroup representation
   private static SearchGroup<BytesRef> convertToSearchGroup(String groupFieldName, String groupFieldValue, Sort groupSort, List<?> sortValues, IndexSchema schema){
     SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
     SchemaField groupField = groupFieldValue != null? schema.getFieldOrNull(groupFieldName) :    null;
     searchGroup.groupValue = null;
     if (groupFieldValue != null) {
       if (groupField != null) {
+        // if we have the group field, we get the BytesRef representation of the fieldValue
+        // according to the type of the field
         BytesRefBuilder builder = new BytesRefBuilder();
         groupField.getType().readableToIndexed(groupFieldValue, builder);
         searchGroup.groupValue = builder.get();
       } else {
+        // ... otherwise we default to String
         searchGroup.groupValue = new BytesRef(groupFieldValue);
       }
     }
+    // if the group is sorted according combining multiple fields, we need to retrieve
+    // the values of all the fields that we are going to use
+
+    // prepare the array with the sort values
     searchGroup.sortValues = sortValues.toArray(new Comparable[sortValues.size()]);
     for (int i = 0; i < searchGroup.sortValues.length; i++) {
+      // for each field:
+      // 1. we get the name of the field used by the current Sort
       final String sortField = groupSort.getSort()[i].getField();
+      // we retrieve the schema field if possible
       final SchemaField field = (sortField != null) ? schema.getFieldOrNull(sortField) : null;
+      // unmarshall the value according to the field if possible, otherwise use the original value
       searchGroup.sortValues[i] = ShardResultTransformerUtils.unmarshalSortValue(searchGroup.sortValues[i], field);
     }
     return searchGroup;
