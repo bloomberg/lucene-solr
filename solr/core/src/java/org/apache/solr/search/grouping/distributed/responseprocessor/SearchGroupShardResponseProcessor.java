@@ -55,16 +55,16 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
   @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     SortSpec groupSortSpec = rb.getGroupingSpec().getGroupSortSpec();
-    Sort groupSort = rb.getGroupingSpec().getGroupSort();
+    Sort groupSort = rb.getGroupingSpec().getGroupSortSpec().getSort();
     final String[] fields = rb.getGroupingSpec().getFields();
-    Sort withinGroupSort = rb.getGroupingSpec().getSortWithinGroup();
+    Sort withinGroupSort = rb.getGroupingSpec().getWithinGroupSortSpec().getSort();
     assert withinGroupSort != null;
 
     final Map<String, List<Collection<SearchGroup<BytesRef>>>> commandSearchGroups = new HashMap<>(fields.length, 1.0f);
     for (String field : fields) {
-      commandSearchGroups.put(field, new ArrayList<Collection<SearchGroup<BytesRef>>>(shardRequest.responses.size()));
+      commandSearchGroups.put(field, new ArrayList<>(shardRequest.responses.size()));
       if (!rb.searchGroupToShards.containsKey(field)) {
-        rb.searchGroupToShards.put(field, new HashMap<SearchGroup<BytesRef>, Set<String>>());
+        rb.searchGroupToShards.put(field, new HashMap<>());
       }
     }
 

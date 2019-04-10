@@ -108,7 +108,27 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return searchGroupsTransformer.transformToNative(shardResponse, groupSort, withinGroupSort, shard);
   }
 
-
+  private static SearchGroup<BytesRef> convertToSearchGroup(String groupFieldName, String groupFieldValue, Sort groupSort, List<?> sortValues, IndexSchema schema){
+    SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
+    SchemaField groupField = groupFieldValue != null? schema.getFieldOrNull(groupFieldName) :    null;
+    searchGroup.groupValue = null;
+    if (groupFieldValue != null) {
+      if (groupField != null) {
+        BytesRefBuilder builder = new BytesRefBuilder();
+        groupField.getType().readableToIndexed(groupFieldValue, builder);
+        searchGroup.groupValue = builder.get();
+      } else {
+        searchGroup.groupValue = new BytesRef(groupFieldValue);
+      }
+    }
+    searchGroup.sortValues = sortValues.toArray(new Comparable[sortValues.size()]);
+    for (int i = 0; i < searchGroup.sortValues.length; i++) {
+      final String sortField = groupSort.getSort()[i].getField();
+      final SchemaField field = (sortField != null) ? schema.getFieldOrNull(sortField) : null;
+      searchGroup.sortValues[i] = ShardResultTransformerUtils.unmarshalSortValue(searchGroup.sortValues[i], field);
+    }
+    return searchGroup;
+  }
 
   private interface SearchGroupsFieldCommandTransformer {
       Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard);
@@ -120,36 +140,31 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
 
     public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
       final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
-      for (Map.Entry<String, NamedList> command : shardResponse) {
+      final IndexSchema schema = searcher.getSchema();
+      for (Map.Entry<String, NamedList> singleShardResponse : shardResponse) {
+        final String groupFieldName = singleShardResponse.getKey();
         List<SearchGroup<BytesRef>> searchGroups = new ArrayList<>();
-        NamedList topGroupsAndGroupCount = command.getValue();
+        NamedList topGroupsAndGroupCount = singleShardResponse.getValue();
+        // this will return the raw list of groups, that the single shard returned
         @SuppressWarnings("unchecked")
         final NamedList<List<Comparable>> rawSearchGroups = (NamedList<List<Comparable>>) topGroupsAndGroupCount.get(TOP_GROUPS);
         if (rawSearchGroups != null) {
+          // if the list exists, then we iterate over each group, the map represents
+          // the identifier of the group (a query or a field value), as a key and a list of
+          // the documents that belongs to the group.
           for (Map.Entry<String, List<Comparable>> rawSearchGroup : rawSearchGroups){
-            SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
-            SchemaField groupField = rawSearchGroup.getKey() != null? searcher.getSchema().getFieldOrNull(command.getKey()) : null;
-            searchGroup.groupValue = null;
-            if (rawSearchGroup.getKey() != null) {
-              if (groupField != null) {
-                BytesRefBuilder builder = new BytesRefBuilder();
-                groupField.getType().readableToIndexed(rawSearchGroup.getKey(), builder);
-                searchGroup.groupValue = builder.get();
-              } else {
-                searchGroup.groupValue = new BytesRef(rawSearchGroup.getKey());
-              }
-            }
-            searchGroup.sortValues = rawSearchGroup.getValue().toArray(new Comparable[rawSearchGroup.getValue().size()]);
-            for (int i = 0; i < searchGroup.sortValues.length; i++) {
-              SchemaField field = groupSort.getSort()[i].getField() != null ? searcher.getSchema().getFieldOrNull(groupSort.getSort()[i].getField()) : null;
-              searchGroup.sortValues[i] = ShardResultTransformerUtils.unmarshalSortValue(searchGroup.sortValues[i], field);
-            }
+            // for each 'raw' search group (group-identifier + documents), we build a SearchGroup object and we add
+            // it to searchGroups
+            final String groupFieldValue = rawSearchGroup.getKey();
+            List<Comparable> documentWithinTheSearchGroup = rawSearchGroup.getValue();
+            SearchGroup<BytesRef> searchGroup = convertToSearchGroup(groupFieldName, groupFieldValue, groupSort, documentWithinTheSearchGroup, schema);
             searchGroups.add(searchGroup);
           }
         }
-
+        // we get the total number of matched documents for this group
         final Integer groupCount = (Integer) topGroupsAndGroupCount.get(GROUP_COUNT);
-        result.put(command.getKey(), new SearchGroupsFieldCommandResult(groupCount, searchGroups));
+        // we add them to the map
+        result.put(singleShardResponse.getKey(), new SearchGroupsFieldCommandResult(groupCount, searchGroups));
       }
       return result;
     }
@@ -183,51 +198,36 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     @Override
     public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
       final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
-      for (Map.Entry<String, NamedList> command : shardResponse) {
+      final IndexSchema schema = searcher.getSchema();
+
+      for (Map.Entry<String, NamedList> singleShardResponse : shardResponse) {
+        final String groupFieldName = singleShardResponse.getKey();
         List<SearchGroup<BytesRef>> searchGroups = new ArrayList<>();
-        NamedList topGroupsAndGroupCount = command.getValue();
+        NamedList topGroupsAndGroupCount = singleShardResponse.getValue();
         @SuppressWarnings("unchecked")
         final NamedList<List<Comparable>> rawSearchGroups = (NamedList<List<Comparable>>) topGroupsAndGroupCount.get(TOP_GROUPS);
         if (rawSearchGroups != null) {
+          // if the list exists, then we iterate over each group, the map represents
+          // the identifier of the group (a query or a field value), as a key and a list of
+          // the documents that belongs to the group.
           for (Map.Entry<String, List<Comparable>> rawSearchGroup : rawSearchGroups){
-            SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
-            SchemaField groupField = rawSearchGroup.getKey() != null? searcher.getSchema().getFieldOrNull(command.getKey()) :    null;
-            searchGroup.groupValue = null;
-            if (rawSearchGroup.getKey() != null) {
-              if (groupField != null) {
-                BytesRefBuilder builder = new BytesRefBuilder();
-                groupField.getType().readableToIndexed(rawSearchGroup.getKey(), builder);
-                searchGroup.groupValue = builder.get();
-              } else {
-                searchGroup.groupValue = new BytesRef(rawSearchGroup.getKey());
-              }
-            }
-            // I don't think we need this for upstream
-            //
-            // If we don't recognize this serialization throw an exception
-            // if (!isSerializationCompatible(rawSearchGroups)) {
-            //   logger.warn("Incompatible serialization/deserialization. Falling back to the default method");
-            //   throw new UnsupportedOperationException("Incompatible serialization/deserialization. Falling back to the default method");
-            // }
+            // for each 'raw' search group (group-identifier + documents), we build a SearchGroup object and we add
+            // it to searchGroups
             NamedList<Object> groupInfo = (NamedList) rawSearchGroup.getValue();
+            final ArrayList<?> sortValues = (ArrayList<?>)groupInfo.get(SORTVALUES_KEY);
+            final String groupFieldValue = rawSearchGroup.getKey();
+            SearchGroup<BytesRef> searchGroup = convertToSearchGroup(groupFieldName, groupFieldValue, groupSort, sortValues, schema);
+
             searchGroup.topDocLuceneId = DocIdSetIterator.NO_MORE_DOCS;
             searchGroup.topDocScore = (float) groupInfo.get(TOP_DOC_SCORE_KEY);
             searchGroup.topDocSolrId = groupInfo.get(TOP_DOC_SOLR_ID_KEY);
-            final ArrayList<?> sortValues = (ArrayList<?>)groupInfo.get(SORTVALUES_KEY);
-            searchGroup.sortValues = sortValues.toArray(new Comparable[sortValues.size()]);
-
-            final IndexSchema schema = searcher.getSchema();
-            for (int i = 0; i < searchGroup.sortValues.length; i++) {
-              final String sortField = groupSort.getSort()[i].getField();
-              final SchemaField field = (sortField != null) ? schema.getFieldOrNull(sortField) : null;
-              searchGroup.sortValues[i] = ShardResultTransformerUtils.unmarshalSortValue(searchGroup.sortValues[i], field);
-            }
             searchGroups.add(searchGroup);
           }
         }
-
+        // we get the total number of matched documents for this group
         final Integer groupCount = (Integer) topGroupsAndGroupCount.get(GROUP_COUNT);
-        result.put(command.getKey(), new SearchGroupsFieldCommandResult(groupCount, searchGroups));
+        // we add them to the map
+        result.put(singleShardResponse.getKey(), new SearchGroupsFieldCommandResult(groupCount, searchGroups));
       }
       return result;
     }
