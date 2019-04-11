@@ -47,7 +47,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   private static final String GROUP_COUNT = "groupCount";
 
   protected final SolrIndexSearcher searcher;
-  private final SearchGroupsFieldCommandTransformer searchGroupsTransformer;
+  private final SearchGroupsFieldCommandSerializer searchGroupsTransformer;
 
   public SearchGroupsResultTransformer(SolrIndexSearcher searcher) {
     this(searcher, false);
@@ -56,9 +56,9 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   public SearchGroupsResultTransformer(SolrIndexSearcher searcher, boolean skipSecondStep) {
     this.searcher = searcher;
     if (skipSecondStep){
-      searchGroupsTransformer = new SkipSecondStepSearchGroupsFieldCommandTransformer();
+      searchGroupsTransformer = new SkipSecondStepSearchGroupsFieldCommandSerializer();
     } else {
-      searchGroupsTransformer = new DefaultSearchGroupsFieldCommandTransformer();
+      searchGroupsTransformer = new DefaultSearchGroupsFieldCommandSerializer();
     }
   }
 
@@ -143,13 +143,13 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return searchGroup;
   }
 
-  private interface SearchGroupsFieldCommandTransformer {
+  private interface SearchGroupsFieldCommandSerializer {
       Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard);
       NamedList serializeSearchGroup(Collection<SearchGroup<BytesRef>> data, SearchGroupsFieldCommand command);
 
     }
 
-    class DefaultSearchGroupsFieldCommandTransformer implements SearchGroupsFieldCommandTransformer {
+    class DefaultSearchGroupsFieldCommandSerializer implements SearchGroupsFieldCommandSerializer {
 
     public Map<String, SearchGroupsFieldCommandResult> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
       final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
@@ -202,7 +202,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     }
   }
 
-  public class SkipSecondStepSearchGroupsFieldCommandTransformer implements SearchGroupsFieldCommandTransformer {
+  public class SkipSecondStepSearchGroupsFieldCommandSerializer implements SearchGroupsFieldCommandSerializer {
 
     private static final String TOP_DOC_SOLR_ID_KEY = "topDocSolrId";
     private static final String TOP_DOC_SCORE_KEY = "topDocScore";
