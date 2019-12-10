@@ -76,9 +76,13 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
     return sortValues.toArray(new Comparable[sortValues.size()]);
   }
 
+  protected SearchGroup<BytesRef> newSearchGroup() {
+    return new SearchGroup<>();
+  }
+
   protected SearchGroup<BytesRef> deserializeOneSearchGroup(SchemaField groupField, String groupValue,
                                                             SortField[] groupSortField, Object rawSearchGroupData) {
-    SearchGroup<BytesRef> searchGroup = new SearchGroup<>();
+    SearchGroup<BytesRef> searchGroup = newSearchGroup();
     searchGroup.groupValue = null;
     if (groupValue != null) {
       if (groupField != null) {

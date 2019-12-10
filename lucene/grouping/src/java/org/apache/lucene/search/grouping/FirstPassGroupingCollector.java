@@ -132,32 +132,33 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
     final Collection<SearchGroup<T>> result = new ArrayList<>();
     int upto = 0;
     final int sortFieldCount = comparators.length;
-    assert sortFieldCount > 0; // this must always be true because fields Sort must contain at least a field
     for(CollectedSearchGroup<T> group : orderedGroups) {
       if (upto++ < groupOffset) {
         continue;
       }
       // System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.toString()));
-      SearchGroup<T> searchGroup = new SearchGroup<>();
-      searchGroup.groupValue = group.groupValue;
-      // We pass this around so that we can get the corresponding solr id when serializing the search group to send to the federator
-      searchGroup.topDocLuceneId = group.topDoc;
-      searchGroup.sortValues = new Object[sortFieldCount];
-      for(int sortFieldIDX=0;sortFieldIDX<sortFieldCount;sortFieldIDX++) {
-        searchGroup.sortValues[sortFieldIDX] = comparators[sortFieldIDX].value(group.comparatorSlot);
-      }
-      searchGroup.topDocScore = Float.NaN;
-      // if there is the score comparator we want to return the score
-      for (FieldComparator comparator: comparators){
-        if (comparator instanceof FieldComparator.RelevanceComparator){
-          searchGroup.topDocScore = (Float)comparator.value(group.comparatorSlot);
-        }
-      }
-
+      SearchGroup<T> searchGroup = newSearchGroupFromCollectedSearchGroup(group, comparators, sortFieldCount);
       result.add(searchGroup);
     }
     //System.out.println("  return " + result.size() + " groups");
     return result;
+  }
+
+  protected SearchGroup<T> newSearchGroup() {
+    return new SearchGroup<>();
+  }
+
+  protected SearchGroup<T> newSearchGroupFromCollectedSearchGroup(
+      CollectedSearchGroup<T> group,
+      FieldComparator<?>[] comparators,
+      int sortFieldCount) {
+    SearchGroup<T> searchGroup = newSearchGroup();
+    searchGroup.groupValue = group.groupValue;
+    searchGroup.sortValues = new Object[sortFieldCount];
+    for(int sortFieldIDX=0;sortFieldIDX<sortFieldCount;sortFieldIDX++) {
+      searchGroup.sortValues[sortFieldIDX] = comparators[sortFieldIDX].value(group.comparatorSlot);
+    }
+    return searchGroup;
   }
 
   @Override

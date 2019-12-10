@@ -1330,6 +1330,7 @@ public class QueryComponent extends SearchComponent
           .setGroupSort(groupingSpec.getGroupSortSpec().getSort())
           .setTopNGroups(cmd.getOffset() + cmd.getLen())
           .setIncludeGroupCount(groupingSpec.isIncludeGroupCount())
+          .setSkipSecondGroupingStep(groupingSpec.isSkipSecondGroupingStep())
           .build()
       );
     }

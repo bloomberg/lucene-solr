@@ -23,6 +23,6 @@ import org.apache.lucene.search.FieldComparator; // javadocs
  * tracking the top doc and {@link FieldComparator} slot.
  * @lucene.internal */
 public class CollectedSearchGroup<T> extends SearchGroup<T> {
-  int topDoc;
-  int comparatorSlot;
+  public int topDoc;
+  public int comparatorSlot;
 }

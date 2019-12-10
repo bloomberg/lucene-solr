@@ -28,6 +28,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AllGroupsCollector;
 import org.apache.lucene.search.grouping.FirstPassGroupingCollector;
+import org.apache.lucene.search.grouping.GroupSelector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
@@ -35,6 +36,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.grouping.Command;
+import org.apache.solr.search.grouping.SkipSecondPassFirstPassGroupingCollector;
 
 /**
  * Creates all the collectors needed for the first phase and how to handle the results.
@@ -47,6 +49,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
     private Sort groupSort;
     private Integer topNGroups;
     private boolean includeGroupCount = false;
+    private boolean skipSecondGroupingStep = false;
 
     public Builder setField(SchemaField field) {
       this.field = field;
@@ -68,12 +71,17 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
       return this;
     }
 
+    public Builder setSkipSecondGroupingStep(boolean skipSecondGroupingStep) {
+      this.skipSecondGroupingStep = skipSecondGroupingStep;
+      return this;
+    }
+
     public SearchGroupsFieldCommand build() {
       if (field == null || groupSort == null || topNGroups == null) {
         throw new IllegalStateException("All fields must be set");
       }
 
-      return new SearchGroupsFieldCommand(field, groupSort, topNGroups, includeGroupCount);
+      return new SearchGroupsFieldCommand(field, groupSort, topNGroups, includeGroupCount, skipSecondGroupingStep);
     }
 
   }
@@ -82,15 +90,25 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
   private final Sort groupSort;
   private final int topNGroups;
   private final boolean includeGroupCount;
+  private final boolean skipSecondGroupingStep;
 
   private FirstPassGroupingCollector firstPassGroupingCollector;
   private AllGroupsCollector allGroupsCollector;
 
-  private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount) {
+  private SearchGroupsFieldCommand(SchemaField field, Sort groupSort, int topNGroups, boolean includeGroupCount, boolean skipSecondGroupingStep) {
     this.field = field;
     this.groupSort = groupSort;
     this.topNGroups = topNGroups;
     this.includeGroupCount = includeGroupCount;
+    this.skipSecondGroupingStep = skipSecondGroupingStep;
+  }
+
+  private  FirstPassGroupingCollector newFirstPassGroupingCollector(GroupSelector groupSelector, Sort groupSort, int topNGroups) {
+    if (skipSecondGroupingStep) {
+      return new SkipSecondPassFirstPassGroupingCollector<>(groupSelector, groupSort, topNGroups);
+    } else {
+      return new FirstPassGroupingCollector<>(groupSelector, groupSort, topNGroups);
+    }
   }
 
   @Override
@@ -101,10 +119,10 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
       if (fieldType.getNumberType() != null) {
         ValueSource vs = fieldType.getValueSource(field, null);
         firstPassGroupingCollector
-            = new FirstPassGroupingCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()), groupSort, topNGroups);
+            = newFirstPassGroupingCollector(new ValueSourceGroupSelector(vs, new HashMap<>()), groupSort, topNGroups);
       } else {
         firstPassGroupingCollector
-            = new FirstPassGroupingCollector<>(new TermGroupSelector(field.getName()), groupSort, topNGroups);
+            = newFirstPassGroupingCollector(new TermGroupSelector(field.getName()), groupSort, topNGroups);
       }
       collectors.add(firstPassGroupingCollector);
     }

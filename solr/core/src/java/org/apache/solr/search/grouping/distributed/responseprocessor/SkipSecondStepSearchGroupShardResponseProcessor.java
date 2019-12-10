@@ -31,6 +31,7 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.GroupingSpecification;
+import org.apache.solr.search.grouping.SkipSecondPassFirstPassGroupingCollector;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.SearchGroupsResultTransformer;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.SkipSecondStepSearchResultResultTransformer;
 
@@ -65,7 +66,9 @@ public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroup
       super.addSearchGroups(srsp, field, searchGroups);
       for (SearchGroup<BytesRef> searchGroup : searchGroups) {
         assert(srsp.getShard() != null);
-        docIdToShard.put(searchGroup.topDocSolrId, srsp.getShard());
+        assert(searchGroup instanceof SkipSecondPassFirstPassGroupingCollector.SolrSearchGroup);
+        SkipSecondPassFirstPassGroupingCollector.SolrSearchGroup<BytesRef> solrSearchGroup = (SkipSecondPassFirstPassGroupingCollector.SolrSearchGroup<BytesRef>)searchGroup;
+        docIdToShard.put(solrSearchGroup.topDocSolrId, srsp.getShard());
       }
     }
 
@@ -89,7 +92,11 @@ public class SkipSecondStepSearchGroupShardResponseProcessor extends SearchGroup
       float maxScore = Float.MIN_VALUE;
       int groupsIndex = 0;
 
-      for (SearchGroup<BytesRef> group : mergedTopGroups) {
+      for (SearchGroup<BytesRef> mergedTopGroup : mergedTopGroups) {
+
+        assert(mergedTopGroup instanceof SkipSecondPassFirstPassGroupingCollector.SolrSearchGroup);
+        SkipSecondPassFirstPassGroupingCollector.SolrSearchGroup<BytesRef> group = (SkipSecondPassFirstPassGroupingCollector.SolrSearchGroup<BytesRef>)mergedTopGroup;
+
         if (! Float.isNaN(group.topDocScore)) {
           maxScore = Math.max(maxScore, group.topDocScore);
         }

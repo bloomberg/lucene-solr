@@ -48,25 +48,9 @@ public class SearchGroup<T> {
    * been passed to {@link FirstPassGroupingCollector#getTopGroups} */
   public Object[] sortValues;
 
-  /** The top doc of this group: we track the Lucene id,
-   * the Solr id and the score of the document */
-  public Object topDocSolrId;
-  public float topDocScore;
-
-  /** The topDocLuceneId will be null at the federator level because it is unique only at the shard level.
-   * It is used by the shard to get the corresponding solr id when serializing the search group to send to the federator
-   */
-  public int topDocLuceneId;
-
   @Override
   public String toString() {
-    return "SearchGroup{" +
-        "groupValue=" + groupValue +
-        ", sortValues=" + Arrays.toString(sortValues) +
-        ", topDocSolrId=" + topDocSolrId +
-        ", topDocScore=" + topDocScore +
-        ", topDocLuceneId=" + topDocLuceneId +
-        '}';
+    return("SearchGroup(groupValue=" + groupValue + " sortValues=" + Arrays.toString(sortValues) + ")");
   }
 
   @Override
@@ -92,7 +76,12 @@ public class SearchGroup<T> {
     return groupValue != null ? groupValue.hashCode() : 0;
   }
 
-  private static class ShardIter<T> {
+  /**
+   * Iterator for all the groups on a shard
+   *
+   * @lucene.experimental
+   */
+  protected static class ShardIter<T> {
     public final Iterator<SearchGroup<T>> iter;
     public final int shardIndex;
 
@@ -117,8 +106,16 @@ public class SearchGroup<T> {
     }
   }
 
-  // Holds all shards currently on the same group
-  private static class MergedGroup<T> {
+  protected MergedGroup<T> newMergedGroup() {
+    return new MergedGroup<>(this.groupValue);
+  }
+
+  /**
+   * Holds all shards currently on the same group
+   *
+   * @lucene.experimental
+   */
+  protected static class MergedGroup<T> {
 
     // groupValue may be null!
     public final T groupValue;
@@ -129,13 +126,27 @@ public class SearchGroup<T> {
     public boolean processed;
     public boolean inQueue;
 
-    /** The top doc of this group:
-     * the Solr id and the score of the document */
-    public float topDocScore;
-    public Object topDocSolrId;
-
     public MergedGroup(T groupValue) {
       this.groupValue = groupValue;
+    }
+
+    private SearchGroup<T> toSearchGroup() {
+      final SearchGroup<T> searchGroup = newSearchGroup();
+      fillSearchGroup(searchGroup);
+      return searchGroup;
+    }
+
+    protected SearchGroup<T> newSearchGroup() {
+      return new SearchGroup<T>();
+    }
+
+    protected void fillSearchGroup(SearchGroup<T> searchGroup) {
+      searchGroup.groupValue = this.groupValue;
+      searchGroup.sortValues = this.topValues;
+    }
+
+    protected void update(SearchGroup<T> group) {
+      this.topValues = group.sortValues;
     }
 
     // Only for assert
@@ -245,9 +256,7 @@ public class SearchGroup<T> {
         if (isNew) {
           // Start a new group:
           //System.out.println("      new");
-          mergedGroup = new MergedGroup<>(group.groupValue);
-          mergedGroup.topDocSolrId = group.topDocSolrId;
-          mergedGroup.topDocScore = group.topDocScore;
+          mergedGroup = group.newMergedGroup();
           mergedGroup.minShardIndex = shard.shardIndex;
           assert group.sortValues != null;
           mergedGroup.topValues = group.sortValues;
@@ -285,9 +294,7 @@ public class SearchGroup<T> {
             if (mergedGroup.inQueue) {
               queue.remove(mergedGroup);
             }
-            mergedGroup.topDocScore = group.topDocScore;
-            mergedGroup.topDocSolrId = group.topDocSolrId;
-            mergedGroup.topValues = group.sortValues;
+            mergedGroup.update(group);
             mergedGroup.minShardIndex = shard.shardIndex;
             queue.add(mergedGroup);
             mergedGroup.inQueue = true;
@@ -330,11 +337,7 @@ public class SearchGroup<T> {
         group.processed = true;
         //System.out.println("  pop: shards=" + group.shards + " group=" + (group.groupValue == null ? "null" : (((BytesRef) group.groupValue).utf8ToString())) + " sortValues=" + Arrays.toString(group.topValues));
         if (count++ >= offset) {
-          final SearchGroup<T> newGroup = new SearchGroup<>();
-          newGroup.groupValue = group.groupValue;
-          newGroup.sortValues = group.topValues;
-          newGroup.topDocSolrId = group.topDocSolrId;
-          newGroup.topDocScore = group.topDocScore;
+          final SearchGroup<T> newGroup = group.toSearchGroup();
           newTopGroups.add(newGroup);
           if (newTopGroups.size() == topN) {
             break;
